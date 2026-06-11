@@ -1,5 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { authClient } from "@/lib/auth/auth-client";
+import { LastUsedBadge } from "@/components/last-used-badge";
 
 export const Route = createFileRoute("/_auth/sign-in")({
   component: RouteComponent,
@@ -38,7 +41,53 @@ const SpotifyIcon = () => (
   </svg>
 );
 
+const providers = [
+  { id: "google", label: "Google", icon: GoogleIcon },
+  { id: "apple", label: "Apple", icon: AppleIcon },
+  { id: "spotify", label: "Spotify", icon: SpotifyIcon },
+] as const;
+
 function RouteComponent() {
+  const [pendingProvider, setPendingProvider] = useState<(typeof providers)[number]["id"] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const lastUsedMethod = authClient.getLastUsedLoginMethod();
+
+  async function signIn(provider: (typeof providers)[number]["id"]) {
+    setError(null);
+    setPendingProvider(provider);
+
+    const { error: signInError } = await authClient.signIn.social({
+      provider,
+      callbackURL: "/",
+      errorCallbackURL: "/sign-in",
+    });
+
+    if (signInError) {
+      setError(signInError.message ?? "Could not start sign in. Try again.");
+      setPendingProvider(null);
+    }
+  }
+
+  const renderButton = ({ id, label, icon: Icon }: (typeof providers)[number], isLastUsed = false) => {
+    return (
+      <div key={id} className="relative">
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full"
+          disabled={pendingProvider !== null}
+          aria-label={`Continue with ${label}`}
+          onClick={() => void signIn(id)}
+        >
+          <Icon />
+          {`Continue with ${label}`}
+        </Button>
+        {isLastUsed && <LastUsedBadge />}
+      </div>
+    );
+  };
+
   return (
     <div className="grid min-h-svh lg:grid-cols-2">
       {/* Left panel */}
@@ -46,28 +95,15 @@ function RouteComponent() {
 
       {/* Right panel */}
       <div className="flex items-center justify-center p-8">
-        <div className="w-full max-w-sm space-y-6">
-          <div className="space-y-1 text-center">
-            <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
-            <p className="text-sm text-muted-foreground">Choose a provider to continue</p>
+        <div className="flex w-full max-w-sm flex-col gap-6">
+          <div className="flex flex-col items-center gap-2 text-center">
+            <h1 className="text-2xl font-bold">Welcome back</h1>
+            <p className="text-sm text-muted-foreground">Sign in to continue</p>
           </div>
 
-          <div className="space-y-3">
-            <Button variant="outline" className="w-full">
-              <GoogleIcon />
-              Continue with Google
-            </Button>
+          <div className="flex flex-col gap-2">{providers.map((p) => renderButton(p, p.id === lastUsedMethod))}</div>
 
-            <Button variant="outline" className="w-full">
-              <AppleIcon />
-              Continue with Apple
-            </Button>
-
-            <Button variant="outline" className="w-full">
-              <SpotifyIcon />
-              Continue with Spotify
-            </Button>
-          </div>
+          {error ? <p className="text-center text-sm text-destructive">{error}</p> : null}
         </div>
       </div>
     </div>
