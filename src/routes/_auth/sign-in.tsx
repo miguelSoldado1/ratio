@@ -1,10 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth/auth-client";
 import { LastUsedBadge } from "@/components/last-used-badge";
 
 export const Route = createFileRoute("/_auth/sign-in")({
+  validateSearch: (search) => ({
+    error: typeof search.error === "string" ? search.error : undefined,
+  }),
   component: RouteComponent,
 });
 
@@ -49,12 +53,16 @@ const providers = [
 
 function RouteComponent() {
   const [pendingProvider, setPendingProvider] = useState<(typeof providers)[number]["id"] | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
+  const { error } = Route.useSearch();
   const lastUsedMethod = authClient.getLastUsedLoginMethod();
 
+  useEffect(() => {
+    if (!error) return;
+    toast.error("Sign in failed", { id: `auth-error-${error}`, description: getAuthErrorMessage(error) });
+  }, [error]);
+
   async function signIn(provider: (typeof providers)[number]["id"]) {
-    setError(null);
     setPendingProvider(provider);
 
     const { error: signInError } = await authClient.signIn.social({
@@ -64,7 +72,7 @@ function RouteComponent() {
     });
 
     if (signInError) {
-      setError(signInError.message ?? "Could not start sign in. Try again.");
+      toast.error("Sign in failed", { description: signInError.message ?? "Could not start sign in. Try again." });
       setPendingProvider(null);
     }
   }
@@ -102,10 +110,17 @@ function RouteComponent() {
           </div>
 
           <div className="flex flex-col gap-2">{providers.map((p) => renderButton(p, p.id === lastUsedMethod))}</div>
-
-          {error ? <p className="text-center text-sm text-destructive">{error}</p> : null}
         </div>
       </div>
     </div>
   );
+}
+
+function getAuthErrorMessage(error: string) {
+  return error
+    .replaceAll("_", " ")
+    .replaceAll("-", " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/^\w/, (letter) => letter.toUpperCase());
 }
