@@ -136,6 +136,10 @@ function App() {
               <dd>{session.data.user.name}</dd>
               <dt className="text-muted-foreground">Email</dt>
               <dd>{session.data.user.email}</dd>
+              <dt className="text-muted-foreground">Username</dt>
+              <dd>{session.data.user.username ?? "Not set"}</dd>
+              <dt className="text-muted-foreground">Display username</dt>
+              <dd>{session.data.user.displayUsername ?? "Not set"}</dd>
               <dt className="text-muted-foreground">Verified</dt>
               <dd>{session.data.user.emailVerified ? "Yes" : "No"}</dd>
               <dt className="text-muted-foreground">User ID</dt>
