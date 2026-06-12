@@ -1,8 +1,9 @@
-import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
+import { betterAuth } from "better-auth";
 import { lastLoginMethod, username } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { db } from "../db";
+// biome-ignore lint/performance/noNamespaceImport: Better Auth's Drizzle adapter expects a schema namespace object.
 import * as schema from "../db/schema";
 
 export const auth = betterAuth({
@@ -22,8 +23,8 @@ export const auth = betterAuth({
   },
   socialProviders: {
     google: {
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
       mapProfileToUser: async (profile) => {
         const baseUsername = profile.email
           ? profile.email.split("@")[0].toLowerCase()
@@ -37,8 +38,8 @@ export const auth = betterAuth({
       },
     },
     apple: {
-      clientId: process.env.APPLE_CLIENT_ID!,
-      clientSecret: process.env.APPLE_CLIENT_SECRET!,
+      clientId: process.env.APPLE_CLIENT_ID ?? "",
+      clientSecret: process.env.APPLE_CLIENT_SECRET ?? "",
       mapProfileToUser: async (profile) => {
         const baseUsername = profile.email
           ? profile.email.split("@")[0].toLowerCase()
@@ -52,8 +53,8 @@ export const auth = betterAuth({
       },
     },
     spotify: {
-      clientId: process.env.SPOTIFY_CLIENT_ID!,
-      clientSecret: process.env.SPOTIFY_CLIENT_SECRET!,
+      clientId: process.env.SPOTIFY_CLIENT_ID ?? "",
+      clientSecret: process.env.SPOTIFY_CLIENT_SECRET ?? "",
       mapProfileToUser: async (profile) => {
         const baseUsername = profile.display_name.toLowerCase().replace(/\s+/g, "_") || "user";
         const finalUsername = await generateUniqueUsername(baseUsername);

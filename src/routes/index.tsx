@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Check, Pencil, X } from "lucide-react";
-import { useEffect, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth/auth-client";
@@ -21,19 +21,59 @@ type PendingAction =
   | `link:${ProviderId}`
   | `unlink:${string}`
   | `profile:${EditableUserField}`;
-type ProfileEdit = {
+interface ProfileEdit {
   field: EditableUserField;
   value: string;
-};
-type LinkedAccount = {
-  id: string;
-  providerId: string;
+}
+interface LinkedAccount {
   accountId: string;
   createdAt: Date;
+  id: string;
+  providerId: string;
+  scopes: string[];
   updatedAt: Date;
   userId: string;
-  scopes: string[];
-};
+}
+
+function getSessionStatusLabel(isPending: boolean, hasSession: boolean) {
+  if (isPending) {
+    return "Checking authentication...";
+  }
+
+  return hasSession ? "You are signed in." : "You are not signed in.";
+}
+
+function getProviderButtonLabel(isPending: boolean, isLinked: boolean, providerLabel: string) {
+  if (isPending) {
+    return "Redirecting...";
+  }
+
+  return isLinked ? `${providerLabel} linked` : `Link ${providerLabel}`;
+}
+
+function SessionActionButton({
+  hasSession,
+  isBusy,
+  isRefetching,
+  isSigningOut,
+  onSignOut,
+}: {
+  hasSession: boolean;
+  isBusy: boolean;
+  isRefetching: boolean;
+  isSigningOut: boolean;
+  onSignOut: () => void;
+}) {
+  if (!hasSession) {
+    return <Button render={<a href="/sign-in">Sign in</a>} />;
+  }
+
+  return (
+    <Button disabled={isRefetching || isBusy} onClick={onSignOut} type="button" variant="outline">
+      {isSigningOut ? "Signing out..." : "Sign out"}
+    </Button>
+  );
+}
 
 function App() {
   const session = authClient.useSession();
@@ -42,6 +82,19 @@ function App() {
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [isActionPending, startActionTransition] = useTransition();
 
+  const refreshLinkedAccounts = useCallback(async () => {
+    const { data, error } = await authClient.listAccounts();
+
+    if (error) {
+      toast.error("Could not load linked accounts", {
+        description: error.message ?? "Try refreshing the page.",
+      });
+      return;
+    }
+
+    setLinkedAccounts(data);
+  }, []);
+
   useEffect(() => {
     if (!session.data) {
       setLinkedAccounts([]);
@@ -49,8 +102,8 @@ function App() {
       return;
     }
 
-    void refreshLinkedAccounts();
-  }, [session.data]);
+    refreshLinkedAccounts();
+  }, [session.data, refreshLinkedAccounts]);
 
   function runAction(action: PendingAction, callback: () => Promise<void>) {
     if (pendingAction) {
@@ -80,19 +133,6 @@ function App() {
     }
 
     await session.refetch();
-  }
-
-  async function refreshLinkedAccounts() {
-    const { data, error } = await authClient.listAccounts();
-
-    if (error) {
-      toast.error("Could not load linked accounts", {
-        description: error.message ?? "Try refreshing the page.",
-      });
-      return;
-    }
-
-    setLinkedAccounts(data);
   }
 
   async function linkProviderAction(provider: ProviderId) {
@@ -190,32 +230,23 @@ function App() {
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
         <div className="flex items-start justify-between gap-4">
           <div className="space-y-1">
-            <h1 className="text-2xl font-semibold">Session</h1>
-            <p className="text-sm text-muted-foreground">
-              {session.isPending
-                ? "Checking authentication..."
-                : session.data
-                  ? "You are signed in."
-                  : "You are not signed in."}
+            <h1 className="font-semibold text-2xl">Session</h1>
+            <p className="text-muted-foreground text-sm">
+              {getSessionStatusLabel(session.isPending, Boolean(session.data))}
             </p>
           </div>
 
-          {session.data ? (
-            <Button
-              type="button"
-              variant="outline"
-              disabled={session.isRefetching || isBusy}
-              onClick={() => runAction("signOut", signOutAction)}
-            >
-              {pendingAction === "signOut" ? "Signing out..." : "Sign out"}
-            </Button>
-          ) : (
-            <Button render={<a href="/sign-in" />}>Sign in</Button>
-          )}
+          <SessionActionButton
+            hasSession={Boolean(session.data)}
+            isBusy={isBusy}
+            isRefetching={session.isRefetching}
+            isSigningOut={pendingAction === "signOut"}
+            onSignOut={() => runAction("signOut", signOutAction)}
+          />
         </div>
 
         <section className="grid gap-3 rounded-md border border-border bg-card p-4">
-          <h2 className="text-sm font-medium">User</h2>
+          <h2 className="font-medium text-sm">User</h2>
           {session.data?.user ? (
             <dl className="grid gap-2 text-sm sm:grid-cols-[120px_1fr]">
               <dt className="text-muted-foreground">Name</dt>
@@ -225,29 +256,29 @@ function App() {
               <dt className="text-muted-foreground">Username</dt>
               <dd>
                 <EditableProfileField
-                  label="username"
-                  value={`@${session.data.user.username ?? "Not set"}`}
                   inputValue={profileEdit?.field === "username" ? profileEdit.value : ""}
                   isEditing={profileEdit?.field === "username"}
                   isPending={pendingAction === "profile:username"}
+                  label="username"
+                  onCancel={() => setProfileEdit(null)}
                   onChange={(value) => setProfileEdit({ field: "username", value })}
                   onEdit={() => startEditingProfileField("username")}
-                  onCancel={() => setProfileEdit(null)}
                   onSave={() => runAction("profile:username", () => updateProfileFieldAction("username"))}
+                  value={`@${session.data.user.username ?? "Not set"}`}
                 />
               </dd>
               <dt className="text-muted-foreground">Display username</dt>
               <dd>
                 <EditableProfileField
-                  label="display username"
-                  value={session.data.user.displayUsername ?? "Not set"}
                   inputValue={profileEdit?.field === "displayUsername" ? profileEdit.value : ""}
                   isEditing={profileEdit?.field === "displayUsername"}
                   isPending={pendingAction === "profile:displayUsername"}
+                  label="display username"
+                  onCancel={() => setProfileEdit(null)}
                   onChange={(value) => setProfileEdit({ field: "displayUsername", value })}
                   onEdit={() => startEditingProfileField("displayUsername")}
-                  onCancel={() => setProfileEdit(null)}
                   onSave={() => runAction("profile:displayUsername", () => updateProfileFieldAction("displayUsername"))}
+                  value={session.data.user.displayUsername ?? "Not set"}
                 />
               </dd>
               <dt className="text-muted-foreground">Verified</dt>
@@ -256,15 +287,15 @@ function App() {
               <dd className="break-all">{session.data.user.id}</dd>
             </dl>
           ) : (
-            <p className="text-sm text-muted-foreground">No user details available.</p>
+            <p className="text-muted-foreground text-sm">No user details available.</p>
           )}
         </section>
 
         {session.data ? (
           <section className="grid gap-4 rounded-md border border-border bg-card p-4">
             <div className="space-y-1">
-              <h2 className="text-sm font-medium">Linked accounts</h2>
-              <p className="text-sm text-muted-foreground">Connect providers from here after signing in.</p>
+              <h2 className="font-medium text-sm">Linked accounts</h2>
+              <p className="text-muted-foreground text-sm">Connect providers from here after signing in.</p>
             </div>
 
             <div className="grid gap-2 sm:grid-cols-3">
@@ -275,13 +306,13 @@ function App() {
 
                 return (
                   <Button
+                    disabled={isLinked || isBusy}
                     key={provider.id}
+                    onClick={() => runAction(action, () => linkProviderAction(provider.id))}
                     type="button"
                     variant={isLinked ? "secondary" : "outline"}
-                    disabled={isLinked || isBusy}
-                    onClick={() => runAction(action, () => linkProviderAction(provider.id))}
                   >
-                    {isPending ? "Redirecting..." : isLinked ? `${provider.label} linked` : `Link ${provider.label}`}
+                    {getProviderButtonLabel(isPending, isLinked, provider.label)}
                   </Button>
                 );
               })}
@@ -303,16 +334,16 @@ function App() {
                       const isPending = pendingAction === action;
 
                       return (
-                        <tr key={account.id} className="border-t border-border">
+                        <tr className="border-border border-t" key={account.id}>
                           <td className="px-3 py-2">{account.providerId}</td>
-                          <td className="px-3 py-2 break-all">{account.accountId}</td>
+                          <td className="break-all px-3 py-2">{account.accountId}</td>
                           <td className="px-3 py-2 text-right">
                             <Button
-                              type="button"
-                              size="sm"
-                              variant="destructive"
                               disabled={isBusy}
                               onClick={() => runAction(action, () => unlinkAccountAction(account))}
+                              size="sm"
+                              type="button"
+                              variant="destructive"
                             >
                               {isPending ? "Unlinking..." : "Unlink"}
                             </Button>
@@ -324,13 +355,13 @@ function App() {
                 </table>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">No linked provider accounts found.</p>
+              <p className="text-muted-foreground text-sm">No linked provider accounts found.</p>
             )}
           </section>
         ) : null}
 
         <section className="grid gap-3 rounded-md border border-border bg-card p-4">
-          <h2 className="text-sm font-medium">Raw session details</h2>
+          <h2 className="font-medium text-sm">Raw session details</h2>
           <pre className="max-h-[520px] overflow-auto rounded-md bg-muted p-3 text-xs leading-relaxed">
             {JSON.stringify(session.data ?? null, null, 2)}
           </pre>
@@ -339,15 +370,15 @@ function App() {
         {session.data ? (
           <section className="grid gap-3 rounded-md border border-destructive/30 bg-card p-4">
             <div className="space-y-1">
-              <h2 className="text-sm font-medium text-destructive">Delete account</h2>
-              <p className="text-sm text-muted-foreground">Remove your user, sessions, and linked provider accounts.</p>
+              <h2 className="font-medium text-destructive text-sm">Delete account</h2>
+              <p className="text-muted-foreground text-sm">Remove your user, sessions, and linked provider accounts.</p>
             </div>
             <div>
               <Button
-                type="button"
-                variant="destructive"
                 disabled={isBusy}
                 onClick={() => runAction("deleteAccount", deleteAccountAction)}
+                type="button"
+                variant="destructive"
               >
                 {pendingAction === "deleteAccount" ? "Deleting..." : "Delete account"}
               </Button>
@@ -385,9 +416,8 @@ function EditableProfileField({
       <div className="flex max-w-md items-center gap-2">
         <input
           aria-label={label}
-          className="h-8 min-w-0 flex-1 rounded-md border border-border bg-background px-3 text-sm transition-colors outline-none focus:border-ring focus:ring-3 focus:ring-ring/30"
+          className="h-8 min-w-0 flex-1 rounded-md border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-ring focus:ring-3 focus:ring-ring/30"
           disabled={isPending}
-          value={inputValue}
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === "Enter") {
@@ -398,12 +428,13 @@ function EditableProfileField({
               onCancel();
             }
           }}
+          value={inputValue}
         />
-        <Button type="button" size="icon-sm" disabled={isPending} onClick={onSave}>
+        <Button disabled={isPending} onClick={onSave} size="icon-sm" type="button">
           <Check />
           <span className="sr-only">Save {label}</span>
         </Button>
-        <Button type="button" size="icon-sm" variant="ghost" disabled={isPending} onClick={onCancel}>
+        <Button disabled={isPending} onClick={onCancel} size="icon-sm" type="button" variant="ghost">
           <X />
           <span className="sr-only">Cancel editing {label}</span>
         </Button>
@@ -414,7 +445,7 @@ function EditableProfileField({
   return (
     <div className="flex min-w-0 items-center gap-2">
       <span className="min-w-0 break-all">{value}</span>
-      <Button type="button" size="icon-xs" variant="ghost" onClick={onEdit}>
+      <Button onClick={onEdit} size="icon-xs" type="button" variant="ghost">
         <Pencil />
         <span className="sr-only">Edit {label}</span>
       </Button>
