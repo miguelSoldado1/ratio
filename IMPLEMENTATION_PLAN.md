@@ -136,6 +136,8 @@ The current repo defines the Better Auth tables directly in `src/lib/auth/auth-s
 
 Cloudflare Worker compatibility is the riskiest database integration. The current local DB client uses `postgres`, which may need to be replaced or wrapped with a Worker-compatible Postgres connection path such as Cloudflare Hyperdrive or another supported driver. Validate this with a deployed Worker test query before building app features on top.
 
+Deployment note from the initial Cloudflare rollout: a module-scoped `postgres` client failed in Workers during OAuth callback handling with `Cannot perform I/O on behalf of a different request`, surfaced by Better Auth as a failed `verification` query while parsing OAuth state. The current mitigation is to create and close the `postgres` client per auth request and to use `prepare: false` for the Supabase transaction pooler on port `6543`. If DB usage expands beyond auth, revisit this before adding shared module-level DB clients. Cloudflare Hyperdrive is a likely production-grade fix because it provides a Worker-native Postgres binding/connection proxy; another option is moving to an edge-compatible HTTP driver where possible.
+
 ```ts
 // albums — cached Spotify metadata
 export const albums = pgTable("albums", {

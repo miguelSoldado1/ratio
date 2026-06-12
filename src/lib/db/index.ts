@@ -1,14 +1,16 @@
-import { config } from "dotenv";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import { env } from "@/env";
+// biome-ignore lint/performance/noNamespaceImport: Better Auth's Drizzle adapter expects a schema namespace object.
+import * as schema from "./schema";
 
-config({ path: ".env" });
+export function createDbClient() {
+  const client = postgres(env.DATABASE_URL, { max: 1, prepare: false });
 
-const databaseUrl = process.env.DATABASE_URL;
-
-if (!databaseUrl) {
-  throw new Error("DATABASE_URL is required");
+  return {
+    client,
+    db: drizzle({ client, schema }),
+  };
 }
 
-const client = postgres(databaseUrl);
-export const db = drizzle({ client });
+export type Db = ReturnType<typeof createDbClient>["db"];

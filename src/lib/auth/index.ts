@@ -2,77 +2,93 @@ import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { betterAuth } from "better-auth";
 import { lastLoginMethod, username } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
-import { db } from "../db";
+import { eq } from "drizzle-orm";
+import { env } from "@/env";
+import { createDbClient } from "../db";
 // biome-ignore lint/performance/noNamespaceImport: Better Auth's Drizzle adapter expects a schema namespace object.
 import * as schema from "../db/schema";
+import type { Db } from "../db";
 
-export const auth = betterAuth({
-  baseURL: process.env.BETTER_AUTH_URL,
-  database: drizzleAdapter(db, { provider: "pg", schema }),
-  emailAndPassword: { enabled: false },
-  user: {
-    deleteUser: {
-      enabled: true,
-    },
-  },
-  account: {
-    accountLinking: {
-      trustedProviders: ["spotify"],
-      disableImplicitLinking: true,
-    },
-  },
-  socialProviders: {
-    google: {
-      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
-      mapProfileToUser: async (profile) => {
-        const baseUsername = profile.email
-          ? profile.email.split("@")[0].toLowerCase()
-          : `user_${profile.sub.slice(-8)}`;
-        const finalUsername = await generateUniqueUsername(baseUsername);
-
-        return {
-          username: finalUsername,
-          displayUsername: profile.name || profile.given_name,
-        };
+export function createAuth(db: Db) {
+  return betterAuth({
+    baseURL: env.BETTER_AUTH_URL,
+    database: drizzleAdapter(db, { provider: "pg", schema }),
+    emailAndPassword: { enabled: false },
+    user: {
+      deleteUser: {
+        enabled: true,
       },
     },
-    apple: {
-      clientId: process.env.APPLE_CLIENT_ID ?? "",
-      clientSecret: process.env.APPLE_CLIENT_SECRET ?? "",
-      mapProfileToUser: async (profile) => {
-        const baseUsername = profile.email
-          ? profile.email.split("@")[0].toLowerCase()
-          : `user_${profile.sub.slice(-8)}`;
-        const finalUsername = await generateUniqueUsername(baseUsername);
-
-        return {
-          username: finalUsername,
-          displayUsername: profile.name || profile.email,
-        };
+    account: {
+      accountLinking: {
+        trustedProviders: ["spotify"],
+        disableImplicitLinking: true,
       },
     },
-    spotify: {
-      clientId: process.env.SPOTIFY_CLIENT_ID ?? "",
-      clientSecret: process.env.SPOTIFY_CLIENT_SECRET ?? "",
-      mapProfileToUser: async (profile) => {
-        const baseUsername = profile.display_name.toLowerCase().replace(/\s+/g, "_") || "user";
-        const finalUsername = await generateUniqueUsername(baseUsername);
+    socialProviders: {
+      google: {
+        clientId: env.GOOGLE_CLIENT_ID,
+        clientSecret: env.GOOGLE_CLIENT_SECRET,
+        mapProfileToUser: async (profile) => {
+          const baseUsername = profile.email
+            ? profile.email.split("@")[0].toLowerCase()
+            : `user_${profile.sub.slice(-8)}`;
+          const finalUsername = await generateUniqueUsername(db, baseUsername);
 
-        return {
-          username: finalUsername,
-          displayUsername: profile.display_name,
-        };
+          return {
+            username: finalUsername,
+            displayUsername: profile.name || profile.given_name,
+          };
+        },
+      },
+      apple: {
+        clientId: env.APPLE_CLIENT_ID,
+        clientSecret: env.APPLE_CLIENT_SECRET,
+        mapProfileToUser: async (profile) => {
+          const baseUsername = profile.email
+            ? profile.email.split("@")[0].toLowerCase()
+            : `user_${profile.sub.slice(-8)}`;
+          const finalUsername = await generateUniqueUsername(db, baseUsername);
+
+          return {
+            username: finalUsername,
+            displayUsername: profile.name || profile.email,
+          };
+        },
+      },
+      spotify: {
+        clientId: env.SPOTIFY_CLIENT_ID,
+        clientSecret: env.SPOTIFY_CLIENT_SECRET,
+        mapProfileToUser: async (profile) => {
+          const baseUsername = profile.display_name.toLowerCase().replace(/\s+/g, "_") || "user";
+          const finalUsername = await generateUniqueUsername(db, baseUsername);
+
+          return {
+            username: finalUsername,
+            displayUsername: profile.display_name,
+          };
+        },
       },
     },
-  },
-  plugins: [username(), lastLoginMethod(), tanstackStartCookies()],
-});
+    plugins: [username(), lastLoginMethod(), tanstackStartCookies()],
+  });
+}
 
-async function generateUniqueUsername(baseUsername: string): Promise<string> {
+export async function handleAuthRequest(request: Request) {
+  const { client, db } = createDbClient();
+  const auth = createAuth(db);
+
+  try {
+    return await auth.handler(request);
+  } finally {
+    await client.end({ timeout: 1 }).catch(() => undefined);
+  }
+}
+
+async function generateUniqueUsername(db: Db, baseUsername: string): Promise<string> {
   const normalizedUsername = normalizeUsername(baseUsername);
 
-  if (await isUsernameAvailable(normalizedUsername)) {
+  if (await isUsernameAvailable(db, normalizedUsername)) {
     return normalizedUsername;
   }
 
@@ -80,7 +96,7 @@ async function generateUniqueUsername(baseUsername: string): Promise<string> {
     const hash = Math.random().toString(36).slice(2, 6);
     const usernameWithHash = `${normalizedUsername.slice(0, 25)}_${hash}`;
 
-    if (await isUsernameAvailable(usernameWithHash)) {
+    if (await isUsernameAvailable(db, usernameWithHash)) {
       return usernameWithHash;
     }
   }
@@ -88,14 +104,15 @@ async function generateUniqueUsername(baseUsername: string): Promise<string> {
   return `${normalizedUsername.slice(0, 20)}_${Date.now().toString(36)}`;
 }
 
-async function isUsernameAvailable(candidate: string) {
-  const result = await auth.api
-    .isUsernameAvailable({
-      body: { username: candidate },
-    })
-    .catch(() => ({ available: false }));
+async function isUsernameAvailable(db: Db, candidate: string) {
+  const existingUser = await db
+    .select({ id: schema.user.id })
+    .from(schema.user)
+    .where(eq(schema.user.username, candidate))
+    .limit(1)
+    .catch(() => [{ id: candidate }]);
 
-  return result.available;
+  return existingUser.length === 0;
 }
 
 function normalizeUsername(candidate: string) {
