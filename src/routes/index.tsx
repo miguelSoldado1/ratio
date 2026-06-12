@@ -65,7 +65,7 @@ function SessionActionButton({
   onSignOut: () => void;
 }) {
   if (!hasSession) {
-    return <Button render={<a href="/sign-in">Sign in</a>} />;
+    return <Button nativeButton={false} render={<a href="/sign-in">Sign in</a>} />;
   }
 
   return (
