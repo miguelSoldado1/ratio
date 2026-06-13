@@ -1,454 +1,254 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Check, Pencil, X } from "lucide-react";
-import { useCallback, useEffect, useState, useTransition } from "react";
-import { toast } from "sonner";
-import { Button } from "@/components/ui/button";
-import { authClient } from "@/lib/auth/auth-client";
+import { Home, Radio, Search, Settings, User } from "lucide-react";
+import { ReviewCard } from "@/components/review-card";
+import { cn } from "@/lib/utils";
+import type { ReviewData } from "@/components/review-card";
 
-export const Route = createFileRoute("/")({ component: App });
+export const Route = createFileRoute("/")({ component: FeedPage });
 
-const providers = [
-  { id: "google", label: "Google" },
-  { id: "apple", label: "Apple" },
-  { id: "spotify", label: "Spotify" },
+// --- Mock data ---
+
+const MOCK_REVIEWS: ReviewData[] = [
+  {
+    id: "1",
+    user: { name: "Alex Rivera", username: "alexrivera" },
+    album: {
+      id: "ok-computer",
+      title: "OK Computer",
+      artist: "Radiohead",
+      year: "1997",
+      coverUrl: "https://picsum.photos/seed/ok-computer/200/200",
+    },
+    rating: 2.5,
+    review:
+      "A landmark record that predicted the anxieties of the digital age with uncanny precision. Thom Yorke's paranoid murmurs have never felt more prescient, and Jonny Greenwood's arrangements feel genuinely dangerous — guitars that dissolve into static, rhythms that lurch and stall like a commute that will never end. Listening in 2024 is almost uncomfortable in how accurate it all turned out to be.",
+    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
+  },
+  {
+    id: "2",
+    user: { name: "Sam Chen", username: "samchen" },
+    album: {
+      id: "tpab",
+      title: "To Pimp a Butterfly",
+      artist: "Kendrick Lamar",
+      year: "2015",
+      coverUrl: "https://picsum.photos/seed/tpab/200/200",
+    },
+    rating: 5,
+    review:
+      "The most ambitious rap album of the decade. Every listen reveals another layer you hadn't noticed before. The jazz instrumentation shouldn't work this well over hip-hop production, but it does — effortlessly, almost tauntingly. Kendrick isn't rapping at you, he's building a world and daring you to find your place in it. The butterfly metaphor pays off better than any concept album has a right to.",
+    createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
+  },
+  {
+    id: "3",
+    user: { name: "Maya Torres", username: "mayatorres" },
+    album: {
+      id: "melodrama",
+      title: "Melodrama",
+      artist: "Lorde",
+      year: "2017",
+      coverUrl: "https://picsum.photos/seed/melodrama/200/200",
+    },
+    rating: 3,
+    review:
+      "There's a version of this album that I think is a perfect breakup record and another version I find exhausting. Lorde's melodrama is earned — she was nineteen and she knew it — but the production occasionally tips from euphoric into overwrought. Green Light is still one of the best pop moments of the 2010s. The closer, Perfect Places, destroys me every time without fail.",
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+  },
+  {
+    id: "4",
+    user: { name: "Jordan Kim", username: "jordankim" },
+    album: {
+      id: "in-rainbows",
+      title: "In Rainbows",
+      artist: "Radiohead",
+      year: "2007",
+      coverUrl: "https://picsum.photos/seed/in-rainbows/200/200",
+    },
+    rating: 1.5,
+    review:
+      "Warm and intimate in a way Radiohead had never quite managed before. The vinyl presentation is perfect, but even on streaming it sounds like the band finally exhaled. Every track feels like a conversation rather than a transmission. Reckoner alone justifies the whole thing — that chorus is one of the most purely beautiful things they've ever recorded, and it lands without a single loud moment.",
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+  },
+  {
+    id: "5",
+    user: { name: "Pat Morgan", username: "patmorgan" },
+    album: {
+      id: "blonde",
+      title: "Blonde",
+      artist: "Frank Ocean",
+      year: "2016",
+      coverUrl: "https://picsum.photos/seed/blonde/200/200",
+    },
+    rating: 4.5,
+    review:
+      "Frank Ocean made the album that every other R&B artist was too afraid to make. It barely has a structure — more like a long afternoon of half-finished thoughts and voice memos than a proper record. And yet it coheres completely. Nights is the centrepiece: the beat switch in the middle is one of the cleanest production moves of the decade. I've started it at the beginning and just let it run more times than I can count.",
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+  },
+  {
+    id: "6",
+    user: { name: "Jamie Lee", username: "jamielee" },
+    album: {
+      id: "gkmc",
+      title: "good kid, m.A.A.d city",
+      artist: "Kendrick Lamar",
+      year: "2012",
+      coverUrl: "https://picsum.photos/seed/gkmc/200/200",
+    },
+    rating: 4,
+    review:
+      "The most vivid autobiographical storytelling in rap. Compton has never felt this cinematic — you can feel the heat off the asphalt. The skit interludes that annoyed people in 2012 are now the whole point; they're the connective tissue that turns a great rap album into an actual narrative. Backseat Freestyle and m.A.A.d city still hit as hard as anything released since.",
+    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+  },
+];
+
+const POPULAR_THIS_WEEK = [
+  {
+    id: "p1",
+    title: "GUTS",
+    artist: "Olivia Rodrigo",
+    year: "2023",
+    score: 4.0,
+    coverUrl: "https://picsum.photos/seed/guts/200/200",
+  },
+  {
+    id: "p2",
+    title: "The Record",
+    artist: "boygenius",
+    year: "2023",
+    score: 4.3,
+    coverUrl: "https://picsum.photos/seed/the-record/200/200",
+  },
+  {
+    id: "p3",
+    title: "Javelin",
+    artist: "Sufjan Stevens",
+    year: "2023",
+    score: 4.5,
+    coverUrl: "https://picsum.photos/seed/javelin/200/200",
+  },
+  {
+    id: "p4",
+    title: "Desire, I Want to Turn Into You",
+    artist: "Caroline Polachek",
+    year: "2023",
+    score: 4.3,
+    coverUrl: "https://picsum.photos/seed/desire/200/200",
+  },
+];
+
+const NAV_LINKS = [
+  { icon: Home, label: "Home", href: "/" },
+  { icon: Search, label: "Search", href: "/search" },
+  { icon: Radio, label: "Feed", href: "/feed" },
+  { icon: User, label: "Profile", href: "/user/me" },
+  { icon: Settings, label: "Settings", href: "/settings" },
 ] as const;
 
-type ProviderId = (typeof providers)[number]["id"];
-type EditableUserField = "username" | "displayUsername";
-type PendingAction =
-  | "signOut"
-  | "deleteAccount"
-  | `link:${ProviderId}`
-  | `unlink:${string}`
-  | `profile:${EditableUserField}`;
-interface ProfileEdit {
-  field: EditableUserField;
-  value: string;
-}
-interface LinkedAccount {
-  accountId: string;
-  createdAt: Date;
-  id: string;
-  providerId: string;
-  scopes: string[];
-  updatedAt: Date;
-  userId: string;
-}
+// --- Page ---
 
-function getSessionStatusLabel(isPending: boolean, hasSession: boolean) {
-  if (isPending) {
-    return "Checking authentication...";
-  }
-
-  return hasSession ? "You are signed in." : "You are not signed in.";
-}
-
-function getProviderButtonLabel(isPending: boolean, isLinked: boolean, providerLabel: string) {
-  if (isPending) {
-    return "Redirecting...";
-  }
-
-  return isLinked ? `${providerLabel} linked` : `Link ${providerLabel}`;
-}
-
-function SessionActionButton({
-  hasSession,
-  isBusy,
-  isRefetching,
-  isSigningOut,
-  onSignOut,
-}: {
-  hasSession: boolean;
-  isBusy: boolean;
-  isRefetching: boolean;
-  isSigningOut: boolean;
-  onSignOut: () => void;
-}) {
-  if (!hasSession) {
-    return <Button nativeButton={false} render={<a href="/sign-in">Sign in</a>} />;
-  }
-
+function FeedPage() {
   return (
-    <Button disabled={isRefetching || isBusy} onClick={onSignOut} type="button" variant="outline">
-      {isSigningOut ? "Signing out..." : "Sign out"}
-    </Button>
-  );
-}
-
-function App() {
-  const session = authClient.useSession();
-  const [linkedAccounts, setLinkedAccounts] = useState<LinkedAccount[]>([]);
-  const [profileEdit, setProfileEdit] = useState<ProfileEdit | null>(null);
-  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
-  const [isActionPending, startActionTransition] = useTransition();
-
-  const refreshLinkedAccounts = useCallback(async () => {
-    const { data, error } = await authClient.listAccounts();
-
-    if (error) {
-      toast.error("Could not load linked accounts", {
-        description: error.message ?? "Try refreshing the page.",
-      });
-      return;
-    }
-
-    setLinkedAccounts(data);
-  }, []);
-
-  useEffect(() => {
-    if (!session.data) {
-      setLinkedAccounts([]);
-      setProfileEdit(null);
-      return;
-    }
-
-    refreshLinkedAccounts();
-  }, [session.data, refreshLinkedAccounts]);
-
-  function runAction(action: PendingAction, callback: () => Promise<void>) {
-    if (pendingAction) {
-      return;
-    }
-
-    setPendingAction(action);
-    startActionTransition(async () => {
-      try {
-        await callback();
-      } finally {
-        startActionTransition(() => {
-          setPendingAction(null);
-        });
-      }
-    });
-  }
-
-  async function signOutAction() {
-    const { error } = await authClient.signOut();
-
-    if (error) {
-      toast.error("Sign out failed", {
-        description: error.message ?? "Could not sign out. Try again.",
-      });
-      return;
-    }
-
-    await session.refetch();
-  }
-
-  async function linkProviderAction(provider: ProviderId) {
-    const { error } = await authClient.linkSocial({
-      provider,
-      callbackURL: "/",
-      errorCallbackURL: "/",
-    });
-
-    if (error) {
-      toast.error("Could not link account", {
-        description: error.message ?? "Try again.",
-      });
-    }
-  }
-
-  async function unlinkAccountAction(account: LinkedAccount) {
-    const { error } = await authClient.unlinkAccount({
-      providerId: account.providerId,
-      accountId: account.accountId,
-    });
-
-    if (error) {
-      toast.error("Could not unlink account", {
-        description: error.message ?? "Try again.",
-      });
-      return;
-    }
-
-    toast.success("Account unlinked");
-    await refreshLinkedAccounts();
-  }
-
-  function startEditingProfileField(field: EditableUserField) {
-    if (!session.data?.user) {
-      return;
-    }
-
-    setProfileEdit({
-      field,
-      value: session.data.user[field] ?? "",
-    });
-  }
-
-  async function updateProfileFieldAction(field: EditableUserField) {
-    const value = profileEdit?.field === field ? profileEdit.value.trim() : "";
-
-    if (!value) {
-      toast.error(field === "username" ? "Username is required" : "Display name is required");
-      return;
-    }
-
-    const { error } = await authClient.updateUser({ [field]: value });
-
-    if (error) {
-      toast.error(field === "username" ? "Could not update username" : "Could not update display name", {
-        description: error.message ?? "Try another value.",
-      });
-      return;
-    }
-
-    toast.success(field === "username" ? "Username updated" : "Display name updated");
-    await session.refetch();
-    setProfileEdit(null);
-  }
-
-  async function deleteAccountAction() {
-    const confirmed = window.confirm("Delete your account? This cannot be undone.");
-
-    if (!confirmed) {
-      return;
-    }
-
-    const { error } = await authClient.deleteUser({
-      callbackURL: "/",
-    });
-
-    if (error) {
-      toast.error("Could not delete account", {
-        description: error.message ?? "Try signing in again, then retry.",
-      });
-      return;
-    }
-
-    toast.success("Account deleted");
-    await session.refetch();
-    window.location.href = "/";
-  }
-
-  const linkedProviderIds = new Set(linkedAccounts.map((account) => account.providerId));
-  const isBusy = pendingAction !== null || isActionPending;
-
-  return (
-    <main className="min-h-svh p-6">
-      <div className="mx-auto flex w-full max-w-3xl flex-col gap-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="space-y-1">
-            <h1 className="font-semibold text-2xl">Session</h1>
-            <p className="text-muted-foreground text-sm">
-              {getSessionStatusLabel(session.isPending, Boolean(session.data))}
-            </p>
+    <div className="flex min-h-screen flex-col">
+      {/* Top bar */}
+      <div className="border-border border-b px-6 py-4 xl:px-16 2xl:px-24">
+        {/* Mobile: logo left, actions right */}
+        <div className="flex items-center justify-between lg:hidden">
+          <span className="font-bold text-2xl text-primary tracking-tight">ratio</span>
+          <div className="flex items-center gap-3">
+            <a
+              aria-label="Search"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+              href="/search"
+            >
+              <Search className="size-5" />
+            </a>
+            <div className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary font-medium text-primary-foreground text-xs uppercase">
+              M
+            </div>
           </div>
-
-          <SessionActionButton
-            hasSession={Boolean(session.data)}
-            isBusy={isBusy}
-            isRefetching={session.isRefetching}
-            isSigningOut={pendingAction === "signOut"}
-            onSignOut={() => runAction("signOut", signOutAction)}
-          />
         </div>
-
-        <section className="grid gap-3 rounded-md border border-border bg-card p-4">
-          <h2 className="font-medium text-sm">User</h2>
-          {session.data?.user ? (
-            <dl className="grid gap-2 text-sm sm:grid-cols-[120px_1fr]">
-              <dt className="text-muted-foreground">Name</dt>
-              <dd>{session.data.user.name}</dd>
-              <dt className="text-muted-foreground">Email</dt>
-              <dd>{session.data.user.email}</dd>
-              <dt className="text-muted-foreground">Username</dt>
-              <dd>
-                <EditableProfileField
-                  inputValue={profileEdit?.field === "username" ? profileEdit.value : ""}
-                  isEditing={profileEdit?.field === "username"}
-                  isPending={pendingAction === "profile:username"}
-                  label="username"
-                  onCancel={() => setProfileEdit(null)}
-                  onChange={(value) => setProfileEdit({ field: "username", value })}
-                  onEdit={() => startEditingProfileField("username")}
-                  onSave={() => runAction("profile:username", () => updateProfileFieldAction("username"))}
-                  value={`@${session.data.user.username ?? "Not set"}`}
-                />
-              </dd>
-              <dt className="text-muted-foreground">Display username</dt>
-              <dd>
-                <EditableProfileField
-                  inputValue={profileEdit?.field === "displayUsername" ? profileEdit.value : ""}
-                  isEditing={profileEdit?.field === "displayUsername"}
-                  isPending={pendingAction === "profile:displayUsername"}
-                  label="display username"
-                  onCancel={() => setProfileEdit(null)}
-                  onChange={(value) => setProfileEdit({ field: "displayUsername", value })}
-                  onEdit={() => startEditingProfileField("displayUsername")}
-                  onSave={() => runAction("profile:displayUsername", () => updateProfileFieldAction("displayUsername"))}
-                  value={session.data.user.displayUsername ?? "Not set"}
-                />
-              </dd>
-              <dt className="text-muted-foreground">Verified</dt>
-              <dd>{session.data.user.emailVerified ? "Yes" : "No"}</dd>
-              <dt className="text-muted-foreground">User ID</dt>
-              <dd className="break-all">{session.data.user.id}</dd>
-            </dl>
-          ) : (
-            <p className="text-muted-foreground text-sm">No user details available.</p>
-          )}
-        </section>
-
-        {session.data ? (
-          <section className="grid gap-4 rounded-md border border-border bg-card p-4">
-            <div className="space-y-1">
-              <h2 className="font-medium text-sm">Linked accounts</h2>
-              <p className="text-muted-foreground text-sm">Connect providers from here after signing in.</p>
+        {/* Desktop: three-column */}
+        <div className="hidden grid-cols-3 items-center gap-4 lg:grid">
+          <span className="font-bold text-2xl text-primary tracking-tight">ratio</span>
+          <div className="relative">
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              className="h-9 w-full border border-border bg-muted pr-4 pl-9 text-foreground text-sm placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
+              placeholder="Search albums, artists…"
+              type="search"
+            />
+          </div>
+          <div className="flex items-center justify-end gap-2.5">
+            <span className="text-muted-foreground text-sm">Miguel</span>
+            <div className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary font-medium text-primary-foreground text-xs uppercase">
+              M
             </div>
-
-            <div className="grid gap-2 sm:grid-cols-3">
-              {providers.map((provider) => {
-                const isLinked = linkedProviderIds.has(provider.id);
-                const action = `link:${provider.id}` as const;
-                const isPending = pendingAction === action;
-
-                return (
-                  <Button
-                    disabled={isLinked || isBusy}
-                    key={provider.id}
-                    onClick={() => runAction(action, () => linkProviderAction(provider.id))}
-                    type="button"
-                    variant={isLinked ? "secondary" : "outline"}
-                  >
-                    {getProviderButtonLabel(isPending, isLinked, provider.label)}
-                  </Button>
-                );
-              })}
-            </div>
-
-            {linkedAccounts.length > 0 ? (
-              <div className="overflow-hidden rounded-md border border-border">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-muted text-muted-foreground">
-                    <tr>
-                      <th className="px-3 py-2 font-medium">Provider</th>
-                      <th className="px-3 py-2 font-medium">Account ID</th>
-                      <th className="px-3 py-2 text-right font-medium">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {linkedAccounts.map((account) => {
-                      const action = `unlink:${account.id}` as const;
-                      const isPending = pendingAction === action;
-
-                      return (
-                        <tr className="border-border border-t" key={account.id}>
-                          <td className="px-3 py-2">{account.providerId}</td>
-                          <td className="break-all px-3 py-2">{account.accountId}</td>
-                          <td className="px-3 py-2 text-right">
-                            <Button
-                              disabled={isBusy}
-                              onClick={() => runAction(action, () => unlinkAccountAction(account))}
-                              size="sm"
-                              type="button"
-                              variant="destructive"
-                            >
-                              {isPending ? "Unlinking..." : "Unlink"}
-                            </Button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-sm">No linked provider accounts found.</p>
-            )}
-          </section>
-        ) : null}
-
-        <section className="grid gap-3 rounded-md border border-border bg-card p-4">
-          <h2 className="font-medium text-sm">Raw session details</h2>
-          <pre className="max-h-[520px] overflow-auto rounded-md bg-muted p-3 text-xs leading-relaxed">
-            {JSON.stringify(session.data ?? null, null, 2)}
-          </pre>
-        </section>
-
-        {session.data ? (
-          <section className="grid gap-3 rounded-md border border-destructive/30 bg-card p-4">
-            <div className="space-y-1">
-              <h2 className="font-medium text-destructive text-sm">Delete account</h2>
-              <p className="text-muted-foreground text-sm">Remove your user, sessions, and linked provider accounts.</p>
-            </div>
-            <div>
-              <Button
-                disabled={isBusy}
-                onClick={() => runAction("deleteAccount", deleteAccountAction)}
-                type="button"
-                variant="destructive"
+          </div>
+        </div>
+      </div>
+      {/* Main grid */}
+      <div className="mx-auto w-full flex-1 px-6 pb-8 lg:grid lg:grid-cols-[180px_1px_1fr_1px_220px] lg:gap-x-10 xl:px-16 2xl:px-24">
+        <aside className="sticky top-8 mb-8 hidden self-start pt-8 lg:block">
+          <nav className="flex flex-col">
+            {NAV_LINKS.map(({ icon: Icon, label, href }) => (
+              <a
+                className={cn(
+                  "flex items-center gap-3 py-2 pl-2 text-sm transition-colors hover:text-foreground",
+                  href === "/" ? "font-medium text-foreground" : "text-muted-foreground"
+                )}
+                href={href}
+                key={href}
               >
-                {pendingAction === "deleteAccount" ? "Deleting..." : "Delete account"}
-              </Button>
-            </div>
-          </section>
-        ) : null}
+                <Icon className="size-4 shrink-0" />
+                {label}
+              </a>
+            ))}
+          </nav>
+        </aside>
+        <div className="hidden bg-border lg:block" />
+        {/* Main feed */}
+        <main className="min-w-0 pt-8">
+          <h1 className="mb-4 font-medium text-[10px] text-muted-foreground uppercase tracking-widest">
+            Recent Reviews
+          </h1>
+          <div>
+            {MOCK_REVIEWS.map((review) => (
+              <ReviewCard key={review.id} {...review} />
+            ))}
+          </div>
+        </main>
+        <div className="hidden bg-border lg:block" />
+        {/* Right sidebar */}
+        <aside className="sticky top-8 hidden self-start pt-8 lg:block">
+          <h2 className="mb-1 font-medium text-[10px] text-muted-foreground uppercase tracking-widest">
+            Popular this week
+          </h2>
+          <div className="flex flex-col">
+            {POPULAR_THIS_WEEK.map((album, i) => (
+              <div className="flex items-center gap-3 border-border border-b py-3.5 last:border-0" key={album.id}>
+                <span className="w-3.5 shrink-0 text-[11px] text-muted-foreground tabular-nums">{i + 1}</span>
+                <div className="size-9 shrink-0 overflow-hidden bg-muted">
+                  {album.coverUrl ? (
+                    <img
+                      alt={album.title}
+                      className="size-full object-cover"
+                      height={36}
+                      referrerPolicy="no-referrer"
+                      src={album.coverUrl}
+                      width={36}
+                    />
+                  ) : null}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium text-foreground text-xs">{album.title}</p>
+                  <p className="truncate text-[11px] text-muted-foreground">{album.artist}</p>
+                </div>
+                <span className="shrink-0 font-bold text-primary text-xs tabular-nums">{album.score.toFixed(1)}</span>
+              </div>
+            ))}
+          </div>
+        </aside>
       </div>
-    </main>
-  );
-}
-
-function EditableProfileField({
-  label,
-  value,
-  inputValue,
-  isEditing,
-  isPending,
-  onChange,
-  onEdit,
-  onCancel,
-  onSave,
-}: {
-  label: string;
-  value: string;
-  inputValue: string;
-  isEditing: boolean;
-  isPending: boolean;
-  onChange: (value: string) => void;
-  onEdit: () => void;
-  onCancel: () => void;
-  onSave: () => void;
-}) {
-  if (isEditing) {
-    return (
-      <div className="flex max-w-md items-center gap-2">
-        <input
-          aria-label={label}
-          className="h-8 min-w-0 flex-1 rounded-md border border-border bg-background px-3 text-sm outline-none transition-colors focus:border-ring focus:ring-3 focus:ring-ring/30"
-          disabled={isPending}
-          onChange={(event) => onChange(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              onSave();
-            }
-
-            if (event.key === "Escape") {
-              onCancel();
-            }
-          }}
-          value={inputValue}
-        />
-        <Button disabled={isPending} onClick={onSave} size="icon-sm" type="button">
-          <Check />
-          <span className="sr-only">Save {label}</span>
-        </Button>
-        <Button disabled={isPending} onClick={onCancel} size="icon-sm" type="button" variant="ghost">
-          <X />
-          <span className="sr-only">Cancel editing {label}</span>
-        </Button>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex min-w-0 items-center gap-2">
-      <span className="min-w-0 break-all">{value}</span>
-      <Button onClick={onEdit} size="icon-xs" type="button" variant="ghost">
-        <Pencil />
-        <span className="sr-only">Edit {label}</span>
-      </Button>
     </div>
   );
 }

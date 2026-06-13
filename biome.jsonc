@@ -30,6 +30,9 @@
   },
   "linter": {
     "rules": {
+      "style": {
+        "useBlockStatements": "off"
+      },
       "suspicious": {
         "noAlert": "off"
       }
