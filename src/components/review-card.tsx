@@ -1,4 +1,5 @@
-import { useId } from "react";
+import { Heart } from "lucide-react";
+import { useId, useState } from "react";
 import { cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
@@ -22,6 +23,8 @@ export interface ReviewData {
   album: ReviewAlbum;
   createdAt: Date;
   id: string;
+  liked?: boolean;
+  likes?: number;
   rating: number; // 1–5 (half-star increments)
   review?: string;
   user: ReviewUser;
@@ -45,6 +48,12 @@ function relativeTime(date: Date): string {
   if (h > 0) return `${h}h`;
   if (m > 0) return `${m}m`;
   return "just now";
+}
+
+function abbreviateCount(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M`;
+  if (n >= 1000) return `${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k`;
+  return String(n);
 }
 
 // --- Sub-components ---
@@ -222,13 +231,77 @@ function Review({ children, className }: ReviewProps) {
   return <p className={cn("mt-3 text-muted-foreground text-sm leading-relaxed", className)}>{children}</p>;
 }
 
+interface LikesProps {
+  className?: string;
+  count: number;
+  liked?: boolean;
+  onToggle?: () => void;
+}
+
+function Likes({ count, liked = false, onToggle, className }: LikesProps) {
+  const [optimisticLiked, setOptimisticLiked] = useState(liked);
+  const [optimisticCount, setOptimisticCount] = useState(count);
+  const [justLiked, setJustLiked] = useState(false);
+  const [countDir, setCountDir] = useState<"up" | "down" | null>(null);
+
+  function handleClick() {
+    const next = !optimisticLiked;
+    setOptimisticLiked(next);
+    setOptimisticCount((c) => c + (next ? 1 : -1));
+    setCountDir(next ? "up" : "down");
+    if (next) setJustLiked(true);
+    onToggle?.();
+  }
+
+  return (
+    <button
+      className={cn(
+        "group flex cursor-pointer items-center gap-1.5",
+        "[transition:transform_130ms_cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]",
+        className
+      )}
+      onClick={handleClick}
+      type="button"
+    >
+      <Heart
+        className={cn(
+          "size-3.5 [transition:color_150ms_ease,fill_150ms_ease,stroke_150ms_ease]",
+          justLiked && "animate-heart-pop",
+          optimisticLiked ? "fill-primary stroke-primary" : "stroke-muted-foreground group-hover:stroke-primary"
+        )}
+        onAnimationEnd={() => setJustLiked(false)}
+      />
+      <span
+        className={cn(
+          "text-[13px] tabular-nums [transition:color_150ms_ease]",
+          countDir === "up" && "animate-count-up",
+          countDir === "down" && "animate-count-down",
+          optimisticLiked ? "text-primary" : "text-muted-foreground group-hover:text-primary"
+        )}
+        key={optimisticCount}
+      >
+        {abbreviateCount(optimisticCount)}
+      </span>
+    </button>
+  );
+}
+
+interface FooterProps {
+  children: ReactNode;
+  className?: string;
+}
+
+function Footer({ children, className }: FooterProps) {
+  return <div className={cn("mt-3 flex items-center gap-3", className)}>{children}</div>;
+}
+
 // --- Default composed component ---
 
 interface ReviewCardProps extends ReviewData {
   className?: string;
 }
 
-function ReviewCard({ user, album, rating, review, createdAt, className }: ReviewCardProps) {
+function ReviewCard({ user, album, rating, review, likes, liked, createdAt, className }: ReviewCardProps) {
   return (
     <Root className={className}>
       <Header createdAt={createdAt} href={`/user/${user.username}`} user={user} />
@@ -237,6 +310,11 @@ function ReviewCard({ user, album, rating, review, createdAt, className }: Revie
         <Rating value={rating} />
       </div>
       {review ? <Review>{review}</Review> : null}
+      {likes === undefined ? null : (
+        <Footer>
+          <Likes count={likes} liked={liked} />
+        </Footer>
+      )}
     </Root>
   );
 }
@@ -246,5 +324,7 @@ ReviewCard.Header = Header;
 ReviewCard.Album = Album;
 ReviewCard.Rating = Rating;
 ReviewCard.Review = Review;
+ReviewCard.Footer = Footer;
+ReviewCard.Likes = Likes;
 
 export { ReviewCard };

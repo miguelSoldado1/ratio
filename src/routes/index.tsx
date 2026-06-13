@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Home, Radio, Search, Settings, User } from "lucide-react";
 import { ReviewCard } from "@/components/review-card";
+import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { ReviewData } from "@/components/review-card";
 
@@ -20,6 +21,7 @@ const MOCK_REVIEWS: ReviewData[] = [
       coverUrl: "https://picsum.photos/seed/ok-computer/200/200",
     },
     rating: 2.5,
+    likes: 2400,
     review:
       "A landmark record that predicted the anxieties of the digital age with uncanny precision. Thom Yorke's paranoid murmurs have never felt more prescient, and Jonny Greenwood's arrangements feel genuinely dangerous — guitars that dissolve into static, rhythms that lurch and stall like a commute that will never end. Listening in 2024 is almost uncomfortable in how accurate it all turned out to be.",
     createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
@@ -35,6 +37,7 @@ const MOCK_REVIEWS: ReviewData[] = [
       coverUrl: "https://picsum.photos/seed/tpab/200/200",
     },
     rating: 5,
+    likes: 1_200_000,
     review:
       "The most ambitious rap album of the decade. Every listen reveals another layer you hadn't noticed before. The jazz instrumentation shouldn't work this well over hip-hop production, but it does — effortlessly, almost tauntingly. Kendrick isn't rapping at you, he's building a world and daring you to find your place in it. The butterfly metaphor pays off better than any concept album has a right to.",
     createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000),
@@ -50,6 +53,7 @@ const MOCK_REVIEWS: ReviewData[] = [
       coverUrl: "https://picsum.photos/seed/melodrama/200/200",
     },
     rating: 3,
+    likes: 7,
     review:
       "There's a version of this album that I think is a perfect breakup record and another version I find exhausting. Lorde's melodrama is earned — she was nineteen and she knew it — but the production occasionally tips from euphoric into overwrought. Green Light is still one of the best pop moments of the 2010s. The closer, Perfect Places, destroys me every time without fail.",
     createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
@@ -65,6 +69,7 @@ const MOCK_REVIEWS: ReviewData[] = [
       coverUrl: "https://picsum.photos/seed/in-rainbows/200/200",
     },
     rating: 1.5,
+    likes: 13_500,
     review:
       "Warm and intimate in a way Radiohead had never quite managed before. The vinyl presentation is perfect, but even on streaming it sounds like the band finally exhaled. Every track feels like a conversation rather than a transmission. Reckoner alone justifies the whole thing — that chorus is one of the most purely beautiful things they've ever recorded, and it lands without a single loud moment.",
     createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
@@ -80,6 +85,7 @@ const MOCK_REVIEWS: ReviewData[] = [
       coverUrl: "https://picsum.photos/seed/blonde/200/200",
     },
     rating: 4.5,
+    likes: 3_000_000,
     review:
       "Frank Ocean made the album that every other R&B artist was too afraid to make. It barely has a structure — more like a long afternoon of half-finished thoughts and voice memos than a proper record. And yet it coheres completely. Nights is the centrepiece: the beat switch in the middle is one of the cleanest production moves of the decade. I've started it at the beginning and just let it run more times than I can count.",
     createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
@@ -95,6 +101,7 @@ const MOCK_REVIEWS: ReviewData[] = [
       coverUrl: "https://picsum.photos/seed/gkmc/200/200",
     },
     rating: 4,
+    likes: 980,
     review:
       "The most vivid autobiographical storytelling in rap. Compton has never felt this cinematic — you can feel the heat off the asphalt. The skit interludes that annoyed people in 2012 are now the whole point; they're the connective tissue that turns a great rap album into an actual narrative. Backseat Freestyle and m.A.A.d city still hit as hard as anything released since.",
     createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
@@ -172,11 +179,7 @@ function FeedPage() {
           <span className="font-bold text-2xl text-primary tracking-tight">ratio</span>
           <div className="relative">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-            <input
-              className="h-9 w-full border border-border bg-muted pr-4 pl-9 text-foreground text-sm placeholder:text-muted-foreground focus:border-ring focus:outline-none focus:ring-2 focus:ring-ring/20"
-              placeholder="Search albums, artists…"
-              type="search"
-            />
+            <Input className="pl-9" placeholder="Search albums, artists…" type="search" />
           </div>
           <div className="flex items-center justify-end gap-2.5">
             <span className="text-muted-foreground text-sm">Miguel</span>
