@@ -1,7 +1,8 @@
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
-import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { TopBar } from "@/components/top-bar";
 import { Toaster } from "@/components/ui/sonner";
 import appCss from "../styles.css?url";
 
@@ -19,6 +20,12 @@ export const Route = createRootRoute({
       <h1>404</h1>
       <p>The requested page could not be found.</p>
     </main>
+  ),
+  component: () => (
+    <>
+      <TopBar />
+      <Outlet />
+    </>
   ),
   shellComponent: RootDocument,
 });

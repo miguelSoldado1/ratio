@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Home, Radio, Search, Settings, User } from "lucide-react";
 import { ReviewCard } from "@/components/review-card";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import type { ReviewData } from "@/components/review-card";
 
@@ -156,39 +155,6 @@ const NAV_LINKS = [
 function FeedPage() {
   return (
     <div className="flex min-h-screen flex-col">
-      {/* Top bar */}
-      <div className="border-border border-b px-6 py-4 xl:px-16 2xl:px-24">
-        {/* Mobile: logo left, actions right */}
-        <div className="flex items-center justify-between lg:hidden">
-          <span className="font-bold text-2xl text-primary tracking-tight">ratio</span>
-          <div className="flex items-center gap-3">
-            <a
-              aria-label="Search"
-              className="text-muted-foreground transition-colors hover:text-foreground"
-              href="/search"
-            >
-              <Search className="size-5" />
-            </a>
-            <div className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary font-medium text-primary-foreground text-xs uppercase">
-              M
-            </div>
-          </div>
-        </div>
-        {/* Desktop: three-column */}
-        <div className="hidden grid-cols-3 items-center gap-4 lg:grid">
-          <span className="font-bold text-2xl text-primary tracking-tight">ratio</span>
-          <div className="relative">
-            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input className="pl-9" placeholder="Search albums, artists…" type="search" />
-          </div>
-          <div className="flex items-center justify-end gap-2.5">
-            <span className="text-muted-foreground text-sm">Miguel</span>
-            <div className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary font-medium text-primary-foreground text-xs uppercase">
-              M
-            </div>
-          </div>
-        </div>
-      </div>
       {/* Main grid */}
       <div className="mx-auto w-full flex-1 px-6 pb-8 lg:grid lg:grid-cols-[180px_1px_1fr_1px_220px] lg:gap-x-10 xl:px-16 2xl:px-24">
         <aside className="sticky top-8 mb-8 hidden self-start pt-8 lg:block">
