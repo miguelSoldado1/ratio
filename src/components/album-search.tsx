@@ -20,6 +20,7 @@ function useAlbumSearch(inputValue: string) {
     enabled: debouncedQuery.length >= 1,
     staleTime: 60_000,
     placeholderData: (prev) => prev,
+    retry: false,
   });
 
   return { ...result, debouncedQuery };

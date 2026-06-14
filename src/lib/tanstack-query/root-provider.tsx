@@ -1,6 +1,14 @@
-import { QueryClient, type QueryClientConfig, QueryClientProvider } from "@tanstack/react-query";
+import { QueryCache, QueryClient, type QueryClientConfig, QueryClientProvider } from "@tanstack/react-query";
+import { toast } from "sonner";
 
-const queryClientOptions: QueryClientConfig = {};
+const queryClientOptions: QueryClientConfig = {
+  queryCache: new QueryCache({
+    onError: (error) => {
+      const message = error instanceof Error ? error.message : "Something went wrong";
+      toast.error("Error", { description: message });
+    },
+  }),
+};
 
 export function getContext() {
   const queryClient = new QueryClient(queryClientOptions);

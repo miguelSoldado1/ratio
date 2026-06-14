@@ -14,7 +14,8 @@ async function searchAlbumsHandler({ query }: z.infer<typeof searchAlbumsSchema>
 
     return body.albums?.items.map(mapSpotifyAlbumSearch) ?? [];
   } catch (error) {
-    throw new Error("Failed to search albums", { cause: error });
+    const status = isSpotifyError(error) ? error.statusCode : 500;
+    throw new Error(spotifyErrorMessage(status));
   }
 }
 
@@ -23,6 +24,17 @@ export const searchAlbums = createServerFn()
   .handler(({ data }) => searchAlbumsHandler(data));
 
 // --- Helpers ---
+
+function spotifyErrorMessage(status: number): string {
+  if (status === 429) return "Spotify rate limit reached, try again shortly";
+  if (status === 401) return "Spotify authentication failed";
+  return "Spotify search failed";
+}
+
+function isSpotifyError(error: unknown): error is { statusCode: number; message: string } {
+  if (typeof error !== "object" || error === null) return false;
+  return "statusCode" in error && typeof (error as { statusCode: unknown }).statusCode === "number";
+}
 
 function mapSpotifyAlbumSearch(album: SpotifyApi.AlbumObjectSimplified) {
   return {
