@@ -5,7 +5,6 @@ import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { eq } from "drizzle-orm";
 import { env } from "@/env";
 import { createDbClient } from "../db";
-// biome-ignore lint/performance/noNamespaceImport: Better Auth's Drizzle adapter expects a schema namespace object.
 import * as schema from "../db/schema";
 import type { Db } from "../db";
 
