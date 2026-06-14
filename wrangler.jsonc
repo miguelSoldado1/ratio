@@ -4,6 +4,12 @@
   "main": "@tanstack/react-start/server-entry",
   "compatibility_date": "2026-06-12",
   "compatibility_flags": ["nodejs_compat"],
+  "kv_namespaces": [
+    {
+      "binding": "CACHE",
+      "id": "0ac8aedf7d20434c89dfd625bab620c1"
+    }
+  ],
   "observability": {
     "enabled": true,
     "logs": {

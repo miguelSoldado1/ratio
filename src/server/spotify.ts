@@ -2,8 +2,17 @@ import SpotifyWebApi from "spotify-web-api-node";
 import { env } from "@/env";
 
 const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
+const CLIENT_CREDENTIALS_CACHE_KEY = "spotify:client-credentials-token";
+const CLOUDFLARE_WORKERS_MODULE = "cloudflare:workers";
 
-let clientCredentialsToken: { accessToken: string; expiresAt: number } | null = null;
+interface ClientCredentialsToken {
+  accessToken: string;
+  expiresAt: number;
+}
+
+type CloudflareWorkersModule = typeof import("cloudflare:workers");
+
+let clientCredentialsToken: ClientCredentialsToken | null = null;
 
 export function createSpotifyApi(accessToken?: string) {
   const spotifyApi = new SpotifyWebApi({
@@ -20,18 +29,88 @@ export function createSpotifyApi(accessToken?: string) {
 
 export async function getClientCredentialsToken() {
   const now = Date.now();
+  const cachedToken = await getCachedClientCredentialsToken(now);
 
-  if (clientCredentialsToken && clientCredentialsToken.expiresAt - TOKEN_REFRESH_BUFFER_MS > now) {
-    return clientCredentialsToken.accessToken;
+  if (cachedToken) {
+    return cachedToken.accessToken;
   }
 
   const spotifyApi = createSpotifyApi();
   const { body } = await spotifyApi.clientCredentialsGrant();
 
-  clientCredentialsToken = {
+  const token = {
     accessToken: body.access_token,
     expiresAt: now + body.expires_in * 1000,
   };
 
-  return clientCredentialsToken.accessToken;
+  clientCredentialsToken = token;
+  await setCachedClientCredentialsToken(token);
+
+  return token.accessToken;
+}
+
+async function getCachedClientCredentialsToken(now: number) {
+  if (isFreshToken(clientCredentialsToken, now)) {
+    return clientCredentialsToken;
+  }
+
+  const spotifyCache = await getSpotifyCache();
+  if (!spotifyCache) return null;
+
+  try {
+    const cachedToken = await spotifyCache.get<unknown>(CLIENT_CREDENTIALS_CACHE_KEY, "json");
+    const token = parseClientCredentialsToken(cachedToken);
+
+    if (isFreshToken(token, now)) {
+      clientCredentialsToken = token;
+      return token;
+    }
+  } catch (error) {
+    console.warn("Failed to read Spotify token from KV", error);
+  }
+
+  return null;
+}
+
+async function setCachedClientCredentialsToken(token: ClientCredentialsToken) {
+  const spotifyCache = await getSpotifyCache();
+  if (!spotifyCache) return;
+
+  try {
+    await spotifyCache.put(CLIENT_CREDENTIALS_CACHE_KEY, JSON.stringify(token), {
+      expirationTtl: Math.max(60, Math.floor((token.expiresAt - Date.now()) / 1000)),
+    });
+  } catch (error) {
+    console.warn("Failed to write Spotify token to KV", error);
+  }
+}
+
+async function getSpotifyCache() {
+  if (!isCloudflareWorkersRuntime()) return null;
+
+  try {
+    const cloudflareWorkers = (await import(/* @vite-ignore */ CLOUDFLARE_WORKERS_MODULE)) as CloudflareWorkersModule;
+    return cloudflareWorkers.env.CACHE;
+  } catch (error) {
+    console.warn("Failed to load Cloudflare Workers bindings", error);
+    return null;
+  }
+}
+
+function isCloudflareWorkersRuntime() {
+  return typeof navigator !== "undefined" && navigator.userAgent === "Cloudflare-Workers";
+}
+
+function isFreshToken(token: ClientCredentialsToken | null, now: number) {
+  return token !== null && token.expiresAt - TOKEN_REFRESH_BUFFER_MS > now;
+}
+
+function parseClientCredentialsToken(value: unknown): ClientCredentialsToken | null {
+  if (typeof value !== "object" || value === null) return null;
+
+  const token = value as Record<string, unknown>;
+  if (typeof token.accessToken !== "string") return null;
+  if (typeof token.expiresAt !== "number" || !Number.isFinite(token.expiresAt)) return null;
+
+  return { accessToken: token.accessToken, expiresAt: token.expiresAt };
 }
