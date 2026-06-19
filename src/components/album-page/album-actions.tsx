@@ -1,4 +1,4 @@
-import { Heart, PencilLine, Plus } from "lucide-react";
+import { Bookmark, PencilLine } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
@@ -16,7 +16,7 @@ export function AlbumActions({ className, compact = false, spotifyUrl }: AlbumAc
         className
       )}
     >
-      <Button className="bg-[#1DB954] px-5 text-[#06150b] hover:bg-[#41d873]" size="lg" type="button">
+      <Button className="px-5" size="lg" type="button">
         <PencilLine className="size-4" />
         Add a review
       </Button>
@@ -25,33 +25,30 @@ export function AlbumActions({ className, compact = false, spotifyUrl }: AlbumAc
           aria-label="Open album on Spotify"
           className={cn(
             buttonVariants({ size: "icon-lg", variant: "outline" }),
-            "text-muted-foreground hover:border-[#1DB954]/70 hover:bg-[#1DB954]/10 hover:text-foreground"
+            "text-muted-foreground hover:border-primary/70 hover:bg-primary/10 hover:text-foreground"
           )}
           href={spotifyUrl}
           rel="noreferrer"
           target="_blank"
           title="Open in Spotify"
         >
-          <img alt="" className="size-[21px] opacity-90" height={225} src="/spotify-logo-icon-white.svg" width={236} />
+          <img
+            alt=""
+            className="h-5.25 w-auto opacity-90"
+            height={225}
+            src="/spotify-logo-icon-white.svg"
+            width={236}
+          />
         </a>
       ) : null}
       <Button
-        aria-label="Save album"
-        className="text-muted-foreground hover:border-[#B7B2A8]/60 hover:text-foreground"
+        aria-label="Bookmark album"
+        className="text-muted-foreground hover:border-muted-foreground/60 hover:text-foreground"
         size="icon-lg"
         type="button"
         variant="outline"
       >
-        <Plus className="size-5" />
-      </Button>
-      <Button
-        aria-label="Like album"
-        className="text-muted-foreground hover:border-[#FF6B4A]/70 hover:text-[#FF6B4A]"
-        size="icon-lg"
-        type="button"
-        variant="outline"
-      >
-        <Heart className="size-5" />
+        <Bookmark className="size-5" />
       </Button>
     </div>
   );

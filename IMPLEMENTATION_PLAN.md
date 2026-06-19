@@ -289,6 +289,7 @@ All album pages (`/album/:spotifyId`) are publicly accessible and shareable. The
 
 - Keep the app quiet, dense, and content-led. Ratio should feel closer to a focused music library than a marketing page.
 - Use the existing typography system and shared UI primitives first. Avoid local font changes or broad shadcn component changes unless the design system itself is being intentionally updated.
+- Use CSS theme variables or semantic Tailwind tokens for all colors. Do not use raw color values in Tailwind classes; add a named token to `src/styles.css` first when the palette needs a new color.
 - Hover should imply action. Add hover states to links, buttons, icon buttons, tabs, and fully clickable cards; keep static rows, metadata, and read-only content visually still.
 - If only part of a card is interactive, make only that control react. Do not add full-card hover unless clicking the card itself has a clear destination.
 - Motion should explain state or provide feedback. Frequent interactions should be instant or very subtle; avoid decorative animation on surfaces users scan repeatedly.
