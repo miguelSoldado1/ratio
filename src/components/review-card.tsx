@@ -1,6 +1,6 @@
 import { Heart } from "lucide-react";
 import { useId, useState } from "react";
-import { cn } from "@/lib/utils";
+import { abbreviateCount, cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
 // --- Types ---
@@ -48,12 +48,6 @@ function relativeTime(date: Date): string {
   if (h > 0) return `${h}h`;
   if (m > 0) return `${m}m`;
   return "just now";
-}
-
-function abbreviateCount(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1)}M`;
-  if (n >= 1000) return `${(n / 1000).toFixed(n % 1000 === 0 ? 0 : 1)}k`;
-  return String(n);
 }
 
 // --- Sub-components ---

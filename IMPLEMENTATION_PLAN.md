@@ -279,6 +279,20 @@ All album pages (`/album/:spotifyId`) are publicly accessible and shareable. The
 
 ---
 
+## Product Design Rules
+
+- Keep the app quiet, dense, and content-led. Ratio should feel closer to a focused music library than a marketing page.
+- Use the existing typography system and shared UI primitives first. Avoid local font changes or broad shadcn component changes unless the design system itself is being intentionally updated.
+- Hover should imply action. Add hover states to links, buttons, icon buttons, tabs, and fully clickable cards; keep static rows, metadata, and read-only content visually still.
+- If only part of a card is interactive, make only that control react. Do not add full-card hover unless clicking the card itself has a clear destination.
+- Motion should explain state or provide feedback. Frequent interactions should be instant or very subtle; avoid decorative animation on surfaces users scan repeatedly.
+- Prefer fine-pointer-only hover treatments where relevant so touch layouts do not inherit desktop affordances.
+- Use subdued metadata hierarchy. Secondary facts should be available but visually quiet, and repeated labels should be removed when nearby context already explains the content.
+- Empty states should preserve the layout and communicate the absence clearly without turning into a separate promotional panel.
+- Keep visual references to Spotify as mood and interaction inspiration, not direct imitation.
+
+---
+
 ## Edge Cases
 
 | Case | Handling |
