@@ -1,30 +1,10 @@
 import type { ReviewData } from "@/components/review-card";
 
 interface AlbumPageAlbum {
-  albumType: "Album";
-  appleMusicId: string;
-  appleMusicUrl: string;
   artist: string;
-  artistAppleMusicId: string;
-  artistUrl: string;
-  artwork: {
-    height: number;
-    large: string;
-    medium: string;
-    small: string;
-    width: number;
-  };
-  barcode: string;
-  copyright: string;
-  country: string;
   coverUrl: string;
-  currency: string;
-  explicitness: "notExplicit";
-  genre: string;
   id: string;
-  label: string;
   release: string;
-  releaseDate: string;
   runtime: string;
   title: string;
   totalTracks: number;
@@ -41,18 +21,9 @@ interface AlbumPageRatingDistributionItem {
 }
 
 interface AlbumPageTrack {
-  appleMusicId: string;
-  appleMusicUrl: string;
-  discNumber: number;
   duration: string;
-  durationMs: number;
   id: string;
-  isStreamable: boolean;
-  plays: string;
-  previewUrl: string;
-  releaseDate: string;
   title: string;
-  trackNumber: number;
 }
 
 export interface AlbumPageData {
@@ -63,7 +34,7 @@ export interface AlbumPageData {
   tracks: AlbumPageTrack[];
 }
 
-export const albumPageAlbum: AlbumPageAlbum = {
+export const albumPageAlbum = {
   albumType: "Album",
   appleMusicId: "1669095245",
   appleMusicUrl: "https://music.apple.com/us/album/desire-i-want-to-turn-into-you/1669095245",
