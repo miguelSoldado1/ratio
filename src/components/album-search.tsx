@@ -67,31 +67,66 @@ interface AlbumResultItemProps {
 
 function AlbumResultItem({ album, onSelect }: AlbumResultItemProps) {
   return (
-    <button
-      className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-accent"
-      onClick={() => onSelect(album)}
-      type="button"
+    <div className="px-1 py-1 transition-colors hover:bg-accent">
+      <button
+        className="flex w-full min-w-0 items-center gap-3 rounded-md px-2 py-1.5 text-left"
+        onClick={() => onSelect(album)}
+        type="button"
+      >
+        <div className="size-9 shrink-0 overflow-hidden rounded bg-muted">
+          {album.image && (
+            <img
+              alt={album.name}
+              className="size-full object-cover"
+              height={36}
+              referrerPolicy="no-referrer"
+              src={album.image}
+              width={36}
+            />
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-medium text-foreground text-sm">{album.name}</p>
+          <p className="truncate text-muted-foreground text-xs">
+            {album.artists.map((a) => a.name).join(", ")}
+            {album.releaseDate ? ` · ${album.releaseDate.slice(0, 4)}` : ""}
+          </p>
+        </div>
+      </button>
+    </div>
+  );
+}
+
+function SpotifySearchSource({ className, href }: { className?: string; href: string }) {
+  return (
+    <a
+      aria-label="Open search results on Spotify"
+      className={cn(
+        "inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-[11px] text-muted-foreground/80 leading-none",
+        "[transition:background-color_150ms_ease,color_150ms_ease,opacity_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] hover:bg-muted/40 hover:text-muted-foreground hover:opacity-100 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/30 active:scale-[0.98]",
+        className
+      )}
+      href={href}
+      rel="noreferrer"
+      target="_blank"
     >
-      <div className="size-9 shrink-0 overflow-hidden rounded bg-muted">
-        {album.image && (
-          <img
-            alt={album.name}
-            className="size-full object-cover"
-            height={36}
-            referrerPolicy="no-referrer"
-            src={album.image}
-            width={36}
-          />
-        )}
-      </div>
-      <div className="min-w-0 flex-1">
-        <p className="truncate font-medium text-foreground text-sm">{album.name}</p>
-        <p className="truncate text-muted-foreground text-xs">
-          {album.artists.map((a) => a.name).join(", ")}
-          {album.releaseDate ? ` · ${album.releaseDate.slice(0, 4)}` : ""}
-        </p>
-      </div>
-    </button>
+      <span>Results from</span>
+      <img
+        alt=""
+        className="block h-auto w-17.5 opacity-85"
+        height={225}
+        src="/spotify-full-logo-white.svg"
+        width={823}
+      />
+    </a>
+  );
+}
+
+function SearchSourceFooter({ query }: { query: string }) {
+  return (
+    <div className="flex items-center justify-end border-border/70 border-t px-2 py-1.5">
+      <SpotifySearchSource href={getSpotifySearchUrl(query)} />
+    </div>
   );
 }
 
@@ -150,18 +185,21 @@ export function AlbumSearchInput({ className, onSelect }: AlbumSearchInputProps)
         )}
       </div>
       {showDropdown && (
-        <div className="fade-in-0 slide-in-from-top-1 absolute top-full left-0 z-50 mt-1.5 w-full animate-in overflow-hidden rounded-lg border border-border bg-popover shadow-lg duration-150">
-          <SearchResults
-            debouncedQuery={debouncedQuery}
-            emptyMessage=""
-            isFetching={isFetching}
-            onSelect={(a) => {
-              onSelect?.(a);
-              setIsOpen(false);
-              setInputValue("");
-            }}
-            results={results}
-          />
+        <div className="fade-in-0 slide-in-from-top-1 absolute top-full left-0 z-50 mt-1.5 flex max-h-[min(70vh,560px)] w-full animate-in flex-col overflow-hidden rounded-lg border border-border bg-popover shadow-lg duration-150">
+          <div className="scrollbar-thin overflow-y-auto [scrollbar-color:var(--border)_transparent] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-1.5">
+            <SearchResults
+              debouncedQuery={debouncedQuery}
+              emptyMessage=""
+              isFetching={isFetching}
+              onSelect={(a) => {
+                onSelect?.(a);
+                setIsOpen(false);
+                setInputValue("");
+              }}
+              results={results}
+            />
+          </div>
+          <SearchSourceFooter query={inputValue} />
         </div>
       )}
     </div>
@@ -272,6 +310,11 @@ export function AlbumSearchOverlay({ isOpen, onClose, onSelect }: AlbumSearchOve
           <p className="px-4 py-10 text-center text-muted-foreground text-sm">Search for albums or artists</p>
         )}
       </div>
+      {inputValue.trim() && <SearchSourceFooter query={inputValue} />}
     </div>
   );
+}
+
+function getSpotifySearchUrl(query: string) {
+  return `https://open.spotify.com/search/${encodeURIComponent(query.trim())}/albums`;
 }

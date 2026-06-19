@@ -10,7 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AlbumAlbumIdRouteImport } from './routes/album.$albumId'
+import { Route as AlbumAlbumIdRouteImport } from './routes/album/$albumId'
 import { Route as AuthSignInRouteImport } from './routes/_auth/sign-in'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
 

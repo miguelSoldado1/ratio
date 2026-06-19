@@ -88,6 +88,10 @@ In server code, retrieve linked-provider tokens through Better Auth's server API
 
 ## Spotify API Strategy
 
+### Attribution Rule
+
+Any UI surface that displays metadata, artwork, previews, or other content fetched from Spotify must include Spotify attribution and link back to the relevant Spotify page where available. Use an official Spotify logo asset as the minimum visible attribution for that surface, preferring the full logo where it fits and the icon where space or product clarity calls for a smaller mark. Do not scatter repeated logos across every row if one surface-level logo clearly covers the Spotify content being shown. For item-level content such as search results, album pages, tracks, and feed cards, keep the mapped `spotifyUrl` available so users can open the applicable album, artist, track, or search result on Spotify.
+
 ### Client Credentials (server token)
 
 Used for all anonymous requests and as fallback for authenticated users without Spotify linked.
@@ -245,6 +249,8 @@ Set `min_votes` to something like 5. Tune `global_mean` from your actual data ov
 
 ## Routes
 
+Route files should prefer TanStack Router's folder-style organization for nested/path segments, e.g. `src/routes/album/$albumId.tsx` for `/album/:albumId`, instead of flattened names such as `album.$albumId.tsx`.
+
 ```
 /                          Public feed — trending + recent activity
 /album/:spotifyId          Album page — metadata, community rating, reviews
@@ -290,6 +296,7 @@ All album pages (`/album/:spotifyId`) are publicly accessible and shareable. The
 - Use subdued metadata hierarchy. Secondary facts should be available but visually quiet, and repeated labels should be removed when nearby context already explains the content.
 - Empty states should preserve the layout and communicate the absence clearly without turning into a separate promotional panel.
 - Keep visual references to Spotify as mood and interaction inspiration, not direct imitation.
+- When a surface uses Spotify-fetched content, include the required Spotify logo attribution in the quietest viable placement and avoid unnecessary repeated logos.
 
 ---
 

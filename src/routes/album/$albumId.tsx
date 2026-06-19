@@ -1,0 +1,83 @@
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { AlbumActions } from "@/components/album-page/album-actions";
+import {
+  getAlbumArtistNames,
+  getAlbumReleaseYear,
+  getAlbumRuntimeLabel,
+} from "@/components/album-page/album-format.ts";
+import { AlbumLookupLoading } from "@/components/album-page/album-lookup-loading";
+import { MobileAlbumHeader } from "@/components/album-page/mobile-album-header";
+import { RatingsPanel } from "@/components/album-page/ratings-panel";
+import { ReviewsSection } from "@/components/album-page/reviews-section";
+import { TrackList } from "@/components/album-page/track-list";
+import { albumPageData } from "@/lib/album-page-mock";
+import { getAlbumDetails } from "@/server/functions/spotify-functions";
+
+export const Route = createFileRoute("/album/$albumId")({
+  component: AlbumPage,
+});
+
+function AlbumPage() {
+  const { albumId } = Route.useParams();
+  const navigate = useNavigate();
+  const albumDetailsQuery = useQuery({
+    queryFn: () => getAlbumDetails({ data: { albumId } }),
+    queryKey: ["album-details", albumId],
+  });
+
+  useEffect(() => {
+    if (albumDetailsQuery.isError) {
+      navigate({ to: "/" });
+    }
+  }, [albumDetailsQuery.isError, navigate]);
+
+  if (albumDetailsQuery.isPending) return <AlbumLookupLoading albumId={albumId} />;
+  if (albumDetailsQuery.isError) return null;
+
+  const { album, tracks } = albumDetailsQuery.data;
+  const coverUrl = album.coverUrl ?? albumPageData.album.coverUrl;
+  const artist = getAlbumArtistNames(album);
+  const releaseYear = getAlbumReleaseYear(album);
+  const albumRuntime = getAlbumRuntimeLabel(album);
+
+  return (
+    <main className="min-h-screen bg-background text-foreground" data-album-id={albumId}>
+      <div className="mx-auto grid w-full max-w-375 gap-8 px-5 py-6 lg:grid-cols-[minmax(240px,340px)_1fr] lg:px-10 xl:gap-12 xl:px-14 2xl:px-20">
+        <MobileAlbumHeader album={album} coverUrl={coverUrl} />
+        <aside className="hidden lg:sticky lg:top-20 lg:block lg:self-start">
+          <img
+            alt={`${album.title} album cover`}
+            className="aspect-square w-full object-cover"
+            height={640}
+            referrerPolicy="no-referrer"
+            src={coverUrl}
+            width={640}
+          />
+          <TrackList className="mt-6" tracks={tracks} />
+        </aside>
+        <section className="min-w-0 pt-3 lg:pt-10">
+          <div className="hidden lg:block">
+            <h1 className="max-w-4xl font-semibold text-4xl leading-tight tracking-normal md:text-5xl">
+              {album.title}
+            </h1>
+            <p className="mt-2 text-lg text-muted-foreground">
+              {artist} · {releaseYear}
+            </p>
+            <p className="mt-1 text-muted-foreground/70 text-sm">{albumRuntime}</p>
+
+            <AlbumActions className="mt-6" spotifyUrl={album.spotifyUrl} />
+          </div>
+          <RatingsPanel
+            className="mt-2 lg:mt-8"
+            ratingDistribution={albumPageData.ratingDistribution}
+            ratingSummary={albumPageData.ratingSummary}
+          />
+          <TrackList className="mt-8 lg:hidden" tracks={tracks} />
+          <ReviewsSection className="mt-10 lg:mt-12" reviews={albumPageData.reviews} />
+        </section>
+      </div>
+    </main>
+  );
+}

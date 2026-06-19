@@ -1,16 +1,19 @@
 import { AlbumActions } from "./album-actions";
+import { getAlbumArtistNames, getAlbumReleaseYear, getAlbumRuntimeLabel } from "./album-format.ts";
+import type { getAlbumDetails } from "@/server/functions/spotify-functions";
 
-interface MobileAlbumHeaderAlbum {
-  artist: string;
+type SpotifyAlbumDetails = Awaited<ReturnType<typeof getAlbumDetails>>;
+type SpotifyAlbum = SpotifyAlbumDetails["album"];
+
+interface MobileAlbumHeaderProps {
+  album: SpotifyAlbum;
   coverUrl: string;
-  release: string;
-  runtime: string;
-  title: string;
-  totalTracks: number;
 }
 
-export function MobileAlbumHeader({ album }: { album: MobileAlbumHeaderAlbum }) {
-  const albumRuntime = `${album.totalTracks} tracks · ${album.runtime}`;
+export function MobileAlbumHeader({ album, coverUrl }: MobileAlbumHeaderProps) {
+  const artist = getAlbumArtistNames(album);
+  const releaseYear = getAlbumReleaseYear(album);
+  const albumRuntime = getAlbumRuntimeLabel(album);
 
   return (
     <section className="lg:hidden">
@@ -20,18 +23,18 @@ export function MobileAlbumHeader({ album }: { album: MobileAlbumHeaderAlbum }) 
           className="aspect-square w-full object-cover"
           height={288}
           referrerPolicy="no-referrer"
-          src={album.coverUrl}
+          src={coverUrl}
           width={288}
         />
         <div className="min-w-0 self-end">
           <h1 className="font-semibold text-2xl leading-tight tracking-normal sm:text-3xl">{album.title}</h1>
           <p className="mt-2 text-muted-foreground text-sm">
-            {album.artist} · {album.release}
+            {artist} · {releaseYear}
           </p>
           <p className="mt-1 text-muted-foreground/70 text-xs">{albumRuntime}</p>
         </div>
       </div>
-      <AlbumActions className="mt-5" compact />
+      <AlbumActions className="mt-5" compact spotifyUrl={album.spotifyUrl} />
     </section>
   );
 }

@@ -2,9 +2,9 @@ import { cn } from "@/lib/utils";
 import type { getAlbumDetails } from "@/server/functions/spotify-functions";
 
 type SpotifyAlbumDetails = Awaited<ReturnType<typeof getAlbumDetails>>;
-type Track = SpotifyAlbumDetails["tracks"][number];
+type SpotifyAlbumTrack = SpotifyAlbumDetails["tracks"][number];
 
-export function TrackList({ className, tracks }: { className?: string; tracks: Track[] }) {
+export function TrackList({ className, tracks }: { className?: string; tracks: SpotifyAlbumTrack[] }) {
   return (
     <section className={cn("pt-5", className)}>
       <h2 className="font-medium text-muted-foreground text-xs uppercase tracking-[0.24em]">Tracks</h2>
@@ -21,7 +21,7 @@ export function TrackList({ className, tracks }: { className?: string; tracks: T
   );
 }
 
-function getTrackDuration(track: Track) {
+function getTrackDuration(track: SpotifyAlbumTrack) {
   const totalSeconds = Math.floor(track.durationMs / 1000);
   const minutes = Math.floor(totalSeconds / 60);
   const seconds = totalSeconds % 60;
