@@ -29,5 +29,9 @@ function formatAlbumRuntime(durationMs: number) {
     return `${hours} hr ${minutes} min`;
   }
 
+  if (seconds === 0) {
+    return `${minutes} min`;
+  }
+
   return `${minutes} min ${seconds} sec`;
 }
