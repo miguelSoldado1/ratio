@@ -67,7 +67,12 @@ function AlbumPage() {
             </p>
             <p className="mt-1 text-muted-foreground/70 text-sm">{albumRuntime}</p>
 
-            <AlbumActions className="mt-6" spotifyUrl={album.spotifyUrl} />
+            <AlbumActions
+              albumArtist={artist}
+              albumTitle={album.title}
+              className="mt-6"
+              spotifyUrl={album.spotifyUrl}
+            />
           </div>
           <RatingsPanel
             className="mt-2 lg:mt-8"

@@ -1,5 +1,6 @@
 import { Heart } from "lucide-react";
-import { useId, useState } from "react";
+import { useState } from "react";
+import { RatingStarIcon } from "@/components/rating-star-icon";
 import { abbreviateCount, cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
@@ -148,68 +149,19 @@ interface RatingProps {
 }
 
 function Rating({ value, className }: RatingProps) {
-  const uid = useId();
-  const stars = Array.from({ length: 5 }, (_, i) => {
-    const fill = Math.min(Math.max(value - i, 0), 1);
-    if (fill >= 1) {
-      return "full";
-    }
-    if (fill >= 0.5) {
-      return "half";
-    }
-    return "empty";
-  });
+  const stars = Array.from({ length: 5 }, (_, i) => Math.min(Math.max(value - i, 0), 1) * 100);
 
   return (
     <div className={cn("flex shrink-0 items-center gap-0.5", className)}>
-      {stars.map((type, i) => (
-        <svg
-          aria-hidden="true"
+      {stars.map((fillPercentage, i) => (
+        <RatingStarIcon
           className="size-3.5"
-          fill="none"
+          fillPercentage={fillPercentage}
           // biome-ignore lint/suspicious/noArrayIndexKey: static star list
           key={i}
-          viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          {type === "full" && (
-            <polygon
-              className="fill-primary stroke-primary"
-              points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"
-              strokeLinejoin="round"
-              strokeWidth="2"
-            />
-          )}
-          {type === "half" && (
-            <>
-              <defs>
-                <linearGradient id={`${uid}-half-${i}`}>
-                  <stop className="text-primary" offset="50%" stopColor="currentColor" />
-                  <stop offset="50%" stopColor="transparent" />
-                </linearGradient>
-              </defs>
-              <polygon
-                className="stroke-primary"
-                fill={`url(#${uid}-half-${i})`}
-                points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"
-                stroke="currentColor"
-                strokeLinejoin="round"
-                strokeWidth="2"
-              />
-            </>
-          )}
-          {type === "empty" && (
-            <polygon
-              className="stroke-primary"
-              fill="none"
-              points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26"
-              strokeLinejoin="round"
-              strokeWidth="2"
-            />
-          )}
-        </svg>
+        />
       ))}
-      <span className="ml-1 font-bold text-primary text-xs tabular-nums">
+      <span className="ml-1 font-bold text-primary text-xs tabular-nums" data-slot="rating-star-value">
         {Number.isInteger(value) ? value : value.toFixed(1)}
       </span>
     </div>

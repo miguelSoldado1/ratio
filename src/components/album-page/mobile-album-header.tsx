@@ -34,7 +34,7 @@ export function MobileAlbumHeader({ album, coverUrl }: MobileAlbumHeaderProps) {
           <p className="mt-1 text-muted-foreground/70 text-xs">{albumRuntime}</p>
         </div>
       </div>
-      <AlbumActions className="mt-5" compact spotifyUrl={album.spotifyUrl} />
+      <AlbumActions albumArtist={artist} albumTitle={album.title} className="mt-5" spotifyUrl={album.spotifyUrl} />
     </section>
   );
 }

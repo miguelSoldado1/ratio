@@ -1,25 +1,21 @@
-import { Bookmark, PencilLine } from "lucide-react";
+import { Bookmark } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { ReviewDrawer } from "./review-drawer";
 
 interface AlbumActionsProps {
+  albumArtist?: string;
+  albumTitle?: string;
   className?: string;
-  compact?: boolean;
   spotifyUrl?: string;
 }
 
-export function AlbumActions({ className, compact = false, spotifyUrl }: AlbumActionsProps) {
+export function AlbumActions({ albumArtist, albumTitle, className, spotifyUrl }: AlbumActionsProps) {
   return (
     <div
-      className={cn(
-        compact ? "grid grid-cols-[1fr_auto_auto_auto] gap-2" : "flex flex-wrap items-center gap-3",
-        className
-      )}
+      className={cn("grid grid-cols-[1fr_auto_auto] gap-2 lg:flex lg:flex-wrap lg:items-center lg:gap-3", className)}
     >
-      <Button className="px-5" size="lg" type="button">
-        <PencilLine className="size-4" />
-        Add a review
-      </Button>
+      <ReviewDrawer albumArtist={albumArtist} albumTitle={albumTitle} />
       {spotifyUrl ? (
         <a
           aria-label="Open album on Spotify"
@@ -48,7 +44,7 @@ export function AlbumActions({ className, compact = false, spotifyUrl }: AlbumAc
         type="button"
         variant="outline"
       >
-        <Bookmark className="size-5" />
+        <Bookmark />
       </Button>
     </div>
   );
