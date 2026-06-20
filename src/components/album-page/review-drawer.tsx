@@ -55,18 +55,19 @@ export function ReviewDrawer({ albumArtist, albumTitle }: ReviewDrawerProps) {
         </Button>
       </DrawerTrigger>
       <DrawerContent
-        className="w-full data-[vaul-drawer-direction=bottom]:max-h-[85vh]"
         onOpenAutoFocus={(event) => {
           event.preventDefault();
           ratingInputRef.current?.focus();
         }}
       >
         <form className="mx-auto flex min-h-0 w-full max-w-sm flex-1 flex-col sm:max-w-md" onSubmit={handleSubmit}>
-          <DrawerHeader>
-            <DrawerTitle>Add a review</DrawerTitle>
-            <DrawerDescription>{[albumTitle, albumArtist].filter(Boolean).join(" - ")}</DrawerDescription>
+          <DrawerHeader className="gap-0 px-4 py-3 sm:gap-0.5 sm:py-4">
+            <DrawerTitle className="text-sm sm:text-base">Add a review</DrawerTitle>
+            <DrawerDescription className="text-xs sm:text-sm">
+              {[albumTitle, albumArtist].filter(Boolean).join(" - ")}
+            </DrawerDescription>
           </DrawerHeader>
-          <div className="min-h-0 flex-1 overflow-y-auto px-4">
+          <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-1">
             <FieldGroup>
               <Field>
                 <FieldTitle id={ratingLabelId}>Rating</FieldTitle>
@@ -89,14 +90,14 @@ export function ReviewDrawer({ albumArtist, albumTitle }: ReviewDrawerProps) {
                   maxLength={2000}
                   onChange={(event) => setReview(event.target.value)}
                   placeholder="Write your review here..."
-                  rows={7}
+                  rows={5}
                   value={review}
                 />
                 <FieldDescription id={reviewDescriptionId}>{review.length}/2000 characters</FieldDescription>
               </Field>
             </FieldGroup>
           </div>
-          <DrawerFooter>
+          <DrawerFooter className="px-4 py-3 sm:py-4">
             <Button disabled={!canSaveReview} type="submit">
               Save review
             </Button>

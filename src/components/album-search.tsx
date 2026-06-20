@@ -122,10 +122,11 @@ function SpotifySearchSource({ className, href }: { className?: string; href: st
   );
 }
 
-function SearchSourceFooter({ query }: { query: string }) {
+function SearchSourceHeader({ className, query }: { className?: string; query: string }) {
   return (
-    <div className="flex items-center justify-end border-border/70 border-t px-2 py-1.5">
-      <SpotifySearchSource href={getSpotifySearchUrl(query)} />
+    <div className={cn("flex items-center justify-between border-border/70 border-b px-4 py-2", className)}>
+      <span className="font-medium text-[10px] text-muted-foreground uppercase tracking-widest">Albums</span>
+      <SpotifySearchSource className="-mr-2" href={getSpotifySearchUrl(query)} />
     </div>
   );
 }
@@ -186,6 +187,7 @@ export function AlbumSearchInput({ className, onSelect }: AlbumSearchInputProps)
       </div>
       {showDropdown && (
         <div className="fade-in-0 slide-in-from-top-1 absolute top-full left-0 z-50 mt-1.5 flex max-h-[min(70vh,560px)] w-full animate-in flex-col overflow-hidden rounded-lg border border-border bg-popover shadow-lg duration-150">
+          <SearchSourceHeader query={inputValue} />
           <div className="scrollbar-thin overflow-y-auto [scrollbar-color:var(--border)_transparent] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-1.5">
             <SearchResults
               debouncedQuery={debouncedQuery}
@@ -199,7 +201,6 @@ export function AlbumSearchInput({ className, onSelect }: AlbumSearchInputProps)
               results={results}
             />
           </div>
-          <SearchSourceFooter query={inputValue} />
         </div>
       )}
     </div>
@@ -297,6 +298,7 @@ export function AlbumSearchOverlay({ isOpen, onClose, onSelect }: AlbumSearchOve
         </div>
       </div>
       {/* Results */}
+      {inputValue.trim() && <SearchSourceHeader query={inputValue} />}
       <div className="flex-1 overflow-y-auto">
         {inputValue.trim() ? (
           <SearchResults
@@ -310,7 +312,6 @@ export function AlbumSearchOverlay({ isOpen, onClose, onSelect }: AlbumSearchOve
           <p className="px-4 py-10 text-center text-muted-foreground text-sm">Search for albums or artists</p>
         )}
       </div>
-      {inputValue.trim() && <SearchSourceFooter query={inputValue} />}
     </div>
   );
 }
