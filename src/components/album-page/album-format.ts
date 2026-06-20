@@ -22,6 +22,10 @@ function formatAlbumRuntime(durationMs: number) {
   const seconds = totalSeconds % 60;
 
   if (hours > 0) {
+    if (minutes === 0) {
+      return `${hours} hr`;
+    }
+
     return `${hours} hr ${minutes} min`;
   }
 
