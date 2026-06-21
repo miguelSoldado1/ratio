@@ -1,11 +1,11 @@
 import { abbreviateCount, cn } from "@/lib/utils";
-import type { AlbumPageData } from "@/lib/album-page-mock";
+import type { getAlbumRatingSummary } from "@/server/functions/review-functions";
 
-export function RatingDistributionChart({
-  ratingDistribution,
-}: {
-  ratingDistribution: AlbumPageData["ratingDistribution"];
-}) {
+interface RatingDistributionChartProps {
+  ratingDistribution: Awaited<ReturnType<typeof getAlbumRatingSummary>>["ratingDistribution"];
+}
+
+export function RatingDistributionChart({ ratingDistribution }: RatingDistributionChartProps) {
   const hasRatings = ratingDistribution.some((item) => item.count > 0);
   const maxCount = Math.max(1, ...ratingDistribution.map((item) => item.count));
 

@@ -142,6 +142,8 @@ Cloudflare Worker compatibility is the riskiest database integration. The curren
 
 Deployment note from the initial Cloudflare rollout: a module-scoped `postgres` client failed in Workers during OAuth callback handling with `Cannot perform I/O on behalf of a different request`, surfaced by Better Auth as a failed `verification` query while parsing OAuth state. The current mitigation is to create and close the `postgres` client per auth request and to use `prepare: false` for the Supabase transaction pooler on port `6543`. If DB usage expands beyond auth, revisit this before adding shared module-level DB clients. Cloudflare Hyperdrive is a likely production-grade fix because it provides a Worker-native Postgres binding/connection proxy; another option is moving to an edge-compatible HTTP driver where possible.
 
+The ratings backend currently starts with reviews only. A review is the rating entity: one row per user per album, with an optional written body. Store the rating as `smallint` from `1` to `10`, where UI stars remain `0.5` to `5` and half-stars map cleanly by multiplying by two. The initial mutation policy is create-only: block duplicate `(userId, albumId)` submissions, add delete later, and do not expose edit/update unless the product decision changes.
+
 ```ts
 // albums — cached Spotify metadata
 export const albums = pgTable("albums", {
@@ -157,26 +159,27 @@ export const albums = pgTable("albums", {
   removed: boolean("removed").default(false), // Spotify delisted flag
 })
 
-// ratings — one per user per album, score + optional review
-export const ratings = pgTable("ratings", {
+// reviews — one per user per album, rating + optional written body
+export const reviews = pgTable("review", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  albumId: text("album_id").notNull().references(() => albums.id),
-  score: numeric("score", { precision: 3, scale: 1 }).notNull(), // 0.0–10.0
-  review: text("review"),
+  albumId: text("album_id").notNull(), // Spotify album ID until local album persistence is wired
+  rating: smallint("rating").notNull(), // 1–10, UI rating 0.5–5 multiplied by two
+  body: text("body"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (t) => ({
   uniq: unique().on(t.userId, t.albumId),   // enforced at DB level
+  ratingRange: check("reviews_ratings_range_check", sql`${t.rating} >= 1 AND ${t.rating} <= 10`),
 }))
 
-// likes — on ratings, not albums
+// likes — on reviews, not albums
 export const likes = pgTable("likes", {
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  ratingId: uuid("rating_id").notNull().references(() => ratings.id, { onDelete: "cascade" }),
+  reviewId: uuid("review_id").notNull().references(() => reviews.id, { onDelete: "cascade" }),
   createdAt: timestamp("created_at").defaultNow(),
 }, (t) => ({
-  pk: primaryKey({ columns: [t.userId, t.ratingId] }),
+  pk: primaryKey({ columns: [t.userId, t.reviewId] }),
 }))
 
 // follows — user graph
@@ -265,11 +268,19 @@ All album pages (`/album/:spotifyId`) are publicly accessible and shareable. The
 
 ---
 
+## Data Fetching and Cache
+
+- In React components, call TanStack Start server functions through `useServerFn(serverFn)` before passing them to `useQuery` or `useMutation`.
+- Keep query keys in `src/lib/tanstack-query/query-keys.ts` and prefer hierarchical prefixes for related data. Album review data shares `albumQueryKeys.review(albumId)`, so create/delete review mutations can invalidate that review group with one TanStack Query prefix match.
+- Keep shared TanStack Query defaults in `src/lib/tanstack-query/root-provider.tsx` instead of repeating options at individual call sites.
+
+---
+
 ## Features
 
 - Browse albums without account
-- Rate albums 0–10 (auth required)
-- Optional written review alongside rating
+- Rate albums 0.5–5 in half-star increments (auth required; stored as 1–10)
+- Optional written review alongside rating, max 2000 characters
 - Like reviews
 - Follow users
 - User profiles with rating history
@@ -307,7 +318,7 @@ All album pages (`/album/:spotifyId`) are publicly accessible and shareable. The
 |---|---|
 | Album removed from Spotify | Keep cached metadata, set `removed = true`, hide "Open in Spotify" link |
 | Spotify refresh token revoked | Catch error from `getAccessToken`, fall back to client credentials, surface soft reconnect prompt in settings |
-| Duplicate rating attempt | Enforced at DB level via unique constraint on `(userId, albumId)` — upsert on re-submit |
+| Duplicate review attempt | Enforced at DB level via unique constraint on `(userId, albumId)` — block duplicate creates; delete may come later, no edit/update flow planned |
 | Low vote count rating display | Bayesian average until threshold is met, show raw score + count after |
 | Empty social feed (new user) | Fall back to trending feed until they follow someone; suggest popular users to follow on signup |
 | `recently-played` too thin | Fall back to `top-artists` for feed seeding; no error state shown to user |
@@ -342,6 +353,5 @@ Work in this sequence to validate the riskiest integrations first before buildin
 ## Open Decisions
 
 - **Additional OAuth providers** — Spotify is required for login/linking; decide which other providers belong in the product.
-- **Rating edit policy** — can users update their rating after submitting? If so, surface the updated timestamp.
-- **Review character limit** — set one early to avoid DB and UI surprises later.
+- **Review deletion UX** — users should eventually be able to delete their one review, but editing/updating remains out of scope.
 - **Spotify reconnect UX** — soft prompt in feed/settings, or hard gate on personalised features?

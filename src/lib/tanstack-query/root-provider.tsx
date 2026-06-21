@@ -2,6 +2,11 @@ import { QueryCache, QueryClient, type QueryClientConfig, QueryClientProvider } 
 import { toast } from "sonner";
 
 const queryClientOptions: QueryClientConfig = {
+  defaultOptions: {
+    queries: {
+      retry: false,
+    },
+  },
   queryCache: new QueryCache({
     onError: (error) => {
       const message = error instanceof Error ? error.message : "Something went wrong";

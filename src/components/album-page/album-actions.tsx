@@ -5,17 +5,18 @@ import { ReviewDrawer } from "./review-drawer";
 
 interface AlbumActionsProps {
   albumArtist?: string;
+  albumId: string;
   albumTitle?: string;
   className?: string;
   spotifyUrl?: string;
 }
 
-export function AlbumActions({ albumArtist, albumTitle, className, spotifyUrl }: AlbumActionsProps) {
+export function AlbumActions({ albumId, albumArtist, albumTitle, className, spotifyUrl }: AlbumActionsProps) {
   return (
     <div
       className={cn("grid grid-cols-[1fr_auto_auto] gap-2 lg:flex lg:flex-wrap lg:items-center lg:gap-3", className)}
     >
-      <ReviewDrawer albumArtist={albumArtist} albumTitle={albumTitle} />
+      <ReviewDrawer albumArtist={albumArtist} albumId={albumId} albumTitle={albumTitle} />
       {spotifyUrl ? (
         <a
           aria-label="Open album on Spotify"

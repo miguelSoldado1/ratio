@@ -1,7 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Search, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
+import { albumQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { useDebounce } from "@/lib/use-debounce";
 import { cn } from "@/lib/utils";
 import { searchAlbums } from "@/server/functions/spotify-functions";
@@ -14,13 +16,13 @@ type AlbumResult = Awaited<ReturnType<typeof searchAlbums>>[number];
 
 function useAlbumSearch(inputValue: string) {
   const debouncedQuery = useDebounce(inputValue.trim(), 300);
+  const searchAlbumsFn = useServerFn(searchAlbums);
   const result = useQuery({
-    queryKey: ["album-search", debouncedQuery],
-    queryFn: () => searchAlbums({ data: { query: debouncedQuery } }),
+    queryKey: albumQueryKeys.search(debouncedQuery),
+    queryFn: () => searchAlbumsFn({ data: { query: debouncedQuery } }),
     enabled: debouncedQuery.length >= 1,
     staleTime: 60_000,
     placeholderData: (prev) => prev,
-    retry: false,
   });
 
   return { ...result, debouncedQuery };

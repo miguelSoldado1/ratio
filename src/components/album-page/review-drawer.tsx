@@ -1,5 +1,8 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Pencil } from "lucide-react";
-import { useId, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Drawer,
@@ -13,32 +16,69 @@ import {
 } from "@/components/ui/drawer";
 import { Field, FieldDescription, FieldGroup, FieldLabel, FieldTitle } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
+import { authClient } from "@/lib/auth/auth-client";
+import { albumQueryKeys } from "@/lib/tanstack-query/query-keys";
+import { createReview, hasMyAlbumReview } from "@/server/functions/review-functions";
+import { tryCatch } from "@/try-catch";
 import { ReviewStarRatingInput } from "./review-star-rating-input";
 import type { FormEvent } from "react";
 
+const reviewFormIds = {
+  ratingDescription: "review-rating-description",
+  ratingLabel: "review-rating-label",
+  review: "review-body",
+  reviewDescription: "review-body-description",
+} as const;
+
 interface ReviewDrawerProps {
   albumArtist?: string;
+  albumId: string;
   albumTitle?: string;
 }
 
-export function ReviewDrawer({ albumArtist, albumTitle }: ReviewDrawerProps) {
-  const ratingDescriptionId = useId();
-  const ratingLabelId = useId();
-  const reviewDescriptionId = useId();
-  const reviewId = useId();
+export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerProps) {
+  const queryClient = useQueryClient();
   const ratingInputRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
-  const [rating, setRating] = useState(0);
-  const [review, setReview] = useState("");
+  const [reviewForm, setReviewForm] = useState({ body: "", rating: 0 });
+  const session = authClient.useSession();
+  const hasSession = Boolean(session.data?.user);
 
-  const canSaveReview = rating > 0;
+  const hasMyAlbumReviewFn = useServerFn(hasMyAlbumReview);
+  const hasMyAlbumReviewQuery = useQuery({
+    enabled: hasSession,
+    queryFn: () => hasMyAlbumReviewFn({ data: { albumId } }),
+    queryKey: albumQueryKeys.hasMyReview(albumId),
+  });
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  const createReviewFn = useServerFn(createReview);
+  const createReviewMutation = useMutation({ mutationFn: createReviewFn });
+
+  const hasCreatedReview = hasMyAlbumReviewQuery.data === true;
+  const isCheckingReview = session.isPending || (hasSession && hasMyAlbumReviewQuery.isPending);
+  const canSaveReview = reviewForm.rating > 0 && !createReviewMutation.isPending && !hasCreatedReview;
+  const isReviewTriggerDisabled = isCheckingReview || hasCreatedReview;
+  const reviewTriggerLabel = getReviewTriggerLabel({
+    hasCreatedReview,
+    isCheckingReview,
+  });
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!canSaveReview) return;
 
+    const data = { albumId, body: reviewForm.body, rating: Math.round(reviewForm.rating * 2) };
+    const { error } = await tryCatch(createReviewMutation.mutateAsync({ data }));
+    if (error) {
+      return toast.error("Error", { description: error instanceof Error ? error.message : "Something went wrong" });
+    }
+
+    await queryClient.invalidateQueries({ queryKey: albumQueryKeys.review(albumId) });
+
+    toast.success("Success", { description: "Review saved" });
     setOpen(false);
+    setReviewForm({ body: "", rating: 0 });
   }
 
   return (
@@ -46,12 +86,13 @@ export function ReviewDrawer({ albumArtist, albumTitle }: ReviewDrawerProps) {
       <DrawerTrigger asChild>
         <Button
           className="min-w-0 px-3 sm:px-5"
+          disabled={isReviewTriggerDisabled}
           onClick={(event) => event.currentTarget.blur()}
           size="lg"
           type="button"
         >
           <Pencil data-icon="inline-start" />
-          Add a review
+          {reviewTriggerLabel}
         </Button>
       </DrawerTrigger>
       <DrawerContent
@@ -70,39 +111,41 @@ export function ReviewDrawer({ albumArtist, albumTitle }: ReviewDrawerProps) {
           <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-1">
             <FieldGroup>
               <Field>
-                <FieldTitle id={ratingLabelId}>Rating</FieldTitle>
+                <FieldTitle id={reviewFormIds.ratingLabel}>Rating</FieldTitle>
                 <ReviewStarRatingInput
-                  ariaDescribedBy={ratingDescriptionId}
-                  ariaLabelledBy={ratingLabelId}
+                  ariaDescribedBy={reviewFormIds.ratingDescription}
+                  ariaLabelledBy={reviewFormIds.ratingLabel}
                   controlRef={ratingInputRef}
-                  onChange={setRating}
-                  value={rating}
+                  onChange={(rating) => setReviewForm((form) => ({ ...form, rating }))}
+                  value={reviewForm.rating}
                 />
-                <FieldDescription id={ratingDescriptionId}>
+                <FieldDescription id={reviewFormIds.ratingDescription}>
                   Click or drag across the stars to set your rating.
                 </FieldDescription>
               </Field>
               <Field>
-                <FieldLabel htmlFor={reviewId}>Review</FieldLabel>
+                <FieldLabel htmlFor={reviewFormIds.review}>Review</FieldLabel>
                 <Textarea
-                  aria-describedby={reviewDescriptionId}
-                  id={reviewId}
+                  aria-describedby={reviewFormIds.reviewDescription}
+                  id={reviewFormIds.review}
                   maxLength={2000}
-                  onChange={(event) => setReview(event.target.value)}
+                  onChange={(event) => setReviewForm((form) => ({ ...form, body: event.target.value }))}
                   placeholder="Write your review here..."
                   rows={5}
-                  value={review}
+                  value={reviewForm.body}
                 />
-                <FieldDescription id={reviewDescriptionId}>{review.length}/2000 characters</FieldDescription>
+                <FieldDescription id={reviewFormIds.reviewDescription}>
+                  {reviewForm.body.length}/2000 characters
+                </FieldDescription>
               </Field>
             </FieldGroup>
           </div>
           <DrawerFooter className="px-4 py-3 sm:py-4">
             <Button disabled={!canSaveReview} type="submit">
-              Save review
+              {createReviewMutation.isPending ? "Saving..." : "Save review"}
             </Button>
             <DrawerClose asChild>
-              <Button type="button" variant="outline">
+              <Button disabled={createReviewMutation.isPending} type="button" variant="outline">
                 Cancel
               </Button>
             </DrawerClose>
@@ -111,4 +154,16 @@ export function ReviewDrawer({ albumArtist, albumTitle }: ReviewDrawerProps) {
       </DrawerContent>
     </Drawer>
   );
+}
+
+interface ReviewTriggerLabelParams {
+  hasCreatedReview: boolean;
+  isCheckingReview: boolean;
+}
+
+function getReviewTriggerLabel({ hasCreatedReview, isCheckingReview }: ReviewTriggerLabelParams) {
+  if (isCheckingReview) return "Checking...";
+  if (hasCreatedReview) return "Review added";
+
+  return "Add a review";
 }

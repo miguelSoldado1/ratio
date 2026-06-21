@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect } from "react";
 import { AlbumActions } from "@/components/album-page/album-actions";
 import {
@@ -13,6 +14,7 @@ import { RatingsPanel } from "@/components/album-page/ratings-panel";
 import { ReviewsSection } from "@/components/album-page/reviews-section";
 import { TrackList } from "@/components/album-page/track-list";
 import { albumPageData } from "@/lib/album-page-mock";
+import { albumQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { getAlbumDetails } from "@/server/functions/spotify-functions";
 
 export const Route = createFileRoute("/album/$albumId")({
@@ -22,9 +24,10 @@ export const Route = createFileRoute("/album/$albumId")({
 function AlbumPage() {
   const { albumId } = Route.useParams();
   const navigate = useNavigate();
+  const getAlbumDetailsFn = useServerFn(getAlbumDetails);
   const albumDetailsQuery = useQuery({
-    queryFn: () => getAlbumDetails({ data: { albumId } }),
-    queryKey: ["album-details", albumId],
+    queryFn: () => getAlbumDetailsFn({ data: { albumId } }),
+    queryKey: albumQueryKeys.details(albumId),
   });
 
   useEffect(() => {
@@ -45,7 +48,7 @@ function AlbumPage() {
   return (
     <main className="min-h-screen bg-background text-foreground" data-album-id={albumId}>
       <div className="mx-auto grid w-full max-w-375 gap-8 px-5 py-6 lg:grid-cols-[minmax(240px,340px)_1fr] lg:px-10 xl:gap-12 xl:px-14 2xl:px-20">
-        <MobileAlbumHeader album={album} coverUrl={coverUrl} />
+        <MobileAlbumHeader album={album} albumId={albumId} coverUrl={coverUrl} />
         <aside className="hidden lg:sticky lg:top-20 lg:block lg:self-start">
           <img
             alt={`${album.title} album cover`}
@@ -69,18 +72,15 @@ function AlbumPage() {
 
             <AlbumActions
               albumArtist={artist}
+              albumId={albumId}
               albumTitle={album.title}
               className="mt-6"
               spotifyUrl={album.spotifyUrl}
             />
           </div>
-          <RatingsPanel
-            className="mt-2 lg:mt-8"
-            ratingDistribution={albumPageData.ratingDistribution}
-            ratingSummary={albumPageData.ratingSummary}
-          />
+          <RatingsPanel albumId={albumId} className="mt-2 lg:mt-8" />
           <TrackList className="mt-8 lg:hidden" tracks={tracks} />
-          <ReviewsSection className="mt-10 lg:mt-12" reviews={albumPageData.reviews} />
+          <ReviewsSection albumId={albumId} className="mt-10 lg:mt-12" />
         </section>
       </div>
     </main>
