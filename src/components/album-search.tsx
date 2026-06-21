@@ -161,6 +161,9 @@ export function AlbumSearchInput({ className, onSelect }: AlbumSearchInputProps)
       <div className="relative">
         <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
         <Input
+          autoCapitalize="none"
+          autoComplete="off"
+          autoCorrect="off"
           className="pr-9 pl-9 [&::-webkit-search-cancel-button]:appearance-none"
           onChange={(e) => {
             setInputValue(e.target.value);
@@ -168,6 +171,7 @@ export function AlbumSearchInput({ className, onSelect }: AlbumSearchInputProps)
           }}
           onFocus={() => setIsOpen(true)}
           placeholder="Search albums, artists…"
+          spellCheck={false}
           type="search"
           value={inputValue}
         />
@@ -274,11 +278,14 @@ export function AlbumSearchOverlay({ isOpen, onClose, onSelect }: AlbumSearchOve
         <div className="relative flex-1">
           <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
+            autoCapitalize="none"
             autoComplete="off"
+            autoCorrect="off"
             className="pr-9 pl-9 [&::-webkit-search-cancel-button]:appearance-none"
             onChange={(e) => setInputValue(e.target.value)}
             placeholder="Search albums, artists…"
             ref={inputRef}
+            spellCheck={false}
             type="search"
             value={inputValue}
           />

@@ -11,9 +11,19 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "TanStack Start Starter" },
+      { name: "theme-color", content: "#151515" },
+      {
+        name: "description",
+        content: "Ratio is a social platform where you can rate your favourite albums or discover new ones.",
+      },
+      { title: "Ratio" },
     ],
-    links: [{ rel: "stylesheet", href: appCss }],
+    links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", href: "/favicon-dark.ico", media: "(prefers-color-scheme: dark)" },
+      { rel: "icon", href: "/favicon-light.ico", media: "(prefers-color-scheme: light)" },
+      { rel: "manifest", href: "/manifest.json" },
+    ],
   }),
   notFoundComponent: () => (
     <main className="container mx-auto p-4 pt-16">
