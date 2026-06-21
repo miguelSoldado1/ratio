@@ -1,6 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequestHeaders } from "@tanstack/react-start/server";
 import { and, count, desc, eq, getTableColumns, sql } from "drizzle-orm";
 import z from "zod";
+import { createAuth } from "@/lib/auth";
 import { createDbClient } from "@/lib/db";
 import * as schema from "@/lib/db/schema";
 import { authMiddleware } from "../auth-middleware";
@@ -10,6 +12,11 @@ const ratingBuckets = ["1", "2", "3", "4", "5"] as const;
 
 const albumIdSchema = z.object({
   albumId: z.string().trim().min(1).max(64),
+});
+
+const reviewLikeSchema = z.object({
+  liked: z.boolean(),
+  reviewId: z.uuid(),
 });
 
 const createReviewSchema = z.object({
@@ -22,8 +29,15 @@ async function getAlbumReviewsHandler({ albumId }: z.infer<typeof albumIdSchema>
   const { client, db } = createDbClient();
 
   try {
+    const viewerUserId = await getCurrentUserId(db);
+    const likedByViewer = viewerUserId
+      ? sql<boolean>`exists(select 1 from ${schema.reviewLikes} where ${schema.reviewLikes.reviewId} = ${schema.reviews.id} and ${schema.reviewLikes.userId} = ${viewerUserId})`
+      : sql<boolean>`false`;
+
     const albumReviews = await db
       .select({
+        liked: likedByViewer,
+        likes: sql<number>`(select count(*)::int from ${schema.reviewLikes} where ${schema.reviewLikes.reviewId} = ${schema.reviews.id})`,
         review: getTableColumns(schema.reviews),
         user: {
           avatarUrl: schema.user.image,
@@ -96,6 +110,26 @@ async function createReviewHandler(data: z.infer<typeof createReviewSchema>, con
   return review;
 }
 
+async function setReviewLikeHandler(data: z.infer<typeof reviewLikeSchema>, context: AuthenticatedContext) {
+  if (data.liked) {
+    await context.db
+      .insert(schema.reviewLikes)
+      .values({ reviewId: data.reviewId, userId: context.user.id })
+      .onConflictDoNothing();
+  } else {
+    await context.db
+      .delete(schema.reviewLikes)
+      .where(and(eq(schema.reviewLikes.reviewId, data.reviewId), eq(schema.reviewLikes.userId, context.user.id)));
+  }
+
+  const [likeCount] = await context.db
+    .select({ likes: count(schema.reviewLikes.reviewId) })
+    .from(schema.reviewLikes)
+    .where(eq(schema.reviewLikes.reviewId, data.reviewId));
+
+  return { liked: data.liked, likes: likeCount?.likes ?? 0, reviewId: data.reviewId };
+}
+
 export const createReview = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator(createReviewSchema)
@@ -114,9 +148,16 @@ export const hasMyAlbumReview = createServerFn()
   .validator(albumIdSchema)
   .handler(({ context, data }) => hasMyAlbumReviewHandler(data, context));
 
+export const setReviewLike = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(reviewLikeSchema)
+  .handler(({ context, data }) => setReviewLikeHandler(data, context));
+
 // --- Helpers ---
 
 interface AlbumReviewRow {
+  liked: boolean;
+  likes: number;
   review: typeof schema.reviews.$inferSelect;
   user: {
     avatarUrl: string | null;
@@ -125,6 +166,13 @@ interface AlbumReviewRow {
     name: string;
     username: string | null;
   };
+}
+
+async function getCurrentUserId(db: ReturnType<typeof createDbClient>["db"]) {
+  const auth = createAuth(db);
+  const session = await auth.api.getSession({ headers: getRequestHeaders() }).catch(() => null);
+
+  return session?.user.id;
 }
 
 interface AlbumRatingSummaryRow {
@@ -162,9 +210,11 @@ function mapAlbumRatingSummary(summary: AlbumRatingSummaryRow | undefined, distr
   };
 }
 
-function mapAlbumReview({ review, user }: AlbumReviewRow) {
+function mapAlbumReview({ liked, likes, review, user }: AlbumReviewRow) {
   return {
     id: review.id,
+    liked,
+    likes,
     rating: review.rating / 2,
     review: review.body ?? undefined,
     createdAt: review.createdAt,

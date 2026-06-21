@@ -21,6 +21,10 @@ Ratio lets anyone browse and discover albums without an account. Authenticated u
 | Auth | Better Auth (self-hosted) | Username + last-login-method plugins already wired |
 | Music data | Spotify Web API | Client Credentials (anonymous) + user token (linked) |
 
+### Client Mutation Handling
+
+For client-side mutations, prefer explicit submit/click handlers that call `mutation.mutateAsync(...)` wrapped in the shared `tryCatch` helper. Handle success work such as cache updates, invalidation, local state resets, and toasts directly after the `tryCatch` result in that handler. Avoid `onSuccess`/`onError` mutation callbacks unless a mutation is intentionally shared and the lifecycle behavior belongs to every caller.
+
 ---
 
 ## Authentication

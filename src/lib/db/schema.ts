@@ -1,5 +1,5 @@
 import { relations, sql } from "drizzle-orm";
-import { check, index, pgTable, smallint, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { check, index, pgTable, primaryKey, smallint, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { user } from "../auth/auth-schema";
 
 // biome-ignore lint/performance/noBarrelFile: Keep a single Drizzle schema entrypoint for config and adapters.
@@ -29,9 +29,39 @@ export const reviews = pgTable(
   ]
 );
 
-export const reviewRelations = relations(reviews, ({ one }) => ({
+export const reviewLikes = pgTable(
+  "review_like",
+  {
+    reviewId: uuid("review_id")
+      .notNull()
+      .references(() => reviews.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.reviewId, table.userId], name: "review_likes_review_user_pk" }),
+    index("review_likes_review_id_idx").on(table.reviewId),
+    index("review_likes_user_id_idx").on(table.userId),
+  ]
+);
+
+export const reviewRelations = relations(reviews, ({ many, one }) => ({
+  likes: many(reviewLikes),
   user: one(user, {
     fields: [reviews.userId],
+    references: [user.id],
+  }),
+}));
+
+export const reviewLikeRelations = relations(reviewLikes, ({ one }) => ({
+  review: one(reviews, {
+    fields: [reviewLikes.reviewId],
+    references: [reviews.id],
+  }),
+  user: one(user, {
+    fields: [reviewLikes.userId],
     references: [user.id],
   }),
 }));

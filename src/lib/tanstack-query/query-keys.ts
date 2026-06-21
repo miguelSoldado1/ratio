@@ -3,6 +3,6 @@ export const albumQueryKeys = {
   review: (albumId: string) => ["album", albumId, "review"] as const,
   hasMyReview: (albumId: string, userId?: string) => [...albumQueryKeys.review(albumId), "me", userId] as const,
   ratingSummary: (albumId: string) => [...albumQueryKeys.review(albumId), "rating-summary"] as const,
-  reviews: (albumId: string) => [...albumQueryKeys.review(albumId), "list"] as const,
+  reviews: (albumId: string, userId?: string) => [...albumQueryKeys.review(albumId), "list", userId] as const,
   search: (query: string) => ["album-search", query] as const,
 };

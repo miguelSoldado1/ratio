@@ -1,6 +1,7 @@
 import { Heart } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { RatingStarIcon } from "@/components/rating-star-icon";
+import { useDebounce } from "@/lib/use-debounce";
 import { abbreviateCount, cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
@@ -180,53 +181,225 @@ function Review({ children, className }: ReviewProps) {
 interface LikesProps {
   className?: string;
   count: number;
+  disabled?: boolean;
   liked?: boolean;
-  onToggle?: () => void;
+  onToggle?: (liked: boolean) => boolean | Promise<boolean | undefined> | undefined;
 }
 
-function Likes({ count, liked = false, onToggle, className }: LikesProps) {
+interface OptimisticLikeState {
+  count: number;
+  liked: boolean;
+}
+
+interface UseDebouncedOptimisticLikeParams {
+  count: number;
+  liked: boolean;
+  onToggle?: LikesProps["onToggle"];
+}
+
+const likePersistDebounceMs = 350;
+
+function getLikeHeartClass({ disabled, liked }: { disabled: boolean; liked: boolean }) {
+  if (liked) return "fill-primary stroke-primary";
+  if (disabled) return "stroke-muted-foreground/70";
+
+  return "stroke-muted-foreground group-hover:stroke-primary";
+}
+
+function getLikeCountClass({ disabled, liked }: { disabled: boolean; liked: boolean }) {
+  if (liked) return "text-primary";
+  if (disabled) return "text-muted-foreground/80";
+
+  return "text-muted-foreground group-hover:text-primary";
+}
+
+function getLikeButtonClass({ disabled }: { disabled: boolean }) {
+  if (disabled) return "cursor-default";
+
+  return "cursor-pointer active:scale-[0.97]";
+}
+
+function useDebouncedOptimisticLike({ count, liked, onToggle }: UseDebouncedOptimisticLikeParams) {
   const [optimisticLiked, setOptimisticLiked] = useState(liked);
   const [optimisticCount, setOptimisticCount] = useState(count);
   const [justLiked, setJustLiked] = useState(false);
   const [countDir, setCountDir] = useState<"up" | "down" | null>(null);
+  const debouncedLiked = useDebounce(optimisticLiked, likePersistDebounceMs);
+  const latestLikedRef = useRef(liked);
+  const persistedLikedRef = useRef(liked);
+  const inFlightLikedRef = useRef<boolean | null>(null);
+  const queuedLikedRef = useRef<boolean | null>(null);
+  const rollbackStateRef = useRef<OptimisticLikeState | null>(null);
 
-  function handleClick() {
+  useEffect(() => {
+    persistedLikedRef.current = liked;
+
+    if (rollbackStateRef.current) return;
+
+    setOptimisticLiked(liked);
+    setOptimisticCount(count);
+    latestLikedRef.current = liked;
+  }, [count, liked]);
+
+  const applyOptimisticLike = useCallback((nextLiked: boolean) => {
+    setOptimisticLiked(nextLiked);
+    setOptimisticCount((currentCount) => Math.max(0, currentCount + (nextLiked ? 1 : -1)));
+    setCountDir(nextLiked ? "up" : "down");
+    if (nextLiked) setJustLiked(true);
+  }, []);
+
+  const restoreOptimisticLike = useCallback((previousState: OptimisticLikeState) => {
+    setOptimisticLiked(previousState.liked);
+    setOptimisticCount(previousState.count);
+    setCountDir(previousState.liked ? "up" : "down");
+  }, []);
+
+  const rollbackOptimisticLike = useCallback(() => {
+    const previousState = rollbackStateRef.current;
+
+    rollbackStateRef.current = null;
+    queuedLikedRef.current = null;
+    latestLikedRef.current = previousState?.liked ?? liked;
+
+    if (previousState) {
+      restoreOptimisticLike(previousState);
+    }
+  }, [liked, restoreOptimisticLike]);
+
+  const takeQueuedLikedToPersist = useCallback(() => {
+    const queuedLiked = queuedLikedRef.current;
+
+    queuedLikedRef.current = null;
+
+    return queuedLiked === persistedLikedRef.current ? null : queuedLiked;
+  }, []);
+
+  const persistLikeChange = useCallback(
+    async (likedToPersist: boolean) => {
+      if (!onToggle) return;
+
+      if (inFlightLikedRef.current !== null) {
+        queuedLikedRef.current = likedToPersist;
+        return;
+      }
+
+      let nextLikedToPersist: boolean | null = likedToPersist;
+
+      while (nextLikedToPersist !== null) {
+        const currentLikedToPersist: boolean = nextLikedToPersist;
+
+        nextLikedToPersist = null;
+        inFlightLikedRef.current = currentLikedToPersist;
+
+        const shouldKeepOptimisticState = await Promise.resolve()
+          .then(() => onToggle(currentLikedToPersist))
+          .catch(() => false);
+        inFlightLikedRef.current = null;
+
+        if (shouldKeepOptimisticState === false) {
+          rollbackOptimisticLike();
+          return;
+        }
+
+        persistedLikedRef.current = currentLikedToPersist;
+        nextLikedToPersist = takeQueuedLikedToPersist();
+
+        if (nextLikedToPersist !== null) {
+          continue;
+        }
+
+        if (latestLikedRef.current === currentLikedToPersist) {
+          rollbackStateRef.current = null;
+        }
+      }
+    },
+    [onToggle, rollbackOptimisticLike, takeQueuedLikedToPersist]
+  );
+
+  useEffect(() => {
+    if (!(onToggle && rollbackStateRef.current)) return;
+
+    if (inFlightLikedRef.current !== null) {
+      queuedLikedRef.current = debouncedLiked;
+      return;
+    }
+
+    if (debouncedLiked === persistedLikedRef.current) {
+      if (latestLikedRef.current === persistedLikedRef.current) {
+        rollbackStateRef.current = null;
+        queuedLikedRef.current = null;
+      }
+      return;
+    }
+
+    persistLikeChange(debouncedLiked).catch(() => undefined);
+  }, [debouncedLiked, onToggle, persistLikeChange]);
+
+  const toggle = useCallback(() => {
+    const previousState = { count: optimisticCount, liked: optimisticLiked };
     const next = !optimisticLiked;
-    setOptimisticLiked(next);
-    setOptimisticCount((c) => c + (next ? 1 : -1));
-    setCountDir(next ? "up" : "down");
-    if (next) setJustLiked(true);
-    onToggle?.();
-  }
+
+    latestLikedRef.current = next;
+    applyOptimisticLike(next);
+
+    if (!onToggle) return;
+
+    if (!rollbackStateRef.current) {
+      rollbackStateRef.current = previousState;
+    }
+
+    if (next === persistedLikedRef.current && inFlightLikedRef.current === null) {
+      rollbackStateRef.current = null;
+      queuedLikedRef.current = null;
+    }
+  }, [applyOptimisticLike, optimisticCount, optimisticLiked, onToggle]);
+
+  const clearJustLiked = useCallback(() => setJustLiked(false), []);
+
+  return {
+    clearJustLiked,
+    count: optimisticCount,
+    countDir,
+    justLiked,
+    liked: optimisticLiked,
+    toggle,
+  };
+}
+
+function Likes({ count, disabled = false, liked = false, onToggle, className }: LikesProps) {
+  const like = useDebouncedOptimisticLike({ count, liked, onToggle });
 
   return (
     <button
+      aria-label={like.liked ? "Unlike review" : "Like review"}
+      aria-pressed={like.liked}
       className={cn(
-        "group flex cursor-pointer items-center gap-1.5",
-        "[transition:transform_130ms_cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]",
+        "group flex items-center gap-1.5 [transition:transform_130ms_cubic-bezier(0.23,1,0.32,1)]",
+        getLikeButtonClass({ disabled }),
         className
       )}
-      onClick={handleClick}
+      disabled={disabled}
+      onClick={like.toggle}
       type="button"
     >
       <Heart
         className={cn(
           "size-3.5 [transition:color_150ms_ease,fill_150ms_ease,stroke_150ms_ease]",
-          justLiked && "animate-heart-pop",
-          optimisticLiked ? "fill-primary stroke-primary" : "stroke-muted-foreground group-hover:stroke-primary"
+          like.justLiked && "animate-heart-pop",
+          getLikeHeartClass({ disabled, liked: like.liked })
         )}
-        onAnimationEnd={() => setJustLiked(false)}
+        onAnimationEnd={like.clearJustLiked}
       />
       <span
         className={cn(
           "text-[13px] tabular-nums [transition:color_150ms_ease]",
-          countDir === "up" && "animate-count-up",
-          countDir === "down" && "animate-count-down",
-          optimisticLiked ? "text-primary" : "text-muted-foreground group-hover:text-primary"
+          like.countDir === "up" && "animate-count-up",
+          like.countDir === "down" && "animate-count-down",
+          getLikeCountClass({ disabled, liked: like.liked })
         )}
-        key={optimisticCount}
+        key={like.count}
       >
-        {abbreviateCount(optimisticCount)}
+        {abbreviateCount(like.count)}
       </span>
     </button>
   );
