@@ -1,12 +1,12 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { LogOut, Search } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import { AlbumSearchInput, AlbumSearchOverlay } from "@/components/album-search";
 import { AuthDialog } from "@/components/auth/auth-dialog";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth/auth-client";
-import { getAuthErrorMessage } from "@/lib/auth/auth-errors";
+import { useAuthRedirectErrorToast } from "@/lib/auth/use-auth-redirect-error-toast";
 
 function LogoHomeLink() {
   return (
@@ -25,7 +25,7 @@ export function TopBar() {
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
 
-  useAuthRedirectErrorToast();
+  useAuthRedirectErrorToast(setAuthDialogOpen);
 
   const handleAlbumSelect = (album: { id: string }) => {
     navigate({ to: "/album/$albumId", params: { albumId: album.id } });
@@ -64,24 +64,6 @@ export function TopBar() {
       </div>
     </>
   );
-}
-
-function useAuthRedirectErrorToast() {
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const url = new URL(window.location.href);
-    const error = url.searchParams.get("error");
-    if (!error) return;
-
-    toast.error("Authentication failed", {
-      description: getAuthErrorMessage(error),
-      id: `auth-error-${error}`,
-    });
-
-    url.searchParams.delete("error");
-    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
-  }, []);
 }
 
 interface HeaderAuthActionsProps {
