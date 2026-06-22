@@ -1,15 +1,19 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ReviewCard } from "@/components/review-card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Spinner } from "@/components/ui/spinner";
+import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
 import { authClient } from "@/lib/auth/auth-client";
 import { albumQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { cn } from "@/lib/utils";
 import { deleteReview, getAlbumReviews, setReviewLike } from "@/server/functions/review-functions";
 import { tryCatch } from "@/try-catch";
 import { DeleteReviewDialog } from "./delete-review-dialog";
+import type { InfiniteData } from "@tanstack/react-query";
+import type { AlbumReviewsPage } from "@/server/functions/review-functions";
 
 interface ReviewsSectionProps {
   albumId: string;
@@ -24,8 +28,11 @@ export function ReviewsSection({ albumId, className }: ReviewsSectionProps) {
   const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
 
   const getAlbumReviewsFn = useServerFn(getAlbumReviews);
-  const albumReviewsQuery = useQuery({
-    queryFn: () => getAlbumReviewsFn({ data: { albumId } }),
+  const albumReviewsQuery = useInfiniteQuery({
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    initialPageParam: null,
+    queryFn: ({ pageParam }: { pageParam: string | null }) =>
+      getAlbumReviewsFn({ data: { albumId, cursor: pageParam ?? undefined } }),
     queryKey: albumQueryKeys.reviews(albumId, userId),
   });
 
@@ -34,6 +41,14 @@ export function ReviewsSection({ albumId, className }: ReviewsSectionProps) {
 
   const deleteReviewFn = useServerFn(deleteReview);
   const deleteReviewMutation = useMutation({ mutationFn: deleteReviewFn });
+
+  const reviews = albumReviewsQuery.data?.pages.flatMap((page) => page.reviews) ?? [];
+  const { fetchNextPage, hasNextPage, isFetchNextPageError, isFetchingNextPage } = albumReviewsQuery;
+  const loadMoreRef = useLoadMoreOnIntersect({
+    enabled: hasNextPage && !isFetchNextPageError,
+    isLoading: isFetchingNextPage,
+    onLoadMore: fetchNextPage,
+  });
 
   async function handleReviewLikeToggle(reviewId: string, liked: boolean) {
     if (!hasSession) {
@@ -48,13 +63,21 @@ export function ReviewsSection({ albumId, className }: ReviewsSectionProps) {
       return false;
     }
 
-    queryClient.setQueryData(albumQueryKeys.reviews(albumId, userId), (reviews: typeof albumReviewsQuery.data) =>
-      reviews?.map((review) =>
-        review.id === updatedReview.reviewId
-          ? { ...review, liked: updatedReview.liked, likes: updatedReview.likes }
-          : review
-      )
-    );
+    queryClient.setQueryData<InfiniteData<AlbumReviewsPage>>(albumQueryKeys.reviews(albumId, userId), (data) => {
+      if (!data) return data;
+
+      return {
+        ...data,
+        pages: data.pages.map((page) => ({
+          ...page,
+          reviews: page.reviews.map((review) =>
+            review.id === updatedReview.reviewId
+              ? { ...review, liked: updatedReview.liked, likes: updatedReview.likes }
+              : review
+          ),
+        })),
+      };
+    });
   }
 
   async function handleReviewDelete(reviewId: string) {
@@ -77,7 +100,7 @@ export function ReviewsSection({ albumId, className }: ReviewsSectionProps) {
     return <ReviewsSectionSkeleton className={className} />;
   }
 
-  if (albumReviewsQuery.isError) {
+  if (albumReviewsQuery.isError && reviews.length === 0) {
     return (
       <section className={cn("border-border/80 border-t py-8", className)}>
         <p className="font-medium text-sm">Reviews unavailable</p>
@@ -86,7 +109,7 @@ export function ReviewsSection({ albumId, className }: ReviewsSectionProps) {
     );
   }
 
-  if (albumReviewsQuery.data.length === 0) {
+  if (reviews.length === 0) {
     return (
       <section className={cn("border-border/80 border-t py-8", className)}>
         <p className="font-medium text-sm">No reviews yet</p>
@@ -99,7 +122,7 @@ export function ReviewsSection({ albumId, className }: ReviewsSectionProps) {
 
   return (
     <section className={className}>
-      {albumReviewsQuery.data.map((review) => (
+      {reviews.map((review) => (
         <ReviewCard.Root className="border-border/80" key={review.id}>
           <ReviewCard.Header createdAt={review.createdAt} href={`/user/${review.user.username}`} user={review.user} />
           <ReviewCard.Rating value={review.rating} />
@@ -121,7 +144,17 @@ export function ReviewsSection({ albumId, className }: ReviewsSectionProps) {
           </ReviewCard.Footer>
         </ReviewCard.Root>
       ))}
+      <div aria-hidden="true" className="h-px" ref={loadMoreRef} />
+      {isFetchingNextPage ? <LoadingMoreReviews /> : null}
     </section>
+  );
+}
+
+function LoadingMoreReviews() {
+  return (
+    <div className="flex justify-center border-border/80 border-t py-6">
+      <Spinner className="size-5 text-muted-foreground" />
+    </div>
   );
 }
 

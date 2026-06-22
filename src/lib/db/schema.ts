@@ -23,6 +23,7 @@ export const reviews = pgTable(
   },
   (table) => [
     index("reviews_album_id_idx").on(table.albumId),
+    index("reviews_album_created_id_idx").on(table.albumId, table.createdAt, table.id),
     index("reviews_user_id_idx").on(table.userId),
     uniqueIndex("reviews_user_album_unique_idx").on(table.userId, table.albumId),
     check("reviews_ratings_range_check", sql`${table.rating} >= 1 AND ${table.rating} <= 10`),

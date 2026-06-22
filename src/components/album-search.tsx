@@ -3,8 +3,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Search, X } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
+import { useDebounce } from "@/hooks/use-debounce";
 import { albumQueryKeys } from "@/lib/tanstack-query/query-keys";
-import { useDebounce } from "@/lib/use-debounce";
 import { cn } from "@/lib/utils";
 import { searchAlbums } from "@/server/functions/spotify-functions";
 

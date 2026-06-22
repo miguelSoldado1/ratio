@@ -1,7 +1,7 @@
 import { ChevronDown, Heart } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { RatingStarIcon } from "@/components/rating-star-icon";
-import { useDebounce } from "@/lib/use-debounce";
+import { useDebounce } from "@/hooks/use-debounce";
 import { abbreviateCount, cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 

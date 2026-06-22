@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeaders } from "@tanstack/react-start/server";
-import { and, count, desc, eq, getTableColumns, sql } from "drizzle-orm";
+import { and, count, desc, eq, getTableColumns, lt, or, sql } from "drizzle-orm";
 import z from "zod";
 import { createAuth } from "@/lib/auth";
 import { createDbClient } from "@/lib/db";
@@ -12,6 +12,15 @@ const ratingBuckets = ["1", "2", "3", "4", "5"] as const;
 
 const albumIdSchema = z.object({
   albumId: z.string().trim().min(1).max(64),
+});
+
+const albumReviewsCursorPayloadSchema = z.object({
+  createdAt: z.iso.datetime(),
+  id: z.uuid(),
+});
+
+const albumReviewsSchema = albumIdSchema.extend({
+  cursor: z.string().trim().min(1).optional(),
 });
 
 const reviewLikeSchema = z.object({
@@ -29,7 +38,27 @@ const createReviewSchema = z.object({
   rating: z.number().int().min(1).max(10),
 });
 
-async function getAlbumReviewsHandler({ albumId }: z.infer<typeof albumIdSchema>) {
+const albumReviewsPageSize = 12;
+const base64PaddingPattern = /=+$/;
+
+// --- Types ---
+
+interface AlbumReviewsCursorPayload {
+  createdAt: string;
+  id: string;
+}
+
+interface AlbumReviewsInput {
+  albumId: string;
+  cursor?: string;
+}
+
+export interface AlbumReviewsPage {
+  nextCursor: string | null;
+  reviews: ReturnType<typeof mapAlbumReview>[];
+}
+
+async function getAlbumReviewsHandler(data: AlbumReviewsInput): Promise<AlbumReviewsPage> {
   const { client, db } = createDbClient();
 
   try {
@@ -38,6 +67,8 @@ async function getAlbumReviewsHandler({ albumId }: z.infer<typeof albumIdSchema>
       ? sql<boolean>`exists(select 1 from ${schema.reviewLikes} where ${schema.reviewLikes.reviewId} = ${schema.reviews.id} and ${schema.reviewLikes.userId} = ${viewerUserId})`
       : sql<boolean>`false`;
     const canDelete = viewerUserId ? sql<boolean>`${schema.reviews.userId} = ${viewerUserId}` : sql<boolean>`false`;
+    const cursor = data.cursor ? decodeAlbumReviewsCursor(data.cursor) : undefined;
+    const cursorFilter = cursor ? getAlbumReviewsCursorFilter(cursor) : undefined;
 
     const albumReviews = await db
       .select({
@@ -55,10 +86,28 @@ async function getAlbumReviewsHandler({ albumId }: z.infer<typeof albumIdSchema>
       })
       .from(schema.reviews)
       .innerJoin(schema.user, eq(schema.reviews.userId, schema.user.id))
-      .where(eq(schema.reviews.albumId, albumId))
-      .orderBy(desc(schema.reviews.createdAt));
+      .where(
+        cursorFilter
+          ? and(eq(schema.reviews.albumId, data.albumId), cursorFilter)
+          : eq(schema.reviews.albumId, data.albumId)
+      )
+      .orderBy(desc(schema.reviews.createdAt), desc(schema.reviews.id))
+      .limit(albumReviewsPageSize + 1);
 
-    return albumReviews.map(mapAlbumReview);
+    const hasNextPage = albumReviews.length > albumReviewsPageSize;
+    const pageRows = hasNextPage ? albumReviews.slice(0, albumReviewsPageSize) : albumReviews;
+    const lastReview = pageRows.at(-1)?.review;
+
+    return {
+      nextCursor:
+        hasNextPage && lastReview
+          ? encodeAlbumReviewsCursor({
+              createdAt: lastReview.createdAt.toISOString(),
+              id: lastReview.id,
+            })
+          : null,
+      reviews: pageRows.map(mapAlbumReview),
+    };
   } finally {
     await client.end({ timeout: 1 }).catch(() => undefined);
   }
@@ -160,7 +209,7 @@ export const deleteReview = createServerFn({ method: "POST" })
   .handler(({ context, data }) => deleteReviewHandler(data, context));
 
 export const getAlbumReviews = createServerFn()
-  .validator(albumIdSchema)
+  .validator(albumReviewsSchema)
   .handler(({ data }) => getAlbumReviewsHandler(data));
 
 export const getAlbumRatingSummary = createServerFn()
@@ -259,4 +308,29 @@ function formatRatingTotal(total: number) {
   if (total >= 1000) return `${(total / 1000).toFixed(total % 1000 === 0 ? 0 : 1)}k ${countLabel}`;
 
   return `${total} ${countLabel}`;
+}
+
+function getAlbumReviewsCursorFilter(cursor: AlbumReviewsCursorPayload) {
+  const cursorCreatedAt = new Date(cursor.createdAt);
+
+  return or(
+    lt(schema.reviews.createdAt, cursorCreatedAt),
+    and(eq(schema.reviews.createdAt, cursorCreatedAt), lt(schema.reviews.id, cursor.id))
+  );
+}
+
+function encodeAlbumReviewsCursor(cursor: AlbumReviewsCursorPayload) {
+  return btoa(JSON.stringify(cursor)).replaceAll("+", "-").replaceAll("/", "_").replace(base64PaddingPattern, "");
+}
+
+function decodeAlbumReviewsCursor(cursor: string): AlbumReviewsCursorPayload {
+  try {
+    const base64Cursor = cursor.replaceAll("-", "+").replaceAll("_", "/");
+    const paddedCursor = base64Cursor.padEnd(Math.ceil(base64Cursor.length / 4) * 4, "=");
+    const parsedCursor: unknown = JSON.parse(atob(paddedCursor));
+
+    return albumReviewsCursorPayloadSchema.parse(parsedCursor);
+  } catch {
+    throw new Error("Invalid reviews cursor");
+  }
 }

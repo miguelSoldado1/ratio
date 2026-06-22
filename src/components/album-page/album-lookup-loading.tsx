@@ -44,7 +44,6 @@ export function AlbumLookupLoading({ albumId }: { albumId: string }) {
         <section className="min-w-0 pt-3 lg:pt-10">
           <DesktopAlbumHeaderSkeleton />
           <RatingsPanelSkeleton className="mt-2 lg:mt-8" />
-          <TrackListSkeleton className="mt-8 lg:hidden" />
           <ReviewsSkeleton className="mt-10 lg:mt-12" />
         </section>
       </div>
