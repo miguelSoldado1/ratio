@@ -28,14 +28,6 @@ const createReviewSchema = z.object({
   rating: z.number().int().min(1).max(10),
 });
 
-// Inferred inputs
-
-export type AlbumIdInput = z.infer<typeof albumIdSchema>;
-export type AlbumReviewsInput = z.infer<typeof albumReviewsSchema>;
-export type CreateReviewInput = z.infer<typeof createReviewSchema>;
-export type DeleteReviewInput = z.infer<typeof deleteReviewSchema>;
-export type ReviewLikeInput = z.infer<typeof reviewLikeSchema>;
-
 // Server functions
 
 export const createReview = createServerFn({ method: "POST" })

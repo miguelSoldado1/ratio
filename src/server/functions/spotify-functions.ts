@@ -12,11 +12,6 @@ const albumDetailsSchema = z.object({
   albumId: z.string().trim().min(1).max(64),
 });
 
-// Inferred inputs
-
-export type AlbumDetailsInput = z.infer<typeof albumDetailsSchema>;
-export type SearchAlbumsInput = z.infer<typeof searchAlbumsSchema>;
-
 // Server functions
 
 export const searchAlbums = createServerFn()

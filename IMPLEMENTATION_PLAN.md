@@ -127,7 +127,9 @@ The main reason to store album records is product correctness, not just performa
 
 Spotify remains the source of truth for discovery and fresh lookup. Our database stores the subset of albums Ratio has durable local activity for. Track lists are not stored in Postgres initially; album pages can fetch tracks live from Spotify or use a short-lived server-owned cache later if needed.
 
-When creating the first review for an album, the client only submits the Spotify album ID plus review data. The server must ensure the album row exists before inserting the review: first check Postgres, then fetch the album from Spotify if missing, then transactionally upsert the album and insert the review. Do not trust client-provided album metadata for durable writes. If Spotify lookup fails and the album row does not already exist, reject the review with a user-friendly retry message rather than creating a review that points at a missing album. If duplicate first-write lookups become painful, add a short-lived Cloudflare KV cache written and read only by server-side Spotify lookup code.
+When creating the first review for an album, the client only submits the Spotify album ID plus review data. The server must ensure the album row exists before inserting the review: first check Postgres, then fetch the album from Spotify if missing, reject non-album Spotify IDs, then transactionally upsert the album and insert the review. Do not trust client-provided album metadata for durable writes. If Spotify lookup fails and the album row does not already exist, reject the review with a user-friendly retry message rather than creating a review that points at a missing album. If duplicate first-write lookups become painful, add a short-lived Cloudflare KV cache written and read only by server-side Spotify lookup code.
+
+When adding the `review.albumId -> album.id` foreign key to a database with existing reviews, choose the migration path explicitly. Disposable or empty databases can apply the final schema directly. Databases with reviews that matter should do it in phases: create `album`, backfill distinct existing review album IDs from Spotify, then add the foreign key.
 
 ### Search
 
@@ -155,17 +157,12 @@ The ratings backend uses reviews as the rating entity: one row per user per albu
 export const albums = pgTable("album", {
   id: text("id").primaryKey(),                // Spotify album ID
   title: text("title").notNull(),
-  artistName: text("artist_name").notNull(),
-  artistIds: text("artist_ids").array().notNull(), // for feed personalisation joins
+  artistNames: text("artist_names").array().notNull(),
   coverUrl: text("cover_url"),
-  releaseDate: text("release_date"),
-  albumType: text("album_type").notNull(),    // keep Spotify's value; product filters to album
-  spotifyUrl: text("spotify_url").notNull(),
-  durationMs: integer("duration_ms"),
+  releaseYear: integer("release_year").notNull(),
   totalTracks: integer("total_tracks"),
-  cachedAt: timestamp("cached_at").defaultNow().notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow(),
-  removed: boolean("removed").default(false).notNull(), // Spotify delisted flag
 })
 
 // reviews — one per user per album, rating + optional written body
@@ -325,13 +322,13 @@ All album pages (`/album/:spotifyId`) are publicly accessible and shareable. The
 
 | Case | Handling |
 |---|---|
-| Album removed from Spotify | Keep cached metadata, set `removed = true`, hide "Open in Spotify" link |
+| Album removed from Spotify | Keep cached metadata in existing local rows; hide or disable Spotify links when live lookup fails |
 | Spotify refresh token revoked | Catch error from `getAccessToken`, fall back to client credentials, surface soft reconnect prompt in settings |
 | Duplicate review attempt | Enforced at DB level via unique constraint on `(userId, albumId)` — block duplicate creates; delete may come later, no edit/update flow planned |
 | Low vote count rating display | Bayesian average until threshold is met, show raw score + count after |
 | Empty social feed (new user) | Fall back to trending feed until they follow someone; suggest popular users to follow on signup |
 | `recently-played` too thin | Fall back to `top-artists` for feed seeding; no error state shown to user |
-| Compilation / single vs album | Filter search and product surfaces to albums only; keep `albumType` from Spotify for defensive checks |
+| Compilation / single vs album | Filter search and product surfaces to albums only; reject non-`album` Spotify IDs before creating local album rows |
 | User signs in on new device | Spotify tokens stored on user record, not session — available immediately after login on any device |
 | Self-follow attempt | Guard in the follow/unfollow endpoint |
 

@@ -1,5 +1,4 @@
 import { createSpotifyApi, getClientCredentialsToken } from "../spotify";
-import type { AlbumDetailsInput, SearchAlbumsInput } from "../functions/spotify-functions";
 
 // Spotify API types
 
@@ -9,12 +8,30 @@ type SpotifyAlbumTracks = SpotifyApi.AlbumTracksResponse;
 type SpotifyAlbumTrack = SpotifyAlbumDetails["tracks"]["items"][number];
 type SpotifyApiClient = ReturnType<typeof createSpotifyApi>;
 
+export interface SpotifyAlbumPersistenceMetadata {
+  artistNames: string[];
+  coverUrl: string | null;
+  id: string;
+  releaseYear: number;
+  title: string;
+  totalTracks: number;
+}
+
+export interface SearchAlbumsInput {
+  query: string;
+}
+
+export interface AlbumDetailsInput {
+  albumId: string;
+}
+
 // Constants
 
 const ALBUM_SEARCH_LIMIT = 10;
 const ALBUM_TRACKS_LIMIT = 50;
 const SPOTIFY_MARKET = "US";
 const ALBUM_TYPE = "album" satisfies SpotifyAlbum["album_type"];
+const ALBUMS_ONLY_ERROR_MESSAGE = "Only albums are supported";
 
 // Services
 
@@ -33,13 +50,28 @@ export async function searchAlbumsService({ query }: SearchAlbumsInput) {
 }
 
 export async function getAlbumDetailsService({ albumId }: AlbumDetailsInput) {
+  const { album, spotifyApi } = await getSpotifyAlbum(albumId);
+  assertAlbumType(album);
+
+  const tracks = await getAlbumTracks(spotifyApi, albumId, album.tracks);
+
+  return mapSpotifyAlbumDetails(album, tracks);
+}
+
+export async function getAlbumPersistenceMetadata(albumId: string): Promise<SpotifyAlbumPersistenceMetadata> {
+  const { album } = await getSpotifyAlbum(albumId);
+  assertAlbumType(album);
+
+  return mapSpotifyAlbumPersistenceMetadata(album);
+}
+
+async function getSpotifyAlbum(albumId: string) {
   try {
     const accessToken = await getClientCredentialsToken();
     const spotifyApi = createSpotifyApi(accessToken);
     const { body: album } = await spotifyApi.getAlbum(albumId, { market: SPOTIFY_MARKET });
-    const tracks = await getAlbumTracks(spotifyApi, albumId, album.tracks);
 
-    return mapSpotifyAlbumDetails(album, tracks);
+    return { album, spotifyApi };
   } catch (error) {
     const status = isSpotifyError(error) ? error.statusCode : 500;
     throw new Error(spotifyErrorMessage(status, "Spotify album lookup failed"));
@@ -59,6 +91,12 @@ function spotifyErrorMessage(status: number, fallbackMessage: string): string {
 function isSpotifyError(error: unknown): error is { statusCode: number; message: string } {
   if (typeof error !== "object" || error === null || !("statusCode" in error)) return false;
   return typeof error.statusCode === "number";
+}
+
+function assertAlbumType(album: SpotifyAlbumDetails) {
+  if (album.album_type !== ALBUM_TYPE) {
+    throw new Error(ALBUMS_ONLY_ERROR_MESSAGE);
+  }
 }
 
 // Mappers
@@ -96,6 +134,27 @@ function mapSpotifyAlbumDetails(album: SpotifyAlbumDetails, tracks: SpotifyAlbum
     },
     tracks: mappedTracks,
   };
+}
+
+function mapSpotifyAlbumPersistenceMetadata(album: SpotifyAlbumDetails): SpotifyAlbumPersistenceMetadata {
+  return {
+    artistNames: album.artists.map((artist) => artist.name),
+    coverUrl: getLargestImageUrl(album.images),
+    id: album.id,
+    releaseYear: getSpotifyReleaseYear(album),
+    title: album.name,
+    totalTracks: album.total_tracks,
+  };
+}
+
+function getSpotifyReleaseYear(album: SpotifyAlbumDetails) {
+  const releaseYear = Number(album.release_date.slice(0, 4));
+
+  if (!Number.isInteger(releaseYear)) {
+    throw new Error("Spotify album release year is invalid");
+  }
+
+  return releaseYear;
 }
 
 function mapSpotifyAlbumTrack(track: SpotifyAlbumTrack) {

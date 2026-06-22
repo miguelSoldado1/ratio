@@ -4,14 +4,8 @@ import z from "zod";
 import { createAuth } from "@/lib/auth";
 import { createDbClient } from "@/lib/db";
 import { reviewLikes, reviews, user } from "@/lib/db/schema";
+import { ensureAlbumExistsForWrite, getMissingAlbumMetadataForWrite } from "./album-service";
 import type { AuthenticatedContext } from "../auth-middleware";
-import type {
-  AlbumIdInput,
-  AlbumReviewsInput,
-  CreateReviewInput,
-  DeleteReviewInput,
-  ReviewLikeInput,
-} from "../functions/review-functions";
 
 // Constants
 
@@ -36,6 +30,27 @@ interface AlbumReviewsCursorPayload {
 export interface AlbumReviewsPage {
   nextCursor: string | null;
   reviews: ReturnType<typeof mapAlbumReview>[];
+}
+
+export interface AlbumIdInput {
+  albumId: string;
+}
+
+export interface AlbumReviewsInput extends AlbumIdInput {
+  cursor?: string;
+}
+
+export interface CreateReviewInput extends AlbumIdInput {
+  body?: string;
+  rating: number;
+}
+
+export interface DeleteReviewInput {
+  reviewId: string;
+}
+
+export interface ReviewLikeInput extends DeleteReviewInput {
+  liked: boolean;
 }
 
 // Services
@@ -130,17 +145,23 @@ export async function hasMyAlbumReviewService(data: AlbumIdInput, context: Authe
 }
 
 export async function createReviewService(data: CreateReviewInput, context: AuthenticatedContext) {
-  const [review] = await context.db
-    .insert(reviews)
-    .values({
-      albumId: data.albumId,
-      body: data.body || null,
-      rating: data.rating,
-      userId: context.user.id,
-    })
-    .returning();
+  const albumMetadata = await getMissingAlbumMetadataForWrite(data.albumId, context.db);
 
-  return review;
+  return await context.db.transaction(async (transaction) => {
+    await ensureAlbumExistsForWrite(albumMetadata, transaction);
+
+    const [review] = await transaction
+      .insert(reviews)
+      .values({
+        albumId: data.albumId,
+        body: data.body || null,
+        rating: data.rating,
+        userId: context.user.id,
+      })
+      .returning();
+
+    return review;
+  });
 }
 
 export async function deleteReviewService(data: DeleteReviewInput, context: AuthenticatedContext) {
