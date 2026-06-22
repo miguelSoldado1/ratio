@@ -89,7 +89,7 @@ async function getSpotifyCache() {
   if (!isCloudflareWorkersRuntime()) return null;
 
   try {
-    const cloudflareWorkers = (await import(/* @vite-ignore */ CLOUDFLARE_WORKERS_MODULE)) as CloudflareWorkersModule;
+    const cloudflareWorkers: CloudflareWorkersModule = await import(/* @vite-ignore */ CLOUDFLARE_WORKERS_MODULE);
     return cloudflareWorkers.env.CACHE;
   } catch (error) {
     console.warn("Failed to load Cloudflare Workers bindings", error);
@@ -107,10 +107,11 @@ function isFreshToken(token: ClientCredentialsToken | null, now: number) {
 
 function parseClientCredentialsToken(value: unknown): ClientCredentialsToken | null {
   if (typeof value !== "object" || value === null) return null;
+  if (!("accessToken" in value && "expiresAt" in value)) return null;
 
-  const token = value as Record<string, unknown>;
-  if (typeof token.accessToken !== "string") return null;
-  if (typeof token.expiresAt !== "number" || !Number.isFinite(token.expiresAt)) return null;
+  const { accessToken, expiresAt } = value;
+  if (typeof accessToken !== "string") return null;
+  if (typeof expiresAt !== "number" || !Number.isFinite(expiresAt)) return null;
 
-  return { accessToken: token.accessToken, expiresAt: token.expiresAt };
+  return { accessToken, expiresAt };
 }

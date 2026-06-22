@@ -13,7 +13,7 @@ import { tryCatch } from "@/try-catch";
 import { DeleteReviewDialog } from "./delete-review-dialog";
 import { ReviewsSectionSkeleton } from "./reviews-section-skeleton";
 import type { InfiniteData } from "@tanstack/react-query";
-import type { AlbumReviewsPage } from "@/server/functions/review-functions";
+import type { AlbumReviewsPage } from "@/server/services/review-service";
 
 interface ReviewsSectionProps {
   albumId: string;
