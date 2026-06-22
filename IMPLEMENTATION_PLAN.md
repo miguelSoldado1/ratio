@@ -117,15 +117,17 @@ Used for authenticated users with Spotify linked.
 
 ### Album Data Caching
 
-Store Spotify album metadata in our own `albums` table after the first time an album enters the product surface through search, an album page, a rating, a list, or a feed item. Do not bulk-import Spotify; cache only albums that users or app features actually touch.
+Store Spotify album metadata in our own `album` table only after a meaningful write action brings that album into Ratio's durable product graph. The initial write action is creating a rating/review; future write actions may include adding an album to a list or saving it. Do not persist albums just because they appear in search results, an album page view, or casual browsing. Do not bulk-import Spotify.
 
 The main reason to store album records is product correctness, not just performance:
 - Ratings, reviews, likes, lists, feeds, and activity need a stable local `albumId` to reference.
-- Album pages should keep rendering even if Spotify changes availability, removes an album, or rate limits us.
+- Feeds, profiles, lists, notifications, and other local product surfaces should be able to render touched albums even if Spotify changes availability, removes an album, or rate limits us.
 - Community aggregates such as average score, rating count, trending, and list membership need local joins.
-- Search can still use Spotify live, but selected results should be persisted before users rate, review, or save them.
+- Search and album pages can still use Spotify live. Album rows are created by trusted server-side write flows before inserting local user data that references them.
 
-Spotify remains the source of truth for discovery and fresh lookup. Our database stores the subset of albums Ratio has interacted with.
+Spotify remains the source of truth for discovery and fresh lookup. Our database stores the subset of albums Ratio has durable local activity for. Track lists are not stored in Postgres initially; album pages can fetch tracks live from Spotify or use a short-lived server-owned cache later if needed.
+
+When creating the first review for an album, the client only submits the Spotify album ID plus review data. The server must ensure the album row exists before inserting the review: first check Postgres, then fetch the album from Spotify if missing, then transactionally upsert the album and insert the review. Do not trust client-provided album metadata for durable writes. If Spotify lookup fails and the album row does not already exist, reject the review with a user-friendly retry message rather than creating a review that points at a missing album. If duplicate first-write lookups become painful, add a short-lived Cloudflare KV cache written and read only by server-side Spotify lookup code.
 
 ### Search
 
@@ -146,28 +148,31 @@ Cloudflare Worker compatibility is the riskiest database integration. The curren
 
 Deployment note from the initial Cloudflare rollout: a module-scoped `postgres` client failed in Workers during OAuth callback handling with `Cannot perform I/O on behalf of a different request`, surfaced by Better Auth as a failed `verification` query while parsing OAuth state. The current mitigation is to create and close the `postgres` client per auth request and to use `prepare: false` for the Supabase transaction pooler on port `6543`. If DB usage expands beyond auth, revisit this before adding shared module-level DB clients. Cloudflare Hyperdrive is a likely production-grade fix because it provides a Worker-native Postgres binding/connection proxy; another option is moving to an edge-compatible HTTP driver where possible.
 
-The ratings backend currently starts with reviews only. A review is the rating entity: one row per user per album, with an optional written body. Store the rating as `smallint` from `1` to `10`, where UI stars remain `0.5` to `5` and half-stars map cleanly by multiplying by two. The initial mutation policy is create-only: block duplicate `(userId, albumId)` submissions, add delete later, and do not expose edit/update unless the product decision changes.
+The ratings backend uses reviews as the rating entity: one row per user per album, with an optional written body. Store the rating as `smallint` from `1` to `10`, where UI stars remain `0.5` to `5` and half-stars map cleanly by multiplying by two. Review creation must ensure the referenced album exists through server-trusted metadata before inserting the review. Block duplicate `(userId, albumId)` submissions, allow deleting a review, and do not expose edit/update unless the product decision changes. Deleting the last review for an album does not delete the album row; cleanup, if ever needed, should be a separate scheduled/admin process for old unreferenced albums.
 
 ```ts
-// albums — cached Spotify metadata
-export const albums = pgTable("albums", {
-  id: text("id").primaryKey(),               // Spotify album ID
-  name: text("name").notNull(),
+// albums — compact Spotify metadata for albums with durable Ratio activity
+export const albums = pgTable("album", {
+  id: text("id").primaryKey(),                // Spotify album ID
+  title: text("title").notNull(),
   artistName: text("artist_name").notNull(),
-  artistIds: text("artist_ids").array(),     // for feed personalisation joins
+  artistIds: text("artist_ids").array().notNull(), // for feed personalisation joins
   coverUrl: text("cover_url"),
   releaseDate: text("release_date"),
-  albumType: text("album_type"),             // keep Spotify's value; product filters to album
-  spotifyUrl: text("spotify_url"),
-  cachedAt: timestamp("cached_at").defaultNow(),
-  removed: boolean("removed").default(false), // Spotify delisted flag
+  albumType: text("album_type").notNull(),    // keep Spotify's value; product filters to album
+  spotifyUrl: text("spotify_url").notNull(),
+  durationMs: integer("duration_ms"),
+  totalTracks: integer("total_tracks"),
+  cachedAt: timestamp("cached_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  removed: boolean("removed").default(false).notNull(), // Spotify delisted flag
 })
 
 // reviews — one per user per album, rating + optional written body
 export const reviews = pgTable("review", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  albumId: text("album_id").notNull(), // Spotify album ID until local album persistence is wired
+  albumId: text("album_id").notNull().references(() => albums.id), // no cascade; keep album rows after review deletion
   rating: smallint("rating").notNull(), // 1–10, UI rating 0.5–5 multiplied by two
   body: text("body"),
   createdAt: timestamp("created_at").defaultNow(),
