@@ -177,7 +177,16 @@ interface ReviewProps {
 }
 
 function Review({ children, className }: ReviewProps) {
-  return <p className={cn("mt-3 text-muted-foreground text-sm leading-relaxed", className)}>{children}</p>;
+  return (
+    <p
+      className={cn(
+        "wrap-break-word mt-3 whitespace-pre-wrap text-muted-foreground text-sm leading-relaxed",
+        className
+      )}
+    >
+      {children}
+    </p>
+  );
 }
 
 interface LikesProps {
