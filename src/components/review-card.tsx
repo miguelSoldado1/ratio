@@ -1,5 +1,5 @@
-import { Heart } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { ChevronDown, Heart } from "lucide-react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { RatingStarIcon } from "@/components/rating-star-icon";
 import { useDebounce } from "@/lib/use-debounce";
 import { abbreviateCount, cn } from "@/lib/utils";
@@ -176,16 +176,85 @@ interface ReviewProps {
   className?: string;
 }
 
+const collapsedReviewMaxHeightPx = 160;
+
 function Review({ children, className }: ReviewProps) {
+  const reviewId = useId();
+  const reviewRef = useRef<HTMLParagraphElement>(null);
+  const resizeObserverRef = useRef<ResizeObserver | null>(null);
+  const [expanded, setExpanded] = useState(false);
+  const [canToggle, setCanToggle] = useState(false);
+
+  const updateCanToggle = useCallback((review: HTMLParagraphElement) => {
+    const nextCanToggle = review.scrollHeight > collapsedReviewMaxHeightPx + 1;
+
+    setCanToggle((currentCanToggle) => (currentCanToggle === nextCanToggle ? currentCanToggle : nextCanToggle));
+  }, []);
+
+  const setReviewElement = useCallback(
+    (review: HTMLParagraphElement | null) => {
+      resizeObserverRef.current?.disconnect();
+      resizeObserverRef.current = null;
+      reviewRef.current = review;
+
+      if (!review) return;
+
+      updateCanToggle(review);
+
+      const resizeObserver = new ResizeObserver(() => {
+        if (reviewRef.current === review) {
+          updateCanToggle(review);
+        }
+      });
+
+      resizeObserver.observe(review);
+      resizeObserverRef.current = resizeObserver;
+    },
+    [updateCanToggle]
+  );
+
   return (
-    <p
-      className={cn(
-        "wrap-break-word mt-3 whitespace-pre-wrap text-muted-foreground text-sm leading-relaxed",
-        className
-      )}
-    >
-      {children}
-    </p>
+    <div className="mt-3">
+      <div className="relative">
+        <p
+          className={cn(
+            "wrap-break-word whitespace-pre-wrap text-muted-foreground text-sm leading-relaxed",
+            !expanded && "max-h-40 overflow-hidden",
+            className
+          )}
+          id={reviewId}
+          ref={setReviewElement}
+        >
+          {children}
+        </p>
+        {canToggle ? (
+          <div
+            className={cn(
+              "pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-linear-to-b from-background/0 via-background/80 to-background opacity-0 [transition:opacity_160ms_cubic-bezier(0.23,1,0.32,1)]",
+              !expanded && "opacity-100"
+            )}
+          />
+        ) : null}
+      </div>
+      {canToggle ? (
+        <button
+          aria-controls={reviewId}
+          aria-expanded={expanded}
+          className="group/review-toggle mt-2 -ml-2 inline-flex h-7 items-center gap-1 rounded-full px-2 font-semibold text-primary text-sm outline-none [transition:color_150ms_ease,background-color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] hover:bg-primary/10 hover:text-primary/90 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 active:scale-[0.97]"
+          onClick={() => setExpanded((isExpanded) => !isExpanded)}
+          type="button"
+        >
+          <span>{expanded ? "Show less" : "Show more"}</span>
+          <ChevronDown
+            aria-hidden="true"
+            className={cn(
+              "size-3.5 [transition:transform_180ms_cubic-bezier(0.23,1,0.32,1)]",
+              expanded && "rotate-180"
+            )}
+          />
+        </button>
+      ) : null}
+    </div>
   );
 }
 
