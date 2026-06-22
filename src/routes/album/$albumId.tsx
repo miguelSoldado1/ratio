@@ -79,7 +79,6 @@ function AlbumPage() {
             />
           </div>
           <RatingsPanel albumId={albumId} className="mt-2 lg:mt-8" />
-          <TrackList className="mt-8 lg:hidden" tracks={tracks} />
           <ReviewsSection albumId={albumId} className="mt-10 lg:mt-12" />
         </section>
       </div>
