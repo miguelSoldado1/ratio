@@ -3,7 +3,6 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { toast } from "sonner";
 import { ReviewCard } from "@/components/review-card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
 import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
 import { authClient } from "@/lib/auth/auth-client";
@@ -12,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { deleteReview, getAlbumReviews, setReviewLike } from "@/server/functions/review-functions";
 import { tryCatch } from "@/try-catch";
 import { DeleteReviewDialog } from "./delete-review-dialog";
+import { ReviewsSectionSkeleton } from "./reviews-section-skeleton";
 import type { InfiniteData } from "@tanstack/react-query";
 import type { AlbumReviewsPage } from "@/server/functions/review-functions";
 
@@ -155,22 +155,5 @@ function LoadingMoreReviews() {
     <div className="flex justify-center border-border/80 border-t py-6">
       <Spinner className="size-5 text-muted-foreground" />
     </div>
-  );
-}
-
-function ReviewsSectionSkeleton({ className }: { className?: string }) {
-  return (
-    <section aria-label="Loading album reviews" className={cn("border-border/80 border-t py-8", className)}>
-      <div className="flex items-center gap-3">
-        <Skeleton className="size-6 rounded-full" />
-        <Skeleton className="h-4 w-28" />
-        <Skeleton className="h-3 w-10" />
-      </div>
-      <Skeleton className="mt-4 h-4 w-20" />
-      <div className="mt-4 flex flex-col gap-2">
-        <Skeleton className="h-4 w-full max-w-2xl" />
-        <Skeleton className="h-4 w-5/6 max-w-xl" />
-      </div>
-    </section>
   );
 }

@@ -1,20 +1,8 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { RatingsPanelSkeleton } from "./ratings-panel";
+import { ReviewsSectionSkeleton } from "./reviews-section-skeleton";
 
-const RATING_BAR_SKELETONS = [
-  { height: 36, id: "rating-bar-1" },
-  { height: 58, id: "rating-bar-2" },
-  { height: 84, id: "rating-bar-3" },
-  { height: 68, id: "rating-bar-4" },
-  { height: 44, id: "rating-bar-5" },
-] as const;
-const RATING_LABEL_SKELETONS = [
-  "rating-label-1",
-  "rating-label-2",
-  "rating-label-3",
-  "rating-label-4",
-  "rating-label-5",
-];
 const TRACK_ROW_SKELETONS = [
   "track-row-1",
   "track-row-2",
@@ -44,7 +32,7 @@ export function AlbumLookupLoading({ albumId }: { albumId: string }) {
         <section className="min-w-0 pt-3 lg:pt-10">
           <DesktopAlbumHeaderSkeleton />
           <RatingsPanelSkeleton className="mt-2 lg:mt-8" />
-          <ReviewsSkeleton className="mt-10 lg:mt-12" />
+          <ReviewsSectionSkeleton className="mt-10 lg:mt-12" />
         </section>
       </div>
     </main>
@@ -88,32 +76,6 @@ function ActionSkeletons({ className }: { className?: string }) {
   );
 }
 
-function RatingsPanelSkeleton({ className }: { className?: string }) {
-  return (
-    <section aria-label="Loading album ratings" className={cn("border-border border-t py-5", className)}>
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
-        <Skeleton className="h-6 w-28" />
-        <Skeleton className="h-4 w-20" />
-      </div>
-      <div className="grid h-32 grid-cols-5 items-end gap-3 border-border border-b pb-2 sm:h-40 sm:gap-5">
-        {RATING_BAR_SKELETONS.map((bar) => (
-          <div className="flex h-full min-w-0 items-end" key={bar.id}>
-            <Skeleton className="w-full rounded-t-sm rounded-b-none" style={{ height: `${bar.height}%` }} />
-          </div>
-        ))}
-      </div>
-      <div className="grid grid-cols-5 gap-3 pt-2 sm:gap-5">
-        {RATING_LABEL_SKELETONS.map((labelId) => (
-          <div className="flex min-w-0 flex-col items-center gap-2" key={labelId}>
-            <Skeleton className="h-3 w-3" />
-            <Skeleton className="h-2 w-7" />
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function TrackListSkeleton({ className }: { className?: string }) {
   return (
     <section className={cn("pt-5", className)}>
@@ -126,25 +88,6 @@ function TrackListSkeleton({ className }: { className?: string }) {
             <Skeleton className="h-4 w-8" />
           </div>
         ))}
-      </div>
-    </section>
-  );
-}
-
-function ReviewsSkeleton({ className }: { className?: string }) {
-  return (
-    <section className={cn("border-border/80 border-t py-8", className)}>
-      <div className="flex items-center gap-3">
-        <Skeleton className="size-10 rounded-full" />
-        <div className="flex flex-col gap-2">
-          <Skeleton className="h-4 w-28" />
-          <Skeleton className="h-3 w-20" />
-        </div>
-      </div>
-      <div className="mt-5 flex flex-col gap-2">
-        <Skeleton className="h-4 w-full max-w-2xl" />
-        <Skeleton className="h-4 w-5/6 max-w-xl" />
-        <Skeleton className="h-4 w-2/3 max-w-lg" />
       </div>
     </section>
   );

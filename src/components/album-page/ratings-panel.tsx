@@ -78,7 +78,7 @@ export function RatingsPanel({ albumId, className }: RatingsPanelProps) {
   );
 }
 
-function RatingsPanelSkeleton({ className }: { className?: string }) {
+export function RatingsPanelSkeleton({ className }: { className?: string }) {
   return (
     <section aria-label="Loading album ratings" className={cn("border-border border-t py-5", className)}>
       <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
