@@ -78,7 +78,6 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
 
     await queryClient.invalidateQueries({ queryKey: albumQueryKeys.review(albumId) });
 
-    toast.success("Success", { description: "Review saved" });
     setOpen(false);
     setReviewForm({ body: "", rating: 0 });
   }
