@@ -1,13 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { useState } from "react";
 import { toast } from "sonner";
 import { ReviewCard } from "@/components/review-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { authClient } from "@/lib/auth/auth-client";
 import { albumQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { cn } from "@/lib/utils";
-import { getAlbumReviews, setReviewLike } from "@/server/functions/review-functions";
+import { deleteReview, getAlbumReviews, setReviewLike } from "@/server/functions/review-functions";
 import { tryCatch } from "@/try-catch";
+import { DeleteReviewDialog } from "./delete-review-dialog";
 
 interface ReviewsSectionProps {
   albumId: string;
@@ -19,6 +21,7 @@ export function ReviewsSection({ albumId, className }: ReviewsSectionProps) {
   const session = authClient.useSession();
   const userId = session.data?.user.id;
   const hasSession = Boolean(userId);
+  const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
 
   const getAlbumReviewsFn = useServerFn(getAlbumReviews);
   const albumReviewsQuery = useQuery({
@@ -28,6 +31,9 @@ export function ReviewsSection({ albumId, className }: ReviewsSectionProps) {
 
   const setReviewLikeFn = useServerFn(setReviewLike);
   const setReviewLikeMutation = useMutation({ mutationFn: setReviewLikeFn });
+
+  const deleteReviewFn = useServerFn(deleteReview);
+  const deleteReviewMutation = useMutation({ mutationFn: deleteReviewFn });
 
   async function handleReviewLikeToggle(reviewId: string, liked: boolean) {
     if (!hasSession) {
@@ -49,6 +55,22 @@ export function ReviewsSection({ albumId, className }: ReviewsSectionProps) {
           : review
       )
     );
+  }
+
+  async function handleReviewDelete(reviewId: string) {
+    setDeletingReviewId(reviewId);
+    const { error } = await tryCatch(deleteReviewMutation.mutateAsync({ data: { reviewId } }));
+    setDeletingReviewId(null);
+
+    if (error) {
+      toast.error("Error", { description: error instanceof Error ? error.message : "Could not delete review" });
+      return false;
+    }
+
+    await queryClient.invalidateQueries({ queryKey: albumQueryKeys.review(albumId) });
+    toast.success("Success", { description: "Review deleted" });
+
+    return true;
   }
 
   if (albumReviewsQuery.isPending) {
@@ -89,6 +111,13 @@ export function ReviewsSection({ albumId, className }: ReviewsSectionProps) {
               liked={review.liked}
               onToggle={hasSession ? (liked) => handleReviewLikeToggle(review.id, liked) : undefined}
             />
+            {review.canDelete ? (
+              <DeleteReviewDialog
+                className="ml-auto"
+                isDeleting={deletingReviewId === review.id}
+                onDelete={() => handleReviewDelete(review.id)}
+              />
+            ) : null}
           </ReviewCard.Footer>
         </ReviewCard.Root>
       ))}

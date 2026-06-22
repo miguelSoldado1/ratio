@@ -69,6 +69,9 @@ function Header({ user, createdAt, href, className }: HeaderProps) {
   const avatarClass =
     "flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted font-medium text-[11px] text-muted-foreground uppercase";
   const usernameClass = "font-medium text-foreground text-sm";
+  const identityClass = "flex min-w-0 items-center gap-2";
+  const identityLinkClass =
+    "group -ml-1.5 h-8 rounded-full px-1.5 pr-2.5 [transition:color_150ms_ease,background-color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] hover:bg-primary/10 active:scale-[0.98]";
   const avatarContent = user.avatarUrl ? (
     <img
       alt={user.name}
@@ -83,20 +86,19 @@ function Header({ user, createdAt, href, className }: HeaderProps) {
   );
 
   return (
-    <div className={cn("mb-3 flex items-center gap-2.5", className)}>
+    <div className={cn("mb-3 flex items-center gap-2", className)}>
       {href ? (
-        <a className={cn(avatarClass, "transition-opacity hover:opacity-80")} href={href}>
-          {avatarContent}
+        <a className={cn(identityClass, identityLinkClass)} href={href}>
+          <span className={avatarClass}>{avatarContent}</span>
+          <span className={cn(usernameClass, "truncate transition-colors group-hover:text-primary")}>
+            {user.username}
+          </span>
         </a>
       ) : (
-        <div className={avatarClass}>{avatarContent}</div>
-      )}
-      {href ? (
-        <a className={cn(usernameClass, "transition-colors hover:text-primary")} href={href}>
-          {user.username}
-        </a>
-      ) : (
-        <span className={usernameClass}>{user.username}</span>
+        <div className={identityClass}>
+          <div className={avatarClass}>{avatarContent}</div>
+          <span className={usernameClass}>{user.username}</span>
+        </div>
       )}
       <span className="text-muted-foreground text-xs">{relativeTime(createdAt)}</span>
     </div>
@@ -216,7 +218,7 @@ function getLikeCountClass({ disabled, liked }: { disabled: boolean; liked: bool
 function getLikeButtonClass({ disabled }: { disabled: boolean }) {
   if (disabled) return "cursor-default";
 
-  return "cursor-pointer active:scale-[0.97]";
+  return "cursor-pointer hover:bg-primary/10 active:scale-[0.97]";
 }
 
 function useDebouncedOptimisticLike({ count, liked, onToggle }: UseDebouncedOptimisticLikeParams) {
@@ -374,7 +376,7 @@ function Likes({ count, disabled = false, liked = false, onToggle, className }: 
       aria-label={like.liked ? "Unlike review" : "Like review"}
       aria-pressed={like.liked}
       className={cn(
-        "group flex items-center gap-1.5 [transition:transform_130ms_cubic-bezier(0.23,1,0.32,1)]",
+        "group -ml-2 flex h-8 items-center gap-1.5 rounded-full px-2 [transition:color_150ms_ease,background-color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)]",
         getLikeButtonClass({ disabled }),
         className
       )}

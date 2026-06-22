@@ -19,6 +19,10 @@ const reviewLikeSchema = z.object({
   reviewId: z.uuid(),
 });
 
+const deleteReviewSchema = z.object({
+  reviewId: z.uuid(),
+});
+
 const createReviewSchema = z.object({
   albumId: z.string().trim().min(1).max(64),
   body: z.string().trim().max(2000).optional(),
@@ -33,11 +37,13 @@ async function getAlbumReviewsHandler({ albumId }: z.infer<typeof albumIdSchema>
     const likedByViewer = viewerUserId
       ? sql<boolean>`exists(select 1 from ${schema.reviewLikes} where ${schema.reviewLikes.reviewId} = ${schema.reviews.id} and ${schema.reviewLikes.userId} = ${viewerUserId})`
       : sql<boolean>`false`;
+    const canDelete = viewerUserId ? sql<boolean>`${schema.reviews.userId} = ${viewerUserId}` : sql<boolean>`false`;
 
     const albumReviews = await db
       .select({
         liked: likedByViewer,
         likes: sql<number>`(select count(*)::int from ${schema.reviewLikes} where ${schema.reviewLikes.reviewId} = ${schema.reviews.id})`,
+        canDelete,
         review: getTableColumns(schema.reviews),
         user: {
           avatarUrl: schema.user.image,
@@ -110,6 +116,19 @@ async function createReviewHandler(data: z.infer<typeof createReviewSchema>, con
   return review;
 }
 
+async function deleteReviewHandler(data: z.infer<typeof deleteReviewSchema>, context: AuthenticatedContext) {
+  const [deletedReview] = await context.db
+    .delete(schema.reviews)
+    .where(and(eq(schema.reviews.id, data.reviewId), eq(schema.reviews.userId, context.user.id)))
+    .returning({ albumId: schema.reviews.albumId, id: schema.reviews.id });
+
+  if (!deletedReview) {
+    throw new Error("Review not found");
+  }
+
+  return deletedReview;
+}
+
 async function setReviewLikeHandler(data: z.infer<typeof reviewLikeSchema>, context: AuthenticatedContext) {
   if (data.liked) {
     await context.db
@@ -135,6 +154,11 @@ export const createReview = createServerFn({ method: "POST" })
   .validator(createReviewSchema)
   .handler(({ context, data }) => createReviewHandler(data, context));
 
+export const deleteReview = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(deleteReviewSchema)
+  .handler(({ context, data }) => deleteReviewHandler(data, context));
+
 export const getAlbumReviews = createServerFn()
   .validator(albumIdSchema)
   .handler(({ data }) => getAlbumReviewsHandler(data));
@@ -156,6 +180,7 @@ export const setReviewLike = createServerFn({ method: "POST" })
 // --- Helpers ---
 
 interface AlbumReviewRow {
+  canDelete: boolean;
   liked: boolean;
   likes: number;
   review: typeof schema.reviews.$inferSelect;
@@ -210,8 +235,9 @@ function mapAlbumRatingSummary(summary: AlbumRatingSummaryRow | undefined, distr
   };
 }
 
-function mapAlbumReview({ liked, likes, review, user }: AlbumReviewRow) {
+function mapAlbumReview({ canDelete, liked, likes, review, user }: AlbumReviewRow) {
   return {
+    canDelete,
     id: review.id,
     liked,
     likes,
