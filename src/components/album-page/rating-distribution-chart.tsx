@@ -1,4 +1,5 @@
 import { abbreviateCount, cn } from "@/lib/utils";
+import type { CSSProperties } from "react";
 import type { getAlbumRatingSummary } from "@/server/functions/review-functions";
 
 interface RatingDistributionChartProps {
@@ -12,19 +13,22 @@ export function RatingDistributionChart({ ratingDistribution }: RatingDistributi
   return (
     <div aria-label={hasRatings ? "Ratings distribution from 1 to 5" : "No ratings distribution yet"} role="img">
       <div className="grid h-32 grid-cols-5 items-end gap-3 border-border border-b pb-2 sm:h-40 sm:gap-5">
-        {ratingDistribution.map((item) => (
-          <div className="flex h-full min-w-0 items-end" key={item.rating}>
-            <div
-              className={
-                hasRatings
-                  ? "w-full origin-bottom rounded-t-sm bg-primary transition-[background-color,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none [@media(hover:hover)_and_(pointer:fine)]:hover:scale-y-[1.03] [@media(hover:hover)_and_(pointer:fine)]:hover:bg-primary/80"
-                  : "h-1 w-full rounded-t-sm bg-muted"
-              }
-              style={hasRatings ? { height: `${Math.max((item.count / maxCount) * 100, 4)}%` } : undefined}
-              title={hasRatings ? `${abbreviateCount(item.count)} ratings at ${item.rating}` : undefined}
-            />
-          </div>
-        ))}
+        {ratingDistribution.map((item) => {
+          const barScale = hasRatings ? Math.max(item.count / maxCount, 0.04) : 0.025;
+
+          return (
+            <div className="flex h-full min-w-0 items-end" key={item.rating}>
+              <div
+                className={cn(
+                  "transform-[scaleY(var(--rating-bar-scale))] starting:transform-[scaleY(0.025)] h-full w-full origin-bottom rounded-t-sm transition-[background-color,transform] duration-220 ease-[cubic-bezier(0.77,0,0.175,1)] motion-reduce:transition-none",
+                  hasRatings ? "bg-primary [@media(hover:hover)_and_(pointer:fine)]:hover:bg-primary/80" : "bg-muted"
+                )}
+                style={{ "--rating-bar-scale": barScale } as CSSProperties}
+                title={hasRatings ? `${abbreviateCount(item.count)} ratings at ${item.rating}` : undefined}
+              />
+            </div>
+          );
+        })}
       </div>
       <div className="grid grid-cols-5 gap-3 pt-2 sm:gap-5">
         {ratingDistribution.map((item) => (
