@@ -5,7 +5,7 @@ Letterboxd for albums, built with TanStack Start, Cloudflare Workers, Supabase P
 ## Planning Docs
 
 - [Product](docs/product.md): core concept, auth tiers, routes, features, product design rules, and edge cases.
-- [Architecture](docs/architecture.md): stack, route organization, TanStack data-fetching conventions, and client mutation handling.
+- [Architecture](docs/architecture.md): stack and major infrastructure choices.
 - [Database](docs/database.md): Drizzle schema ownership, migration workflow, Better Auth schema changes, Worker compatibility, and table design.
 - [Spotify](docs/spotify.md): attribution, login/linking behavior, token strategy, album caching, and search.
 - [Roadmap](docs/roadmap.md): build order, feed algorithm, rating display, and open decisions.
