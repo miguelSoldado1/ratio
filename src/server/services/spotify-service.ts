@@ -209,19 +209,28 @@ function getAlbumSearchResults(searchResults: SpotifyAlbum[]) {
   for (const album of searchResults) {
     if (album.album_type !== ALBUM_TYPE) continue;
 
-    const key = [
-      album.name.trim().toLowerCase(),
-      album.artists.map((artist) => artist.name.trim().toLowerCase()).join("|"),
-      album.release_date.slice(0, 4),
-    ].join("::");
-
-    const currentAlbum = albumsByKey.get(key);
-    if (!currentAlbum || album.id.localeCompare(currentAlbum.id) < 0) {
-      albumsByKey.set(key, album);
-    }
+    const key = getAlbumSearchDedupeKey(album);
+    if (!albumsByKey.has(key)) albumsByKey.set(key, album);
   }
 
   return Array.from(albumsByKey.values());
+}
+
+function getAlbumSearchDedupeKey(album: SpotifyAlbum) {
+  return [
+    normalizeAlbumSearchText(removeAdvisoryEditionMarkers(album.name)),
+    album.artists.map((artist) => normalizeAlbumSearchText(artist.name)).join("|"),
+    album.release_date,
+    album.total_tracks,
+  ].join("::");
+}
+
+function removeAdvisoryEditionMarkers(value: string) {
+  return value.replace(/\s*[([{"']\s*(?:explicit|clean|edited|clean version|explicit version)\s*[)\]}"']\s*/gi, " ");
+}
+
+function normalizeAlbumSearchText(value: string) {
+  return value.trim().toLowerCase().replace(/\s+/g, " ");
 }
 
 // Images
