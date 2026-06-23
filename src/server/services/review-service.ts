@@ -3,7 +3,7 @@ import { and, count, desc, eq, getTableColumns, lt, or, sql } from "drizzle-orm"
 import z from "zod";
 import { createAuth } from "@/lib/auth";
 import { createDbClient } from "@/lib/db";
-import { reviewLikes, reviews, user } from "@/lib/db/schema";
+import { albums, reviewLikes, reviews, user } from "@/lib/db/schema";
 import { ensureAlbumExistsForWrite, getMissingAlbumMetadataForWrite } from "./album-service";
 import type { AuthenticatedContext } from "../auth-middleware";
 
@@ -32,12 +32,24 @@ export interface AlbumReviewsPage {
   reviews: ReturnType<typeof mapAlbumReview>[];
 }
 
+export interface UserReviewsPage {
+  nextCursor: string | null;
+  reviewCount: number;
+  reviews: ReturnType<typeof mapUserReview>[];
+  user: ReturnType<typeof mapUserProfile>;
+}
+
 export interface AlbumIdInput {
   albumId: string;
 }
 
 export interface AlbumReviewsInput extends AlbumIdInput {
   cursor?: string;
+}
+
+export interface UserReviewsInput {
+  cursor?: string;
+  username: string;
 }
 
 export interface CreateReviewInput extends AlbumIdInput {
@@ -100,6 +112,72 @@ export async function getAlbumReviewsService(data: AlbumReviewsInput): Promise<A
             })
           : null,
       reviews: pageRows.map(mapAlbumReview),
+    };
+  } finally {
+    await client.end({ timeout: 1 }).catch(() => undefined);
+  }
+}
+
+export async function getUserReviewsService(data: UserReviewsInput): Promise<UserReviewsPage> {
+  const { client, db } = createDbClient();
+
+  try {
+    const [profile] = await db
+      .select({
+        avatarUrl: user.image,
+        displayUsername: user.displayUsername,
+        id: user.id,
+        name: user.name,
+        username: user.username,
+      })
+      .from(user)
+      .where(eq(user.username, data.username))
+      .limit(1);
+
+    if (!profile) {
+      throw new Error("User not found");
+    }
+
+    const viewerUserId = await getCurrentUserId(db);
+    const likedByViewer = viewerUserId
+      ? sql<boolean>`exists(select 1 from ${reviewLikes} where ${reviewLikes.reviewId} = ${reviews.id} and ${reviewLikes.userId} = ${viewerUserId})`
+      : sql<boolean>`false`;
+    const cursor = data.cursor ? decodeAlbumReviewsCursor(data.cursor) : undefined;
+    const cursorFilter = cursor ? getAlbumReviewsCursorFilter(cursor) : undefined;
+
+    const [reviewCountRow] = await db
+      .select({ total: count(reviews.id) })
+      .from(reviews)
+      .where(eq(reviews.userId, profile.id));
+
+    const userReviews = await db
+      .select({
+        album: getTableColumns(albums),
+        liked: likedByViewer,
+        likes: sql<number>`(select count(*)::int from ${reviewLikes} where ${reviewLikes.reviewId} = ${reviews.id})`,
+        review: getTableColumns(reviews),
+      })
+      .from(reviews)
+      .innerJoin(albums, eq(reviews.albumId, albums.id))
+      .where(cursorFilter ? and(eq(reviews.userId, profile.id), cursorFilter) : eq(reviews.userId, profile.id))
+      .orderBy(desc(reviews.createdAt), desc(reviews.id))
+      .limit(albumReviewsPageSize + 1);
+
+    const hasNextPage = userReviews.length > albumReviewsPageSize;
+    const pageRows = hasNextPage ? userReviews.slice(0, albumReviewsPageSize) : userReviews;
+    const lastReview = pageRows.at(-1)?.review;
+
+    return {
+      nextCursor:
+        hasNextPage && lastReview
+          ? encodeAlbumReviewsCursor({
+              createdAt: lastReview.createdAt.toISOString(),
+              id: lastReview.id,
+            })
+          : null,
+      reviewCount: reviewCountRow?.total ?? 0,
+      reviews: pageRows.map((row) => mapUserReview(row, profile)),
+      user: mapUserProfile(profile),
     };
   } finally {
     await client.end({ timeout: 1 }).catch(() => undefined);
@@ -213,6 +291,21 @@ interface AlbumReviewRow {
   };
 }
 
+interface UserProfileRow {
+  avatarUrl: string | null;
+  displayUsername: string | null;
+  id: string;
+  name: string;
+  username: string | null;
+}
+
+interface UserReviewRow {
+  album: typeof albums.$inferSelect;
+  liked: boolean;
+  likes: number;
+  review: typeof reviews.$inferSelect;
+}
+
 interface AlbumRatingSummaryRow {
   average: number | null;
   total: number;
@@ -272,6 +365,37 @@ function mapAlbumReview({ canDelete, liked, likes, review, user }: AlbumReviewRo
       avatarUrl: user.avatarUrl ?? undefined,
       name: user.displayUsername ?? user.name,
       username: user.username ?? user.id,
+    },
+  };
+}
+
+function mapUserProfile(userProfile: UserProfileRow) {
+  return {
+    avatarUrl: userProfile.avatarUrl ?? undefined,
+    displayName: userProfile.displayUsername ?? userProfile.name,
+    username: userProfile.username ?? userProfile.id,
+  };
+}
+
+function mapUserReview({ album, liked, likes, review }: UserReviewRow, userProfile: UserProfileRow) {
+  return {
+    album: {
+      artist: album.artistNames.join(", "),
+      coverUrl: album.coverUrl ?? undefined,
+      id: album.id,
+      title: album.title,
+      year: String(album.releaseYear),
+    },
+    createdAt: review.createdAt,
+    id: review.id,
+    liked,
+    likes,
+    rating: review.rating / 2,
+    review: review.body ?? undefined,
+    user: {
+      avatarUrl: userProfile.avatarUrl ?? undefined,
+      name: userProfile.displayUsername ?? userProfile.name,
+      username: userProfile.username ?? userProfile.id,
     },
   };
 }

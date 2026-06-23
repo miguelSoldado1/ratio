@@ -5,14 +5,14 @@ import { toast } from "sonner";
 import { ReviewCard } from "@/components/review-card";
 import { Spinner } from "@/components/ui/spinner";
 import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
+import { useReviewLikeToggle } from "@/hooks/use-review-like-toggle";
 import { authClient } from "@/lib/auth/auth-client";
 import { albumQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { cn } from "@/lib/utils";
-import { deleteReview, getAlbumReviews, setReviewLike } from "@/server/functions/review-functions";
+import { deleteReview, getAlbumReviews } from "@/server/functions/review-functions";
 import { tryCatch } from "@/try-catch";
 import { DeleteReviewDialog } from "./delete-review-dialog";
 import { ReviewsSectionSkeleton } from "./reviews-section-skeleton";
-import type { InfiniteData } from "@tanstack/react-query";
 import type { AlbumReviewsPage } from "@/server/services/review-service";
 
 interface ReviewsSectionProps {
@@ -26,6 +26,7 @@ export function ReviewsSection({ albumId, className }: ReviewsSectionProps) {
   const userId = session.data?.user.id;
   const hasSession = Boolean(userId);
   const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
+  const reviewsQueryKey = albumQueryKeys.reviews(albumId, userId);
 
   const getAlbumReviewsFn = useServerFn(getAlbumReviews);
   const albumReviewsQuery = useInfiniteQuery({
@@ -33,11 +34,13 @@ export function ReviewsSection({ albumId, className }: ReviewsSectionProps) {
     initialPageParam: null,
     queryFn: ({ pageParam }: { pageParam: string | null }) =>
       getAlbumReviewsFn({ data: { albumId, cursor: pageParam ?? undefined } }),
-    queryKey: albumQueryKeys.reviews(albumId, userId),
+    queryKey: reviewsQueryKey,
   });
 
-  const setReviewLikeFn = useServerFn(setReviewLike);
-  const setReviewLikeMutation = useMutation({ mutationFn: setReviewLikeFn });
+  const handleReviewLikeToggle = useReviewLikeToggle<AlbumReviewsPage>({
+    enabled: hasSession,
+    queryKey: reviewsQueryKey,
+  });
 
   const deleteReviewFn = useServerFn(deleteReview);
   const deleteReviewMutation = useMutation({ mutationFn: deleteReviewFn });
@@ -49,36 +52,6 @@ export function ReviewsSection({ albumId, className }: ReviewsSectionProps) {
     isLoading: isFetchingNextPage,
     onLoadMore: fetchNextPage,
   });
-
-  async function handleReviewLikeToggle(reviewId: string, liked: boolean) {
-    if (!hasSession) {
-      return false;
-    }
-
-    const { data: updatedReview, error } = await tryCatch(
-      setReviewLikeMutation.mutateAsync({ data: { liked, reviewId } })
-    );
-    if (error) {
-      toast.error("Error", { description: error instanceof Error ? error.message : "Could not update review like" });
-      return false;
-    }
-
-    queryClient.setQueryData<InfiniteData<AlbumReviewsPage>>(albumQueryKeys.reviews(albumId, userId), (data) => {
-      if (!data) return data;
-
-      return {
-        ...data,
-        pages: data.pages.map((page) => ({
-          ...page,
-          reviews: page.reviews.map((review) =>
-            review.id === updatedReview.reviewId
-              ? { ...review, liked: updatedReview.liked, likes: updatedReview.likes }
-              : review
-          ),
-        })),
-      };
-    });
-  }
 
   async function handleReviewDelete(reviewId: string) {
     setDeletingReviewId(reviewId);

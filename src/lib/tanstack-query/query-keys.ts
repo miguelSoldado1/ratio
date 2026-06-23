@@ -6,3 +6,8 @@ export const albumQueryKeys = {
   reviews: (albumId: string, userId?: string) => [...albumQueryKeys.review(albumId), "list", userId] as const,
   search: (query: string) => ["album-search", query] as const,
 };
+
+export const userQueryKeys = {
+  profile: (username: string) => ["user", username, "profile"] as const,
+  reviews: (username: string, userId?: string) => [...userQueryKeys.profile(username), "reviews", userId] as const,
+};

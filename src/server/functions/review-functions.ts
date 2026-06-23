@@ -13,6 +13,11 @@ const albumReviewsSchema = albumIdSchema.extend({
   cursor: z.string().trim().min(1).optional(),
 });
 
+const userReviewsSchema = z.object({
+  cursor: z.string().trim().min(1).optional(),
+  username: z.string().trim().min(1).max(64),
+});
+
 const reviewLikeSchema = z.object({
   liked: z.boolean(),
   reviewId: z.uuid(),
@@ -47,6 +52,10 @@ export const getAlbumReviews = createServerFn()
 export const getAlbumRatingSummary = createServerFn()
   .validator(albumIdSchema)
   .handler(({ data }) => reviewService.getAlbumRatingSummaryService(data));
+
+export const getUserReviews = createServerFn()
+  .validator(userReviewsSchema)
+  .handler(({ data }) => reviewService.getUserReviewsService(data));
 
 export const hasMyAlbumReview = createServerFn()
   .middleware([authMiddleware])
