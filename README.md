@@ -1,23 +1,35 @@
-# TanStack Start + shadcn/ui
+# Ratio
 
-This is a template for a new TanStack Start project with React, TypeScript, and shadcn/ui.
+Letterboxd for albums, built with TanStack Start, Cloudflare Workers, Supabase Postgres, Drizzle, Better Auth, and the Spotify Web API.
 
-## Adding components
+## Planning Docs
 
-To add components to your app, run the following command:
+- [Product](docs/product.md): core concept, auth tiers, routes, features, product design rules, and edge cases.
+- [Architecture](docs/architecture.md): stack, route organization, TanStack data-fetching conventions, and client mutation handling.
+- [Database](docs/database.md): Drizzle schema ownership, migration workflow, Better Auth schema changes, Worker compatibility, and table design.
+- [Spotify](docs/spotify.md): attribution, login/linking behavior, token strategy, album caching, and search.
+- [Roadmap](docs/roadmap.md): build order, feed algorithm, rating display, and open decisions.
 
-```bash
-npx shadcn@latest add button
+## Development
+
+Use `.env` for local values such as `DATABASE_URL`, `BETTER_AUTH_URL`, and OAuth client credentials.
+
+```sh
+pnpm install
+pnpm run dev
 ```
 
-This will place the ui components in the `components` directory.
+Use `pnpm run dev:cf` when you want to exercise the Cloudflare runtime locally.
 
-## Using components
+## Useful Commands
 
-To use the components in your app, import them as follows:
-
-```tsx
-import { Button } from "@/components/ui/button";
+```sh
+pnpm run dev
+pnpm run dev:cf
+pnpm run build
+pnpm run typecheck
+pnpm run check
+pnpm test
 ```
 
 ## Cloudflare deployment
@@ -31,5 +43,3 @@ This app is configured for Cloudflare Workers through the Cloudflare Vite plugin
 5. Set non-secret production values, such as `BETTER_AUTH_URL`, as Wrangler vars or secrets.
 6. Run `pnpm run build` to validate the Worker bundle.
 7. Deploy with `pnpm run deploy`.
-
-For local development, keep using `.env` with `DATABASE_URL`, `BETTER_AUTH_URL`, and the OAuth client values. Use `pnpm run dev` for normal Vite development or `pnpm run dev:cf` when you want to exercise the Cloudflare runtime locally.
