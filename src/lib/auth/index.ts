@@ -32,7 +32,7 @@ export function createAuth(db: Db) {
           before: (data, context) => {
             if (context?.path !== "/update-user") return Promise.resolve();
 
-            if ("image" in data || "avatarObjectKey" in data) {
+            if (data.image !== undefined || "avatarObjectKey" in data) {
               throw new APIError("BAD_REQUEST", {
                 message: "Profile photo must be updated through avatar upload.",
               });
