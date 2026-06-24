@@ -1,4 +1,4 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { ProfileHeader, ProfileHeaderSkeleton } from "@/components/profile/profile-header";
@@ -7,7 +7,7 @@ import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
 import { useReviewLikeToggle } from "@/hooks/use-review-like-toggle";
 import { authClient } from "@/lib/auth/auth-client";
 import { userQueryKeys } from "@/lib/tanstack-query/query-keys";
-import { getUserReviews } from "@/server/functions/review-functions";
+import { getUserProfile, getUserReviews } from "@/server/functions/review-functions";
 import type { UserReviewsPage } from "@/server/services/review-service";
 
 export const Route = createFileRoute("/user/$username")({
@@ -20,14 +20,24 @@ function UserPage() {
   const viewerUserId = session.data?.user.id;
   const viewerUsername = session.data?.user.username;
   const hasSession = Boolean(viewerUserId);
-  const reviewsQueryKey = userQueryKeys.reviews(username, viewerUserId);
 
+  const getUserProfileFn = useServerFn(getUserProfile);
   const getUserReviewsFn = useServerFn(getUserReviews);
+  const userProfileQuery = useQuery({
+    queryFn: () => getUserProfileFn({ data: { username } }),
+    queryKey: userQueryKeys.profile(username),
+  });
+
+  const profile = userProfileQuery.data?.user;
+  const reviewsQueryKey = profile
+    ? userQueryKeys.reviews(profile.id, viewerUserId)
+    : userQueryKeys.reviews("", viewerUserId);
   const userReviewsQuery = useInfiniteQuery({
+    enabled: Boolean(profile),
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     initialPageParam: null,
     queryFn: ({ pageParam }: { pageParam: string | null }) =>
-      getUserReviewsFn({ data: { cursor: pageParam ?? undefined, username } }),
+      getUserReviewsFn({ data: { cursor: pageParam ?? undefined, userId: profile?.id ?? "" } }),
     queryKey: reviewsQueryKey,
   });
 
@@ -36,8 +46,6 @@ function UserPage() {
     queryKey: reviewsQueryKey,
   });
 
-  const firstPage = userReviewsQuery.data?.pages[0];
-  const profile = firstPage?.user;
   const reviews = userReviewsQuery.data?.pages.flatMap((page) => page.reviews) ?? [];
   const { fetchNextPage, hasNextPage, isFetchNextPageError, isFetchingNextPage } = userReviewsQuery;
   const loadMoreRef = useLoadMoreOnIntersect({
@@ -46,7 +54,7 @@ function UserPage() {
     onLoadMore: fetchNextPage,
   });
 
-  if (userReviewsQuery.isPending) {
+  if (userProfileQuery.isPending || (profile && userReviewsQuery.isPending)) {
     return (
       <main className="min-h-screen bg-background text-foreground">
         <div className="mx-auto flex w-full max-w-375 flex-col gap-8 px-5 py-8 lg:px-10 lg:py-12 xl:px-14 2xl:px-20">
@@ -57,7 +65,7 @@ function UserPage() {
     );
   }
 
-  if (userReviewsQuery.isError || !profile) {
+  if (userProfileQuery.isError || userReviewsQuery.isError || !profile) {
     return (
       <main className="min-h-screen bg-background text-foreground">
         <div className="mx-auto w-full max-w-375 px-5 py-12 lg:px-10 xl:px-14 2xl:px-20">
@@ -75,7 +83,7 @@ function UserPage() {
           avatarUrl={profile.avatarUrl}
           canEdit={viewerUsername === profile.username}
           displayName={profile.displayName}
-          reviewCount={firstPage.reviewCount}
+          reviewCount={userProfileQuery.data.reviewCount}
           username={profile.username}
         />
         <ProfileReviewsSection
@@ -84,6 +92,7 @@ function UserPage() {
           isFetchingNextPage={isFetchingNextPage}
           loadMoreRef={loadMoreRef}
           onReviewLikeToggle={handleReviewLikeToggle}
+          profileUser={profile}
           reviews={reviews}
         />
       </div>

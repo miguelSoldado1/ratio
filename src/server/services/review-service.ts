@@ -34,8 +34,11 @@ export interface AlbumReviewsPage {
 
 export interface UserReviewsPage {
   nextCursor: string | null;
-  reviewCount: number;
   reviews: ReturnType<typeof mapUserReview>[];
+}
+
+export interface UserProfile {
+  reviewCount: number;
   user: ReturnType<typeof mapUserProfile>;
 }
 
@@ -49,6 +52,10 @@ export interface AlbumReviewsInput extends AlbumIdInput {
 
 export interface UserReviewsInput {
   cursor?: string;
+  userId: string;
+}
+
+export interface UserProfileInput {
   username: string;
 }
 
@@ -118,7 +125,7 @@ export async function getAlbumReviewsService(data: AlbumReviewsInput): Promise<A
   }
 }
 
-export async function getUserReviewsService(data: UserReviewsInput): Promise<UserReviewsPage> {
+export async function getUserProfileService(data: UserProfileInput): Promise<UserProfile> {
   const { client, db } = createDbClient();
 
   try {
@@ -138,17 +145,30 @@ export async function getUserReviewsService(data: UserReviewsInput): Promise<Use
       throw new Error("User not found");
     }
 
+    const [reviewCountRow] = await db
+      .select({ total: count(reviews.id) })
+      .from(reviews)
+      .where(eq(reviews.userId, profile.id));
+
+    return {
+      reviewCount: reviewCountRow?.total ?? 0,
+      user: mapUserProfile(profile),
+    };
+  } finally {
+    await client.end({ timeout: 1 }).catch(() => undefined);
+  }
+}
+
+export async function getUserReviewsService(data: UserReviewsInput): Promise<UserReviewsPage> {
+  const { client, db } = createDbClient();
+
+  try {
     const viewerUserId = await getCurrentUserId(db);
     const likedByViewer = viewerUserId
       ? sql<boolean>`exists(select 1 from ${reviewLikes} where ${reviewLikes.reviewId} = ${reviews.id} and ${reviewLikes.userId} = ${viewerUserId})`
       : sql<boolean>`false`;
     const cursor = data.cursor ? decodeAlbumReviewsCursor(data.cursor) : undefined;
     const cursorFilter = cursor ? getAlbumReviewsCursorFilter(cursor) : undefined;
-
-    const [reviewCountRow] = await db
-      .select({ total: count(reviews.id) })
-      .from(reviews)
-      .where(eq(reviews.userId, profile.id));
 
     const userReviews = await db
       .select({
@@ -159,7 +179,7 @@ export async function getUserReviewsService(data: UserReviewsInput): Promise<Use
       })
       .from(reviews)
       .innerJoin(albums, eq(reviews.albumId, albums.id))
-      .where(cursorFilter ? and(eq(reviews.userId, profile.id), cursorFilter) : eq(reviews.userId, profile.id))
+      .where(cursorFilter ? and(eq(reviews.userId, data.userId), cursorFilter) : eq(reviews.userId, data.userId))
       .orderBy(desc(reviews.createdAt), desc(reviews.id))
       .limit(albumReviewsPageSize + 1);
 
@@ -175,9 +195,7 @@ export async function getUserReviewsService(data: UserReviewsInput): Promise<Use
               id: lastReview.id,
             })
           : null,
-      reviewCount: reviewCountRow?.total ?? 0,
-      reviews: pageRows.map((row) => mapUserReview(row, profile)),
-      user: mapUserProfile(profile),
+      reviews: pageRows.map(mapUserReview),
     };
   } finally {
     await client.end({ timeout: 1 }).catch(() => undefined);
@@ -373,11 +391,12 @@ function mapUserProfile(userProfile: UserProfileRow) {
   return {
     avatarUrl: userProfile.avatarUrl ?? undefined,
     displayName: userProfile.displayUsername ?? userProfile.name,
+    id: userProfile.id,
     username: userProfile.username ?? userProfile.id,
   };
 }
 
-function mapUserReview({ album, liked, likes, review }: UserReviewRow, userProfile: UserProfileRow) {
+function mapUserReview({ album, liked, likes, review }: UserReviewRow) {
   return {
     album: {
       artist: album.artistNames.join(", "),
@@ -392,11 +411,6 @@ function mapUserReview({ album, liked, likes, review }: UserReviewRow, userProfi
     likes,
     rating: review.rating / 2,
     review: review.body ?? undefined,
-    user: {
-      avatarUrl: userProfile.avatarUrl ?? undefined,
-      name: userProfile.displayUsername ?? userProfile.name,
-      username: userProfile.username ?? userProfile.id,
-    },
   };
 }
 
