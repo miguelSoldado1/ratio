@@ -64,10 +64,12 @@ export function ProfilePhotoEditor({
     mutationFn: () => removeMyAvatarFn(),
   });
 
-  const isSavingPhoto = setAvatarMutation.isPending || removeAvatarMutation.isPending;
-  const isPhotoBusy = avatarUpload.isPending || isSavingPhoto;
+  const isRemovingPhoto = removeAvatarMutation.isPending;
+  const isSavingPhoto = setAvatarMutation.isPending;
+  const isPhotoBusy = avatarUpload.isPending || isSavingPhoto || isRemovingPhoto;
   const isDisabled = disabled || isPhotoBusy;
   const photoStatusLabel = getPhotoStatusLabel({
+    isRemovingPhoto,
     isSavingPhoto,
     progress: avatarUpload.progress,
     uploading: avatarUpload.isPending,
@@ -112,8 +114,6 @@ export function ProfilePhotoEditor({
 
     await session.refetch().catch(() => undefined);
 
-    toast.success("Success", { description: "Your profile photo has been updated." });
-
     if (avatarResult.cleanupFailed) {
       toast.error("Storage cleanup failed", { description: "The previous profile photo could not be deleted." });
     }
@@ -139,8 +139,6 @@ export function ProfilePhotoEditor({
     });
 
     await session.refetch().catch(() => undefined);
-
-    toast.success("Success", { description: "Your profile photo has been removed." });
 
     if (avatarResult.cleanupFailed) {
       toast.error("Storage cleanup failed", { description: "The previous profile photo could not be deleted." });
@@ -196,16 +194,16 @@ export function ProfilePhotoEditor({
   );
 }
 
-function getPhotoStatusLabel({
-  isSavingPhoto,
-  progress,
-  uploading,
-}: {
+interface GetPhotoStatusLabelParams {
+  isRemovingPhoto: boolean;
   isSavingPhoto: boolean;
   progress: number;
   uploading: boolean;
-}) {
+}
+
+function getPhotoStatusLabel({ isRemovingPhoto, isSavingPhoto, progress, uploading }: GetPhotoStatusLabelParams) {
   if (uploading) return `Uploading ${Math.round(progress * 100)}%`;
+  if (isRemovingPhoto) return "Removing photo...";
   if (isSavingPhoto) return "Saving photo...";
 
   return "JPG, PNG, WebP, or AVIF up to 2 MB.";
@@ -221,17 +219,19 @@ function getErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
+interface UpdateProfileAvatarCacheParams {
+  avatarObjectKey?: string;
+  avatarUrl?: string;
+  queryClient: ReturnType<typeof useQueryClient>;
+  username: string;
+}
+
 function updateProfileAvatarCache({
   avatarObjectKey,
   avatarUrl,
   queryClient,
   username,
-}: {
-  avatarObjectKey?: string;
-  avatarUrl?: string;
-  queryClient: ReturnType<typeof useQueryClient>;
-  username: string;
-}) {
+}: UpdateProfileAvatarCacheParams) {
   queryClient.setQueriesData<UserProfile>({ queryKey: userQueryKeys.profile(username) }, (current) => {
     if (!current) return current;
 
