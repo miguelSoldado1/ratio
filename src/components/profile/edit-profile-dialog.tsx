@@ -1,8 +1,9 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
-import { Camera, Pencil } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
+import { ProfilePhotoEditor } from "@/components/profile/profile-photo-editor";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -38,19 +39,29 @@ interface ProfileFormErrors {
 }
 
 interface EditProfileDialogProps {
+  avatarObjectKey?: string;
   avatarUrl?: string;
   className?: string;
   displayName: string;
   username: string;
 }
 
-export function EditProfileDialog({ avatarUrl, className, displayName, username }: EditProfileDialogProps) {
+export function EditProfileDialog({
+  avatarObjectKey,
+  avatarUrl,
+  className,
+  displayName,
+  username,
+}: EditProfileDialogProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ displayUsername: displayName, username });
   const [isSaving, setIsSaving] = useState(false);
+  const [isPhotoBusy, setIsPhotoBusy] = useState(false);
   const [errors, setErrors] = useState<ProfileFormErrors>({});
+
+  const isFormDisabled = isSaving || isPhotoBusy;
 
   useEffect(() => {
     if (!open) return;
@@ -128,26 +139,14 @@ export function EditProfileDialog({ avatarUrl, className, displayName, username 
           <DialogDescription>Update the identity people see on your reviews.</DialogDescription>
         </DialogHeader>
         <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
-          <div className="flex items-center justify-between gap-4 border-border/80 border-b pb-5">
-            <div className="flex min-w-0 items-center gap-4">
-              <ProfileDialogAvatar avatarUrl={avatarUrl} name={displayName} />
-              <div className="min-w-0">
-                <p className="font-medium text-sm">Profile photo</p>
-                <p className="mt-1 text-muted-foreground text-sm">Image uploads are coming later.</p>
-              </div>
-            </div>
-            <Button
-              aria-label="Change photo"
-              className="shrink-0"
-              disabled
-              size="icon-sm"
-              title="Change photo"
-              type="button"
-              variant="outline"
-            >
-              <Camera />
-            </Button>
-          </div>
+          <ProfilePhotoEditor
+            avatarObjectKey={avatarObjectKey}
+            avatarUrl={avatarUrl}
+            disabled={isSaving}
+            displayName={displayName}
+            onBusyChange={setIsPhotoBusy}
+            username={username}
+          />
           <FieldGroup className="gap-5">
             <Field data-invalid={Boolean(errors.displayUsername)}>
               <FieldLabel htmlFor={fieldIds.displayUsername}>Display username</FieldLabel>
@@ -159,7 +158,7 @@ export function EditProfileDialog({ avatarUrl, className, displayName, username 
                 }
                 aria-invalid={Boolean(errors.displayUsername)}
                 autoComplete="name"
-                disabled={isSaving}
+                disabled={isFormDisabled}
                 id={fieldIds.displayUsername}
                 onChange={(event) => {
                   setForm((current) => ({ ...current, displayUsername: event.target.value }));
@@ -179,7 +178,7 @@ export function EditProfileDialog({ avatarUrl, className, displayName, username 
                 }
                 aria-invalid={Boolean(errors.username)}
                 autoComplete="username"
-                disabled={isSaving}
+                disabled={isFormDisabled}
                 id={fieldIds.username}
                 onChange={(event) => {
                   setForm((current) => ({ ...current, username: event.target.value }));
@@ -192,10 +191,10 @@ export function EditProfileDialog({ avatarUrl, className, displayName, username 
             <FieldError id={fieldIds.formError}>{errors.form}</FieldError>
           </FieldGroup>
           <DialogFooter className="pt-1">
-            <Button disabled={isSaving} onClick={() => setOpen(false)} type="button" variant="outline">
+            <Button disabled={isFormDisabled} onClick={() => setOpen(false)} type="button" variant="outline">
               Cancel
             </Button>
-            <Button disabled={isSaving} type="submit">
+            <Button disabled={isFormDisabled} type="submit">
               {isSaving ? "Saving..." : "Save changes"}
             </Button>
           </DialogFooter>
@@ -203,27 +202,6 @@ export function EditProfileDialog({ avatarUrl, className, displayName, username 
       </DialogContent>
     </Dialog>
   );
-}
-
-function ProfileDialogAvatar({ avatarUrl, name }: { avatarUrl?: string; name: string }) {
-  const initial = name.trim().charAt(0) || "U";
-  const className =
-    "flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted font-semibold text-xl text-muted-foreground uppercase";
-
-  if (avatarUrl) {
-    return (
-      <img
-        alt={name}
-        className={cn(className, "object-cover")}
-        height={64}
-        referrerPolicy="no-referrer"
-        src={avatarUrl}
-        width={64}
-      />
-    );
-  }
-
-  return <div className={className}>{initial}</div>;
 }
 
 function getProfileUpdateErrors(error: unknown): ProfileFormErrors {
@@ -250,13 +228,17 @@ function getProfileUpdateErrorCode(error: unknown) {
 }
 
 function getProfileUpdateErrorMessage(error: unknown) {
+  return getErrorMessage(error, "Try a different username and save again.");
+}
+
+function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof Error) return error.message;
 
   if (typeof error === "object" && error !== null && "message" in error && typeof error.message === "string") {
     return error.message;
   }
 
-  return "Try a different username and save again.";
+  return fallback;
 }
 
 function updateProfileCache({

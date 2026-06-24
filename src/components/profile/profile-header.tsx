@@ -2,6 +2,7 @@ import { EditProfileDialog } from "@/components/profile/edit-profile-dialog";
 import { cn } from "@/lib/utils";
 
 interface ProfileHeaderProps {
+  avatarObjectKey?: string;
   avatarUrl?: string;
   canEdit: boolean;
   className?: string;
@@ -11,6 +12,7 @@ interface ProfileHeaderProps {
 }
 
 export function ProfileHeader({
+  avatarObjectKey,
   avatarUrl,
   canEdit,
   className,
@@ -30,7 +32,14 @@ export function ProfileHeader({
           </h1>
           <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground text-sm md:text-base">
             <span>@{username}</span>·<span>{reviewCountLabel}</span>
-            {canEdit ? <EditProfileDialog avatarUrl={avatarUrl} displayName={displayName} username={username} /> : null}
+            {canEdit ? (
+              <EditProfileDialog
+                avatarObjectKey={avatarObjectKey}
+                avatarUrl={avatarUrl}
+                displayName={displayName}
+                username={username}
+              />
+            ) : null}
           </div>
         </div>
       </div>

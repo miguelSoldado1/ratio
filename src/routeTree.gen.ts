@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UserUsernameRouteImport } from './routes/user/$username'
+import { Route as ApiUploadRouteImport } from './routes/api/upload'
 import { Route as AlbumAlbumIdRouteImport } from './routes/album/$albumId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
 
@@ -22,6 +23,11 @@ const IndexRoute = IndexRouteImport.update({
 const UserUsernameRoute = UserUsernameRouteImport.update({
   id: '/user/$username',
   path: '/user/$username',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiUploadRoute = ApiUploadRouteImport.update({
+  id: '/api/upload',
+  path: '/api/upload',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AlbumAlbumIdRoute = AlbumAlbumIdRouteImport.update({
@@ -38,12 +44,14 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/album/$albumId': typeof AlbumAlbumIdRoute
+  '/api/upload': typeof ApiUploadRoute
   '/user/$username': typeof UserUsernameRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/album/$albumId': typeof AlbumAlbumIdRoute
+  '/api/upload': typeof ApiUploadRoute
   '/user/$username': typeof UserUsernameRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -51,20 +59,38 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/album/$albumId': typeof AlbumAlbumIdRoute
+  '/api/upload': typeof ApiUploadRoute
   '/user/$username': typeof UserUsernameRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/album/$albumId' | '/user/$username' | '/api/auth/$'
+  fullPaths:
+    | '/'
+    | '/album/$albumId'
+    | '/api/upload'
+    | '/user/$username'
+    | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/album/$albumId' | '/user/$username' | '/api/auth/$'
-  id: '__root__' | '/' | '/album/$albumId' | '/user/$username' | '/api/auth/$'
+  to:
+    | '/'
+    | '/album/$albumId'
+    | '/api/upload'
+    | '/user/$username'
+    | '/api/auth/$'
+  id:
+    | '__root__'
+    | '/'
+    | '/album/$albumId'
+    | '/api/upload'
+    | '/user/$username'
+    | '/api/auth/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AlbumAlbumIdRoute: typeof AlbumAlbumIdRoute
+  ApiUploadRoute: typeof ApiUploadRoute
   UserUsernameRoute: typeof UserUsernameRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
@@ -83,6 +109,13 @@ declare module '@tanstack/react-router' {
       path: '/user/$username'
       fullPath: '/user/$username'
       preLoaderRoute: typeof UserUsernameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/upload': {
+      id: '/api/upload'
+      path: '/api/upload'
+      fullPath: '/api/upload'
+      preLoaderRoute: typeof ApiUploadRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/album/$albumId': {
@@ -105,6 +138,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AlbumAlbumIdRoute: AlbumAlbumIdRoute,
+  ApiUploadRoute: ApiUploadRoute,
   UserUsernameRoute: UserUsernameRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }

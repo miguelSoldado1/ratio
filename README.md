@@ -43,3 +43,38 @@ This app is configured for Cloudflare Workers through the Cloudflare Vite plugin
 5. Set non-secret production values, such as `BETTER_AUTH_URL`, as Wrangler vars or secrets.
 6. Run `pnpm run build` to validate the Worker bundle.
 7. Deploy with `pnpm run deploy`.
+
+### R2 avatar uploads and CORS
+
+Profile photo uploads use browser direct-to-R2 uploads, so the R2 bucket CORS policy must allow the app origin that serves the upload UI.
+
+When the deployed URL changes, update the bucket CORS origins. This includes the temporary development Workers URL and the eventual custom domain.
+
+```json
+{
+	"rules": [
+		{
+			"allowed": {
+				"methods": ["GET", "PUT", "POST", "DELETE", "HEAD"],
+				"origins": [
+					"http://127.0.0.1:3000",
+					"http://localhost:3000",
+					"https://your-development-url.workers.dev",
+					"https://your-domain.com"
+				],
+				"headers": ["*"]
+			},
+			"exposeHeaders": ["ETag"],
+			"maxAgeSeconds": 3000
+		}
+	]
+}
+```
+
+Apply the policy with:
+
+```sh
+pnpm wrangler r2 bucket cors set <bucket-name> --file <cors-file>.json
+```
+
+Keep `CLOUDFLARE_R2_PUBLIC_URL` in sync with the public URL used to serve stored avatars. The public URL does not have to match the app origin, but the CORS origins must match every app origin that performs uploads.

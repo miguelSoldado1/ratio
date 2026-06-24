@@ -1,5 +1,5 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
-import { betterAuth } from "better-auth";
+import { APIError, betterAuth } from "better-auth";
 import { lastLoginMethod, username } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { eq } from "drizzle-orm";
@@ -14,8 +14,33 @@ export function createAuth(db: Db) {
     database: drizzleAdapter(db, { provider: "pg", schema }),
     emailAndPassword: { enabled: false },
     user: {
+      additionalFields: {
+        avatarObjectKey: {
+          input: false,
+          required: false,
+          returned: false,
+          type: "string",
+        },
+      },
       deleteUser: {
         enabled: true,
+      },
+    },
+    databaseHooks: {
+      user: {
+        update: {
+          before: (data, context) => {
+            if (context?.path !== "/update-user") return Promise.resolve();
+
+            if ("image" in data || "avatarObjectKey" in data) {
+              throw new APIError("BAD_REQUEST", {
+                message: "Profile photo must be updated through avatar upload.",
+              });
+            }
+
+            return Promise.resolve();
+          },
+        },
       },
     },
     account: {

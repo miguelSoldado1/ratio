@@ -288,6 +288,7 @@ export async function setReviewLikeService(data: ReviewLikeInput, context: Authe
 function getUserProfileRow(db: ReturnType<typeof createDbClient>["db"], username: string) {
   return db
     .select({
+      avatarObjectKey: user.avatarObjectKey,
       avatarUrl: user.image,
       displayUsername: user.displayUsername,
       id: user.id,
@@ -317,6 +318,7 @@ interface AlbumReviewRow {
 }
 
 interface UserProfileRow {
+  avatarObjectKey: string | null;
   avatarUrl: string | null;
   displayUsername: string | null;
   id: string;
@@ -396,6 +398,7 @@ function mapAlbumReview({ canDelete, liked, likes, review, user }: AlbumReviewRo
 
 function mapUserProfile(userProfile: UserProfileRow, canEdit: boolean) {
   return {
+    avatarObjectKey: canEdit ? (userProfile.avatarObjectKey ?? undefined) : undefined,
     avatarUrl: userProfile.avatarUrl ?? undefined,
     canEdit,
     displayName: userProfile.displayUsername ?? userProfile.name,

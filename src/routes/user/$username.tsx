@@ -96,6 +96,7 @@ function UserPage() {
     <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex w-full max-w-375 flex-col px-5 py-8 lg:px-10 lg:py-12 xl:px-14 2xl:px-20">
         <ProfileHeader
+          avatarObjectKey={profile.avatarObjectKey}
           avatarUrl={profile.avatarUrl}
           canEdit={profile.canEdit}
           displayName={profile.displayName}
