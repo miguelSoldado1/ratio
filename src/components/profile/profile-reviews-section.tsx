@@ -1,3 +1,4 @@
+import { DeleteReviewDialog } from "@/components/delete-review-dialog";
 import { ReviewCard } from "@/components/review-card";
 import { ReviewCardSkeleton } from "@/components/review-card-skeleton";
 import { cn } from "@/lib/utils";
@@ -7,19 +8,23 @@ import type { UserReviewsPage } from "@/server/services/review-service";
 type ProfileReview = UserReviewsPage["reviews"][number];
 
 interface ProfileReviewsSectionProps {
+  deletingReviewId: string | null;
   displayName: string;
   hasSession: boolean;
   isFetchingNextPage: boolean;
   loadMoreRef: RefObject<HTMLDivElement | null>;
+  onReviewDelete: (reviewId: string) => Promise<boolean>;
   onReviewLikeToggle: (reviewId: string, liked: boolean) => boolean | Promise<boolean | undefined> | undefined;
   reviews: ProfileReview[];
 }
 
 export function ProfileReviewsSection({
+  deletingReviewId,
   displayName,
   hasSession,
   isFetchingNextPage,
   loadMoreRef,
+  onReviewDelete,
   onReviewLikeToggle,
   reviews,
 }: ProfileReviewsSectionProps) {
@@ -44,6 +49,13 @@ export function ProfileReviewsSection({
                   liked={review.liked}
                   onToggle={hasSession ? (liked) => onReviewLikeToggle(review.id, liked) : undefined}
                 />
+                {review.canDelete ? (
+                  <DeleteReviewDialog
+                    className="ml-auto"
+                    isDeleting={deletingReviewId === review.id}
+                    onDelete={() => onReviewDelete(review.id)}
+                  />
+                ) : null}
               </ReviewCard.Footer>
             </ReviewCard.Root>
           ))}

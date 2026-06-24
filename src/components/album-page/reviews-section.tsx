@@ -1,17 +1,16 @@
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
-import { toast } from "sonner";
+import { useCallback } from "react";
+import { DeleteReviewDialog } from "@/components/delete-review-dialog";
 import { ReviewCard } from "@/components/review-card";
 import { Spinner } from "@/components/ui/spinner";
 import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
+import { useReviewDelete } from "@/hooks/use-review-delete";
 import { useReviewLikeToggle } from "@/hooks/use-review-like-toggle";
 import { authClient } from "@/lib/auth/auth-client";
 import { albumQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { cn } from "@/lib/utils";
-import { deleteReview, getAlbumReviews } from "@/server/functions/review-functions";
-import { tryCatch } from "@/try-catch";
-import { DeleteReviewDialog } from "./delete-review-dialog";
+import { getAlbumReviews } from "@/server/functions/review-functions";
 import { ReviewsSectionSkeleton } from "./reviews-section-skeleton";
 import type { AlbumReviewsPage } from "@/server/services/review-service";
 
@@ -25,7 +24,6 @@ export function ReviewsSection({ albumId, className }: ReviewsSectionProps) {
   const session = authClient.useSession();
   const userId = session.data?.user.id;
   const hasSession = Boolean(userId);
-  const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
   const reviewsQueryKey = albumQueryKeys.reviews(albumId, userId);
 
   const getAlbumReviewsFn = useServerFn(getAlbumReviews);
@@ -42,8 +40,13 @@ export function ReviewsSection({ albumId, className }: ReviewsSectionProps) {
     queryKey: reviewsQueryKey,
   });
 
-  const deleteReviewFn = useServerFn(deleteReview);
-  const deleteReviewMutation = useMutation({ mutationFn: deleteReviewFn });
+  const handleReviewDeleted = useCallback(
+    () => queryClient.invalidateQueries({ queryKey: albumQueryKeys.review(albumId) }),
+    [albumId, queryClient]
+  );
+  const { deleteReview: handleReviewDelete, deletingReviewId } = useReviewDelete({
+    onDeleted: handleReviewDeleted,
+  });
 
   const reviews = albumReviewsQuery.data?.pages.flatMap((page) => page.reviews) ?? [];
   const { fetchNextPage, hasNextPage, isFetchNextPageError, isFetchingNextPage } = albumReviewsQuery;
@@ -52,22 +55,6 @@ export function ReviewsSection({ albumId, className }: ReviewsSectionProps) {
     isLoading: isFetchingNextPage,
     onLoadMore: fetchNextPage,
   });
-
-  async function handleReviewDelete(reviewId: string) {
-    setDeletingReviewId(reviewId);
-    const { error } = await tryCatch(deleteReviewMutation.mutateAsync({ data: { reviewId } }));
-    setDeletingReviewId(null);
-
-    if (error) {
-      toast.error("Error", { description: error instanceof Error ? error.message : "Could not delete review" });
-      return false;
-    }
-
-    await queryClient.invalidateQueries({ queryKey: albumQueryKeys.review(albumId) });
-    toast.success("Success", { description: "Review deleted" });
-
-    return true;
-  }
 
   if (albumReviewsQuery.isPending) {
     return <ReviewsSectionSkeleton className={className} />;

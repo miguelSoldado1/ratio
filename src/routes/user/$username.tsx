@@ -1,13 +1,15 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
+import { useCallback } from "react";
 import { ProfileHeader, ProfileHeaderSkeleton } from "@/components/profile/profile-header";
 import { ProfileReviewsSection, ProfileReviewsSectionSkeleton } from "@/components/profile/profile-reviews-section";
 import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
+import { useReviewDelete } from "@/hooks/use-review-delete";
 import { useReviewLikeToggle } from "@/hooks/use-review-like-toggle";
 import { authClient } from "@/lib/auth/auth-client";
-import { userQueryKeys } from "@/lib/tanstack-query/query-keys";
-import { getUserReviews } from "@/server/functions/review-functions";
+import { albumQueryKeys, userQueryKeys } from "@/lib/tanstack-query/query-keys";
+import { getUserProfile, getUserReviews } from "@/server/functions/review-functions";
 import type { UserReviewsPage } from "@/server/services/review-service";
 
 export const Route = createFileRoute("/user/$username")({
@@ -16,11 +18,18 @@ export const Route = createFileRoute("/user/$username")({
 
 function UserPage() {
   const { username } = Route.useParams();
+  const queryClient = useQueryClient();
   const session = authClient.useSession();
   const viewerUserId = session.data?.user.id;
-  const viewerUsername = session.data?.user.username;
   const hasSession = Boolean(viewerUserId);
+  const profileQueryKey = userQueryKeys.profile(username, viewerUserId);
   const reviewsQueryKey = userQueryKeys.reviews(username, viewerUserId);
+
+  const getUserProfileFn = useServerFn(getUserProfile);
+  const userProfileQuery = useQuery({
+    queryFn: () => getUserProfileFn({ data: { username } }),
+    queryKey: profileQueryKey,
+  });
 
   const getUserReviewsFn = useServerFn(getUserReviews);
   const userReviewsQuery = useInfiniteQuery({
@@ -36,8 +45,20 @@ function UserPage() {
     queryKey: reviewsQueryKey,
   });
 
-  const firstPage = userReviewsQuery.data?.pages[0];
-  const profile = firstPage?.user;
+  const handleReviewDeleted = useCallback(
+    (deletedReview: { albumId: string }) =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: userQueryKeys.profile(username) }),
+        queryClient.invalidateQueries({ queryKey: userQueryKeys.reviews(username) }),
+        queryClient.invalidateQueries({ queryKey: albumQueryKeys.review(deletedReview.albumId) }),
+      ]).then(() => undefined),
+    [queryClient, username]
+  );
+  const { deleteReview: handleReviewDelete, deletingReviewId } = useReviewDelete({
+    onDeleted: handleReviewDeleted,
+  });
+
+  const profile = userProfileQuery.data;
   const reviews = userReviewsQuery.data?.pages.flatMap((page) => page.reviews) ?? [];
   const { fetchNextPage, hasNextPage, isFetchNextPageError, isFetchingNextPage } = userReviewsQuery;
   const loadMoreRef = useLoadMoreOnIntersect({
@@ -46,7 +67,7 @@ function UserPage() {
     onLoadMore: fetchNextPage,
   });
 
-  if (userReviewsQuery.isPending) {
+  if (userProfileQuery.isPending || userReviewsQuery.isPending) {
     return (
       <main className="min-h-screen bg-background text-foreground">
         <div className="mx-auto flex w-full max-w-375 flex-col gap-8 px-5 py-8 lg:px-10 lg:py-12 xl:px-14 2xl:px-20">
@@ -57,7 +78,7 @@ function UserPage() {
     );
   }
 
-  if (userReviewsQuery.isError || !profile) {
+  if (userProfileQuery.isError || !profile) {
     return (
       <main className="min-h-screen bg-background text-foreground">
         <div className="mx-auto w-full max-w-375 px-5 py-12 lg:px-10 xl:px-14 2xl:px-20">
@@ -73,19 +94,28 @@ function UserPage() {
       <div className="mx-auto flex w-full max-w-375 flex-col px-5 py-8 lg:px-10 lg:py-12 xl:px-14 2xl:px-20">
         <ProfileHeader
           avatarUrl={profile.avatarUrl}
-          canEdit={viewerUsername === profile.username}
+          canEdit={profile.canEdit}
           displayName={profile.displayName}
-          reviewCount={firstPage.reviewCount}
+          reviewCount={profile.reviewCount}
           username={profile.username}
         />
-        <ProfileReviewsSection
-          displayName={profile.displayName}
-          hasSession={hasSession}
-          isFetchingNextPage={isFetchingNextPage}
-          loadMoreRef={loadMoreRef}
-          onReviewLikeToggle={handleReviewLikeToggle}
-          reviews={reviews}
-        />
+        {userReviewsQuery.isError && reviews.length === 0 ? (
+          <section className="mt-7 py-8">
+            <p className="font-medium text-sm">Reviews unavailable</p>
+            <p className="mt-1 max-w-md text-muted-foreground text-sm">Could not load reviews for this profile.</p>
+          </section>
+        ) : (
+          <ProfileReviewsSection
+            deletingReviewId={deletingReviewId}
+            displayName={profile.displayName}
+            hasSession={hasSession}
+            isFetchingNextPage={isFetchingNextPage}
+            loadMoreRef={loadMoreRef}
+            onReviewDelete={handleReviewDelete}
+            onReviewLikeToggle={handleReviewLikeToggle}
+            reviews={reviews}
+          />
+        )}
       </div>
     </main>
   );
