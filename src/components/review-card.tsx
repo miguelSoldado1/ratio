@@ -1,6 +1,7 @@
 import { ChevronDown, Heart } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { RatingStarIcon } from "@/components/rating-star-icon";
+import { UserAvatar } from "@/components/user-avatar";
 import { useDebounce } from "@/hooks/use-debounce";
 import { abbreviateCount, cn } from "@/lib/utils";
 import type { ReactNode } from "react";
@@ -66,37 +67,23 @@ interface HeaderProps {
 }
 
 function Header({ user, createdAt, href, className }: HeaderProps) {
-  const avatarClass =
-    "flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted font-medium text-[11px] text-muted-foreground uppercase";
   const usernameClass = "font-medium text-foreground text-sm";
   const identityClass = "flex min-w-0 items-center gap-2";
   const identityLinkClass =
     "group -ml-1.5 h-8 rounded-full px-1.5 pr-2.5 [transition:color_150ms_ease,background-color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] hover:bg-primary/10 active:scale-[0.98]";
-  const avatarContent = user.avatarUrl ? (
-    <img
-      alt={user.name}
-      className="size-full object-cover"
-      height={24}
-      referrerPolicy="no-referrer"
-      src={user.avatarUrl}
-      width={24}
-    />
-  ) : (
-    <span>{user.name.charAt(0)}</span>
-  );
 
   return (
     <div className={cn("mb-3 flex items-center gap-2", className)}>
       {href ? (
         <a className={cn(identityClass, identityLinkClass)} href={href}>
-          <span className={avatarClass}>{avatarContent}</span>
+          <UserAvatar className="size-6 text-[11px]" height={24} name={user.name} src={user.avatarUrl} />
           <span className={cn(usernameClass, "truncate transition-colors group-hover:text-primary")}>
             {user.username}
           </span>
         </a>
       ) : (
         <div className={identityClass}>
-          <div className={avatarClass}>{avatarContent}</div>
+          <UserAvatar className="size-6 text-[11px]" height={24} name={user.name} src={user.avatarUrl} />
           <span className={usernameClass}>{user.username}</span>
         </div>
       )}

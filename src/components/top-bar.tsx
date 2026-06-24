@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { AlbumSearchInput, AlbumSearchOverlay } from "@/components/album-search";
 import { AuthDialog } from "@/components/auth/auth-dialog";
 import { Button } from "@/components/ui/button";
+import { UserAvatar } from "@/components/user-avatar";
 import { authClient } from "@/lib/auth/auth-client";
 import { useAuthRedirectErrorToast } from "@/lib/auth/use-auth-redirect-error-toast";
 
@@ -109,7 +110,14 @@ function HeaderAuthActions({ compact = false, onAuthClick }: HeaderAuthActionsPr
   return (
     <div className="flex items-center justify-end gap-2.5">
       {!compact && <span className="max-w-36 truncate text-muted-foreground text-sm">{displayName}</span>}
-      <UserAvatar image={user.image} name={displayName} />
+      <UserAvatar
+        alt=""
+        className="size-8 text-xs"
+        fallbackInitial="A"
+        height={32}
+        name={displayName}
+        src={user.image}
+      />
       <Button
         aria-label="Sign out"
         className="text-muted-foreground hover:text-foreground"
@@ -122,25 +130,6 @@ function HeaderAuthActions({ compact = false, onAuthClick }: HeaderAuthActionsPr
       >
         <LogOut />
       </Button>
-    </div>
-  );
-}
-
-interface UserAvatarProps {
-  image?: null | string;
-  name: string;
-}
-
-function UserAvatar({ image, name }: UserAvatarProps) {
-  const initial = name.trim().charAt(0) || "A";
-
-  if (image) {
-    return <img alt="" className="size-8 shrink-0 rounded-full object-cover" height={32} src={image} width={32} />;
-  }
-
-  return (
-    <div className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary font-medium text-primary-foreground text-xs uppercase">
-      {initial}
     </div>
   );
 }

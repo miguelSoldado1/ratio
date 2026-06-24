@@ -5,10 +5,10 @@ import { Camera, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { UserAvatar } from "@/components/user-avatar";
 import { authClient } from "@/lib/auth/auth-client";
 import { avatarAccept } from "@/lib/avatar";
 import { userQueryKeys } from "@/lib/tanstack-query/query-keys";
-import { cn } from "@/lib/utils";
 import { removeMyAvatar, setMyAvatar } from "@/server/functions/avatar-functions";
 import { tryCatch } from "@/try-catch";
 import type { ChangeEvent } from "react";
@@ -150,7 +150,7 @@ export function ProfilePhotoEditor({
   return (
     <div className="flex items-center justify-between gap-4 border-border/80 border-b pb-5">
       <div className="flex min-w-0 items-center gap-4">
-        <ProfileEditorAvatar avatarUrl={photo.avatarUrl} name={displayName} />
+        <UserAvatar className="size-16 text-xl" height={64} name={displayName} src={photo.avatarUrl} />
         <div className="min-w-0">
           <p className="font-medium text-sm">Profile photo</p>
           <p className="mt-1 text-muted-foreground text-sm">{photoStatusLabel}</p>
@@ -194,27 +194,6 @@ export function ProfilePhotoEditor({
       </div>
     </div>
   );
-}
-
-function ProfileEditorAvatar({ avatarUrl, name }: { avatarUrl?: string; name: string }) {
-  const initial = name.trim().charAt(0) || "U";
-  const className =
-    "flex size-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted font-semibold text-xl text-muted-foreground uppercase";
-
-  if (avatarUrl) {
-    return (
-      <img
-        alt={name}
-        className={cn(className, "object-cover")}
-        height={64}
-        referrerPolicy="no-referrer"
-        src={avatarUrl}
-        width={64}
-      />
-    );
-  }
-
-  return <div className={className}>{initial}</div>;
 }
 
 function getPhotoStatusLabel({
