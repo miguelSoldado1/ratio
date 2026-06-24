@@ -10,6 +10,8 @@ export const albumQueryKeys = {
 export const userQueryKeys = {
   profile: (username: string, userId?: string) =>
     userId ? (["user", username, "profile", userId] as const) : (["user", username, "profile"] as const),
-  reviews: (username: string, userId?: string) =>
-    userId ? (["user", username, "reviews", userId] as const) : (["user", username, "reviews"] as const),
+  reviews: (reviewedUserId: string, viewerUserId?: string) =>
+    viewerUserId
+      ? (["user", reviewedUserId, "reviews", viewerUserId] as const)
+      : (["user", reviewedUserId, "reviews"] as const),
 };

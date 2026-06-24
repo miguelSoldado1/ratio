@@ -23,7 +23,6 @@ function UserPage() {
   const viewerUserId = session.data?.user.id;
   const hasSession = Boolean(viewerUserId);
   const profileQueryKey = userQueryKeys.profile(username, viewerUserId);
-  const reviewsQueryKey = userQueryKeys.reviews(username, viewerUserId);
 
   const getUserProfileFn = useServerFn(getUserProfile);
   const userProfileQuery = useQuery({
@@ -32,11 +31,16 @@ function UserPage() {
   });
 
   const getUserReviewsFn = useServerFn(getUserReviews);
+  const profile = userProfileQuery.data?.user;
+  const reviewsQueryKey = profile
+    ? userQueryKeys.reviews(profile.id, viewerUserId)
+    : userQueryKeys.reviews("", viewerUserId);
   const userReviewsQuery = useInfiniteQuery({
+    enabled: Boolean(profile),
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     initialPageParam: null,
     queryFn: ({ pageParam }: { pageParam: string | null }) =>
-      getUserReviewsFn({ data: { cursor: pageParam ?? undefined, username } }),
+      getUserReviewsFn({ data: { cursor: pageParam ?? undefined, userId: profile?.id ?? "" } }),
     queryKey: reviewsQueryKey,
   });
 
@@ -49,16 +53,15 @@ function UserPage() {
     (deletedReview: { albumId: string }) =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: userQueryKeys.profile(username) }),
-        queryClient.invalidateQueries({ queryKey: userQueryKeys.reviews(username) }),
+        queryClient.invalidateQueries({ queryKey: userQueryKeys.reviews(profile?.id ?? "") }),
         queryClient.invalidateQueries({ queryKey: albumQueryKeys.review(deletedReview.albumId) }),
       ]).then(() => undefined),
-    [queryClient, username]
+    [profile?.id, queryClient, username]
   );
   const { deleteReview: handleReviewDelete, deletingReviewId } = useReviewDelete({
     onDeleted: handleReviewDeleted,
   });
 
-  const profile = userProfileQuery.data;
   const reviews = userReviewsQuery.data?.pages.flatMap((page) => page.reviews) ?? [];
   const { fetchNextPage, hasNextPage, isFetchNextPageError, isFetchingNextPage } = userReviewsQuery;
   const loadMoreRef = useLoadMoreOnIntersect({
@@ -67,7 +70,7 @@ function UserPage() {
     onLoadMore: fetchNextPage,
   });
 
-  if (userProfileQuery.isPending || userReviewsQuery.isPending) {
+  if (userProfileQuery.isPending || (profile && userReviewsQuery.isPending)) {
     return (
       <main className="min-h-screen bg-background text-foreground">
         <div className="mx-auto flex w-full max-w-375 flex-col gap-8 px-5 py-8 lg:px-10 lg:py-12 xl:px-14 2xl:px-20">
@@ -96,7 +99,7 @@ function UserPage() {
           avatarUrl={profile.avatarUrl}
           canEdit={profile.canEdit}
           displayName={profile.displayName}
-          reviewCount={profile.reviewCount}
+          reviewCount={userProfileQuery.data.reviewCount}
           username={profile.username}
         />
         {userReviewsQuery.isError && reviews.length === 0 ? (
@@ -113,6 +116,7 @@ function UserPage() {
             loadMoreRef={loadMoreRef}
             onReviewDelete={handleReviewDelete}
             onReviewLikeToggle={handleReviewLikeToggle}
+            profileUser={profile}
             reviews={reviews}
           />
         )}

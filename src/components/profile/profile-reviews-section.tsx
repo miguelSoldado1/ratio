@@ -3,9 +3,10 @@ import { ReviewCard } from "@/components/review-card";
 import { ReviewCardSkeleton } from "@/components/review-card-skeleton";
 import { cn } from "@/lib/utils";
 import type { RefObject } from "react";
-import type { UserReviewsPage } from "@/server/services/review-service";
+import type { UserProfile, UserReviewsPage } from "@/server/services/review-service";
 
 type ProfileReview = UserReviewsPage["reviews"][number];
+type ProfileUser = UserProfile["user"];
 
 interface ProfileReviewsSectionProps {
   deletingReviewId: string | null;
@@ -15,6 +16,7 @@ interface ProfileReviewsSectionProps {
   loadMoreRef: RefObject<HTMLDivElement | null>;
   onReviewDelete: (reviewId: string) => Promise<boolean>;
   onReviewLikeToggle: (reviewId: string, liked: boolean) => boolean | Promise<boolean | undefined> | undefined;
+  profileUser: ProfileUser;
   reviews: ProfileReview[];
 }
 
@@ -26,6 +28,7 @@ export function ProfileReviewsSection({
   loadMoreRef,
   onReviewDelete,
   onReviewLikeToggle,
+  profileUser,
   reviews,
 }: ProfileReviewsSectionProps) {
   return (
@@ -36,7 +39,14 @@ export function ProfileReviewsSection({
         <>
           {reviews.map((review) => (
             <ReviewCard.Root className="border-border/80" key={review.id}>
-              <ReviewCard.Header createdAt={review.createdAt} user={review.user} />
+              <ReviewCard.Header
+                createdAt={review.createdAt}
+                user={{
+                  avatarUrl: profileUser.avatarUrl,
+                  name: profileUser.displayName,
+                  username: profileUser.username,
+                }}
+              />
               <div className="flex items-start gap-3">
                 <ReviewCard.Album album={review.album} className="flex-1" href={`/album/${review.album.id}`} />
                 <ReviewCard.Rating value={review.rating} />

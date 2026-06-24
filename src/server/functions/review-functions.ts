@@ -15,7 +15,7 @@ const albumReviewsSchema = albumIdSchema.extend({
 
 const userReviewsSchema = z.object({
   cursor: z.string().trim().min(1).optional(),
-  username: z.string().trim().min(1).max(64),
+  userId: z.string().trim().min(1).max(128),
 });
 
 const userProfileSchema = z.object({

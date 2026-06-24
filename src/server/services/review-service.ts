@@ -37,7 +37,10 @@ export interface UserReviewsPage {
   reviews: ReturnType<typeof mapUserReview>[];
 }
 
-export type UserProfile = ReturnType<typeof mapUserProfile>;
+export interface UserProfile {
+  reviewCount: number;
+  user: ReturnType<typeof mapUserProfile>;
+}
 
 export interface UserProfileInput {
   username: string;
@@ -51,8 +54,9 @@ export interface AlbumReviewsInput extends AlbumIdInput {
   cursor?: string;
 }
 
-export interface UserReviewsInput extends UserProfileInput {
+export interface UserReviewsInput {
   cursor?: string;
+  userId: string;
 }
 
 export interface CreateReviewInput extends AlbumIdInput {
@@ -137,7 +141,10 @@ export async function getUserProfileService(data: UserProfileInput): Promise<Use
       .from(reviews)
       .where(eq(reviews.userId, profile.id));
 
-    return mapUserProfile(profile, viewerUserId === profile.id, reviewCountRow?.total ?? 0);
+    return {
+      reviewCount: reviewCountRow?.total ?? 0,
+      user: mapUserProfile(profile, viewerUserId === profile.id),
+    };
   } finally {
     await client.end({ timeout: 1 }).catch(() => undefined);
   }
@@ -147,14 +154,8 @@ export async function getUserReviewsService(data: UserReviewsInput): Promise<Use
   const { client, db } = createDbClient();
 
   try {
-    const profile = await getUserProfileRow(db, data.username);
-
-    if (!profile) {
-      throw new Error("User not found");
-    }
-
     const viewerUserId = await getCurrentUserId(db);
-    const canDelete = viewerUserId === profile.id;
+    const canDelete = viewerUserId === data.userId;
     const likedByViewer = viewerUserId
       ? sql<boolean>`exists(select 1 from ${reviewLikes} where ${reviewLikes.reviewId} = ${reviews.id} and ${reviewLikes.userId} = ${viewerUserId})`
       : sql<boolean>`false`;
@@ -170,7 +171,7 @@ export async function getUserReviewsService(data: UserReviewsInput): Promise<Use
       })
       .from(reviews)
       .innerJoin(albums, eq(reviews.albumId, albums.id))
-      .where(cursorFilter ? and(eq(reviews.userId, profile.id), cursorFilter) : eq(reviews.userId, profile.id))
+      .where(cursorFilter ? and(eq(reviews.userId, data.userId), cursorFilter) : eq(reviews.userId, data.userId))
       .orderBy(desc(reviews.createdAt), desc(reviews.id))
       .limit(albumReviewsPageSize + 1);
 
@@ -186,7 +187,7 @@ export async function getUserReviewsService(data: UserReviewsInput): Promise<Use
               id: lastReview.id,
             })
           : null,
-      reviews: pageRows.map((row) => mapUserReview(row, profile, canDelete)),
+      reviews: pageRows.map((row) => mapUserReview(row, canDelete)),
     };
   } finally {
     await client.end({ timeout: 1 }).catch(() => undefined);
@@ -393,21 +394,17 @@ function mapAlbumReview({ canDelete, liked, likes, review, user }: AlbumReviewRo
   };
 }
 
-function mapUserProfile(userProfile: UserProfileRow, canEdit: boolean, reviewCount: number) {
+function mapUserProfile(userProfile: UserProfileRow, canEdit: boolean) {
   return {
     avatarUrl: userProfile.avatarUrl ?? undefined,
     canEdit,
     displayName: userProfile.displayUsername ?? userProfile.name,
-    reviewCount,
+    id: userProfile.id,
     username: userProfile.username ?? userProfile.id,
   };
 }
 
-function mapUserReview(
-  { album, liked, likes, review }: UserReviewRow,
-  userProfile: UserProfileRow,
-  canDelete: boolean
-) {
+function mapUserReview({ album, liked, likes, review }: UserReviewRow, canDelete: boolean) {
   return {
     album: {
       artist: album.artistNames.join(", "),
@@ -423,11 +420,6 @@ function mapUserReview(
     likes,
     rating: review.rating / 2,
     review: review.body ?? undefined,
-    user: {
-      avatarUrl: userProfile.avatarUrl ?? undefined,
-      name: userProfile.displayUsername ?? userProfile.name,
-      username: userProfile.username ?? userProfile.id,
-    },
   };
 }
 
