@@ -2,7 +2,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Pencil } from "lucide-react";
 import { useEffect, useState } from "react";
-import { toast } from "sonner";
 import { ProfilePhotoEditor } from "@/components/profile/profile-photo-editor";
 import { Button } from "@/components/ui/button";
 import {
@@ -110,7 +109,6 @@ export function EditProfileDialog({
     });
 
     setOpen(false);
-    toast.success("Success", { description: "Your profile has been updated." });
 
     if (nextUsername.toLowerCase() !== username) {
       navigate({ params: { username: nextUsername.toLowerCase() }, to: "/user/$username" });
