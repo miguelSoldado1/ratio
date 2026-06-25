@@ -67,7 +67,7 @@ interface HeaderProps {
 }
 
 function Header({ user, createdAt, href, className }: HeaderProps) {
-  const usernameClass = "font-medium text-foreground text-sm";
+  const usernameClass = "font-medium text-foreground/75 text-sm";
   const identityClass = "flex min-w-0 items-center gap-2";
   const identityLinkClass =
     "group -ml-1.5 h-8 rounded-full px-1.5 pr-2.5 [transition:color_150ms_ease,background-color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] hover:bg-primary/10 active:scale-[0.98]";

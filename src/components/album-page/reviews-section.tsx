@@ -96,7 +96,7 @@ export function ReviewsSection({ albumId, className }: ReviewsSectionProps) {
             />
             {review.canDelete ? (
               <DeleteReviewDialog
-                className="ml-auto"
+                className="-mr-2 ml-auto"
                 isDeleting={deletingReviewId === review.id}
                 onDelete={() => handleReviewDelete(review.id)}
               />

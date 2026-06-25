@@ -61,7 +61,7 @@ export function ProfileReviewsSection({
                 />
                 {review.canDelete ? (
                   <DeleteReviewDialog
-                    className="ml-auto"
+                    className="-mr-2 ml-auto"
                     isDeleting={deletingReviewId === review.id}
                     onDelete={() => onReviewDelete(review.id)}
                   />
