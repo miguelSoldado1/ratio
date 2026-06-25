@@ -19,20 +19,6 @@ import { searchAlbums } from "@/server/functions/spotify-functions";
 
 type AlbumResult = Awaited<ReturnType<typeof searchAlbums>>[number];
 
-function useAlbumSearch(inputValue: string) {
-  const debouncedQuery = useDebounce(inputValue.trim(), 300);
-  const searchAlbumsFn = useServerFn(searchAlbums);
-  const result = useQuery({
-    queryFn: () => searchAlbumsFn({ data: { query: debouncedQuery } }),
-    queryKey: albumQueryKeys.search(debouncedQuery),
-    enabled: debouncedQuery.length >= 1,
-    placeholderData: (prev) => prev,
-    staleTime: 60_000,
-  });
-
-  return { ...result, debouncedQuery };
-}
-
 interface AlbumSearchCommandProps {
   onOpenChange: (open: boolean) => void;
   onSelect?: (album: AlbumResult) => void;
@@ -41,7 +27,16 @@ interface AlbumSearchCommandProps {
 
 export function AlbumSearchCommand({ onOpenChange, onSelect, open }: AlbumSearchCommandProps) {
   const [inputValue, setInputValue] = useState("");
-  const { data: results = [], isFetching, debouncedQuery } = useAlbumSearch(inputValue);
+  const debouncedQuery = useDebounce(inputValue.trim(), 300);
+
+  const searchAlbumsFn = useServerFn(searchAlbums);
+  const { data: results = [], isFetching } = useQuery({
+    queryFn: () => searchAlbumsFn({ data: { query: debouncedQuery } }),
+    queryKey: albumQueryKeys.search(debouncedQuery),
+    enabled: debouncedQuery.length >= 1,
+    placeholderData: (prev) => prev,
+  });
+
   const trimmedInput = inputValue.trim();
 
   useEffect(() => {
