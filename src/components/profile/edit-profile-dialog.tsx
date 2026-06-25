@@ -15,6 +15,7 @@ import {
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth/auth-client";
+import { displayUsernameMaxLength, getDisplayUsernameLength } from "@/lib/auth/profile-identity";
 import { userQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { cn } from "@/lib/utils";
 import type { FormEvent } from "react";
@@ -82,6 +83,8 @@ export function EditProfileDialog({
 
     if (!nextDisplayUsername) {
       nextErrors.displayUsername = "Display username is required.";
+    } else if (getDisplayUsernameLength(nextDisplayUsername) > displayUsernameMaxLength) {
+      nextErrors.displayUsername = `Use ${displayUsernameMaxLength} characters or fewer.`;
     }
 
     if (nextErrors.displayUsername || nextErrors.username) {
@@ -158,6 +161,7 @@ export function EditProfileDialog({
                 autoComplete="name"
                 disabled={isFormDisabled}
                 id={fieldIds.displayUsername}
+                maxLength={displayUsernameMaxLength}
                 onChange={(event) => {
                   setForm((current) => ({ ...current, displayUsername: event.target.value }));
                   setErrors((current) => ({ ...current, displayUsername: undefined, form: undefined }));
@@ -206,11 +210,15 @@ function getProfileUpdateErrors(error: unknown): ProfileFormErrors {
   const message = getProfileUpdateErrorMessage(error);
   const code = getProfileUpdateErrorCode(error);
 
+  if (code === "INVALID_DISPLAY_USERNAME") {
+    return { displayUsername: `Use ${displayUsernameMaxLength} characters or fewer.` };
+  }
+
   if (code?.startsWith("USERNAME_") || message.toLowerCase().includes("username")) {
     return { username: message };
   }
 
-  if (code === "INVALID_DISPLAY_USERNAME" || message.toLowerCase().includes("display username")) {
+  if (message.toLowerCase().includes("display username")) {
     return { displayUsername: message };
   }
 

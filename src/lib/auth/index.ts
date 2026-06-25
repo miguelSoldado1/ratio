@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { env } from "@/env";
 import { createDbClient } from "../db";
 import * as schema from "../db/schema";
+import { isDisplayUsernameValid, limitDisplayUsername, trimDisplayUsername } from "./profile-identity";
 import type { Db } from "../db";
 
 export function createAuth(db: Db) {
@@ -61,7 +62,7 @@ export function createAuth(db: Db) {
 
           return {
             username: finalUsername,
-            displayUsername: profile.name || profile.given_name,
+            displayUsername: limitDisplayUsername(profile.name || profile.given_name || baseUsername),
           };
         },
       },
@@ -76,7 +77,7 @@ export function createAuth(db: Db) {
 
           return {
             username: finalUsername,
-            displayUsername: profile.name || profile.email,
+            displayUsername: limitDisplayUsername(profile.name || profile.email || baseUsername),
           };
         },
       },
@@ -89,12 +90,19 @@ export function createAuth(db: Db) {
 
           return {
             username: finalUsername,
-            displayUsername: profile.display_name,
+            displayUsername: limitDisplayUsername(profile.display_name || baseUsername),
           };
         },
       },
     },
-    plugins: [username(), lastLoginMethod(), tanstackStartCookies()],
+    plugins: [
+      username({
+        displayUsernameNormalization: trimDisplayUsername,
+        displayUsernameValidator: isDisplayUsernameValid,
+      }),
+      lastLoginMethod(),
+      tanstackStartCookies(),
+    ],
   });
 }
 
