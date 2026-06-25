@@ -22,6 +22,10 @@ const userProfileSchema = z.object({
   username: z.string().trim().min(1).max(64),
 });
 
+const userSearchSchema = z.object({
+  query: z.string().trim().min(1).max(64),
+});
+
 const reviewLikeSchema = z.object({
   liked: z.boolean(),
   reviewId: z.uuid(),
@@ -64,6 +68,10 @@ export const getUserReviews = createServerFn()
 export const getUserProfile = createServerFn()
   .validator(userProfileSchema)
   .handler(({ data }) => reviewService.getUserProfileService(data));
+
+export const searchUsers = createServerFn()
+  .validator(userSearchSchema)
+  .handler(({ data }) => reviewService.searchUsersService(data));
 
 export const hasMyAlbumReview = createServerFn()
   .middleware([authMiddleware])

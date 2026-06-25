@@ -43,7 +43,7 @@ All album pages (`/album/:spotifyId`) are publicly accessible and shareable. The
 /                          Public feed - trending + recent activity
 /album/:spotifyId          Album page - metadata, community rating, reviews
 /user/:username            Profile - ratings, reviews, lists, followers
-/search                    Search albums via Spotify API
+/search                    Search albums via Spotify API and users via Ratio data
 /feed                      Personalised feed (auth required)
 /lists/:id                 Public list view
 /settings                  Account settings, linked providers, Spotify connect
@@ -58,7 +58,7 @@ All album pages (`/album/:spotifyId`) are publicly accessible and shareable. The
 - Follow users
 - User profiles with rating history
 - Album pages with community score and reviews
-- Search via Spotify API
+- Search albums via Spotify API and users by username/display username
 - Link/unlink Spotify in settings
 - Personalised feed for users with Spotify linked
 - Lists: curated ranked or unranked album collections

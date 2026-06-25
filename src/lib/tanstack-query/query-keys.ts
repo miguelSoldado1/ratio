@@ -14,4 +14,5 @@ export const userQueryKeys = {
     viewerUserId
       ? (["user", reviewedUserId, "reviews", viewerUserId] as const)
       : (["user", reviewedUserId, "reviews"] as const),
+  search: (query: string) => ["user-search", query] as const,
 };

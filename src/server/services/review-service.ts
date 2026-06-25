@@ -1,5 +1,5 @@
 import { getRequestHeaders } from "@tanstack/react-start/server";
-import { and, count, desc, eq, getTableColumns, lt, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, getTableColumns, ilike, isNotNull, lt, or, sql } from "drizzle-orm";
 import z from "zod";
 import { createAuth } from "@/lib/auth";
 import { createDbClient } from "@/lib/db";
@@ -12,6 +12,7 @@ import type { AuthenticatedContext } from "../auth-middleware";
 const ratingBuckets: readonly ["1", "2", "3", "4", "5"] = ["1", "2", "3", "4", "5"];
 const albumReviewsPageSize = 12;
 const base64PaddingPattern = /=+$/;
+const userSearchResultLimit = 5;
 
 // Schemas
 
@@ -43,6 +44,16 @@ export interface UserProfile {
 }
 
 export interface UserProfileInput {
+  username: string;
+}
+
+export interface UserSearchInput {
+  query: string;
+}
+
+export interface UserSearchResult {
+  avatarUrl?: string;
+  displayUsername?: string;
   username: string;
 }
 
@@ -145,6 +156,45 @@ export async function getUserProfileService(data: UserProfileInput): Promise<Use
       reviewCount: reviewCountRow?.total ?? 0,
       user: mapUserProfile(profile, viewerUserId === profile.id),
     };
+  } finally {
+    await client.end({ timeout: 1 }).catch(() => undefined);
+  }
+}
+
+export async function searchUsersService(data: UserSearchInput): Promise<UserSearchResult[]> {
+  const { client, db } = createDbClient();
+
+  try {
+    const normalizedQuery = data.query.toLowerCase();
+    const escapedQuery = escapeLikePattern(data.query);
+    const containsPattern = `%${escapedQuery}%`;
+    const prefixPattern = `${escapedQuery}%`;
+
+    const userRows = await db
+      .select({
+        avatarUrl: user.image,
+        displayUsername: user.displayUsername,
+        username: user.username,
+      })
+      .from(user)
+      .where(
+        and(
+          isNotNull(user.username),
+          or(ilike(user.username, containsPattern), ilike(user.displayUsername, containsPattern))
+        )
+      )
+      .orderBy(
+        sql<number>`case
+          when lower(${user.username}) = ${normalizedQuery} then 0
+          when ${user.username} ilike ${prefixPattern} then 1
+          when ${user.displayUsername} ilike ${prefixPattern} then 2
+          else 3
+        end`,
+        user.username
+      )
+      .limit(userSearchResultLimit);
+
+    return userRows.flatMap(mapUserSearchResult);
   } finally {
     await client.end({ timeout: 1 }).catch(() => undefined);
   }
@@ -301,6 +351,10 @@ function getUserProfileRow(db: ReturnType<typeof createDbClient>["db"], username
     .then((rows) => rows[0]);
 }
 
+function escapeLikePattern(value: string) {
+  return value.replace(/[\\%_]/g, "\\$&");
+}
+
 // Rows
 
 interface AlbumReviewRow {
@@ -323,6 +377,12 @@ interface UserProfileRow {
   displayUsername: string | null;
   id: string;
   name: string;
+  username: string | null;
+}
+
+interface UserSearchRow {
+  avatarUrl: string | null;
+  displayUsername: string | null;
   username: string | null;
 }
 
@@ -405,6 +465,20 @@ function mapUserProfile(userProfile: UserProfileRow, canEdit: boolean) {
     id: userProfile.id,
     username: userProfile.username ?? userProfile.id,
   };
+}
+
+function mapUserSearchResult(userRow: UserSearchRow) {
+  if (!userRow.username) {
+    return [];
+  }
+
+  return [
+    {
+      avatarUrl: userRow.avatarUrl ?? undefined,
+      displayUsername: userRow.displayUsername ?? undefined,
+      username: userRow.username,
+    },
+  ];
 }
 
 function mapUserReview({ album, liked, likes, review }: UserReviewRow, canDelete: boolean) {

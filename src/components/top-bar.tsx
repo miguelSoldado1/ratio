@@ -1,9 +1,10 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { LogIn, LogOut } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { AlbumSearchCommand, AlbumSearchTrigger } from "@/components/album-search";
 import { AuthDialog } from "@/components/auth/auth-dialog";
+import { GlobalSearch } from "@/components/global-search/global-search";
+import { GlobalSearchTrigger } from "@/components/global-search/global-search-trigger";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/user-avatar";
 import { authClient } from "@/lib/auth/auth-client";
@@ -23,28 +24,23 @@ function LogoHomeLink() {
 }
 
 export function TopBar() {
-  const navigate = useNavigate();
   const [searchOpen, setSearchOpen] = useState(false);
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
 
   useAuthRedirectErrorToast(setAuthDialogOpen);
 
-  const handleAlbumSelect = (album: { id: string }) => {
-    navigate({ to: "/album/$albumId", params: { albumId: album.id } });
-  };
-
   return (
     <>
       <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} />
-      <AlbumSearchCommand onOpenChange={setSearchOpen} onSelect={handleAlbumSelect} open={searchOpen} />
+      <GlobalSearch onOpenChange={setSearchOpen} open={searchOpen} />
       <div className="sticky top-0 z-40 border-border/80 border-b bg-background/95 px-4 py-3 backdrop-blur-md sm:px-6 xl:px-16 2xl:px-24">
         <div className="mx-auto grid w-full max-w-375 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
           <LogoHomeLink />
           <div className="hidden min-w-0 justify-center lg:flex">
-            <AlbumSearchTrigger className="max-w-108" onOpen={() => setSearchOpen(true)} />
+            <GlobalSearchTrigger className="max-w-108" onOpen={() => setSearchOpen(true)} />
           </div>
           <div className="flex min-w-0 items-center justify-end gap-1.5">
-            <AlbumSearchTrigger className="lg:hidden" compact onOpen={() => setSearchOpen(true)} />
+            <GlobalSearchTrigger className="lg:hidden" compact onOpen={() => setSearchOpen(true)} />
             <HeaderAuthActions compact onAuthClick={() => setAuthDialogOpen(true)} />
           </div>
         </div>
