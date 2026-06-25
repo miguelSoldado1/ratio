@@ -1,4 +1,4 @@
-export const displayUsernameMaxLength = 40;
+export const displayUsernameMaxLength = 50;
 
 export function getDisplayUsernameLength(displayUsername: string) {
   return Array.from(displayUsername.trim()).length;
