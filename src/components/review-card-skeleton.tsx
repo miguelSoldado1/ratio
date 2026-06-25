@@ -48,9 +48,9 @@ function SkeletonRating({ className }: { className?: string }) {
 
 function SkeletonReview({ className }: { className?: string }) {
   return (
-    <div className={cn("mt-4 flex flex-col gap-2", className)}>
-      <Skeleton className="h-4 w-full max-w-2xl" />
-      <Skeleton className="h-4 w-5/6 max-w-xl" />
+    <div className={cn("mt-3 flex flex-col gap-2", className)}>
+      <Skeleton className="h-4.5 w-full max-w-2xl" />
+      <Skeleton className="h-4.5 w-5/6 max-w-xl" />
     </div>
   );
 }

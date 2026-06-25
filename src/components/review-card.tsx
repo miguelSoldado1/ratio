@@ -205,7 +205,7 @@ function Review({ children, className }: ReviewProps) {
       <div className="relative">
         <p
           className={cn(
-            "wrap-break-word whitespace-pre-wrap text-muted-foreground text-sm leading-relaxed",
+            "wrap-break-word whitespace-pre-wrap text-[15px] text-foreground/90 leading-[1.45]",
             !expanded && "max-h-40 overflow-hidden",
             className
           )}
