@@ -3,7 +3,7 @@ import { UserAvatar } from "@/components/user-avatar";
 import { cn } from "@/lib/utils";
 import type { AlbumResult, UserResult } from "./types";
 
-const albumResultsBeforeUsersLimit = 5;
+const albumResultsBeforeUsersLimit = 4;
 
 interface SearchResultsProps {
   albumResults: AlbumResult[];
