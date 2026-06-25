@@ -262,6 +262,7 @@ function updateProfileCache({
     user: {
       ...previousData.user,
       displayName,
+      displayUsername: displayName,
       username: nextUsername,
     },
   };

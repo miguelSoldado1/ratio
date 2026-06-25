@@ -11,7 +11,8 @@ export const Route = createFileRoute("/")({ component: FeedPage });
 const MOCK_REVIEWS: ReviewData[] = [
   {
     id: "1",
-    user: { name: "Alex Rivera", username: "alexrivera" },
+    user: { displayUsername: "Alex Rivera" },
+    userHref: "/user/alexrivera",
     album: {
       id: "ok-computer",
       title: "OK Computer",
@@ -27,7 +28,8 @@ const MOCK_REVIEWS: ReviewData[] = [
   },
   {
     id: "2",
-    user: { name: "Sam Chen", username: "samchen" },
+    user: { displayUsername: "Sam Chen" },
+    userHref: "/user/samchen",
     album: {
       id: "tpab",
       title: "To Pimp a Butterfly",
@@ -43,7 +45,8 @@ const MOCK_REVIEWS: ReviewData[] = [
   },
   {
     id: "3",
-    user: { name: "Maya Torres", username: "mayatorres" },
+    user: { displayUsername: "Maya Torres" },
+    userHref: "/user/mayatorres",
     album: {
       id: "melodrama",
       title: "Melodrama",
@@ -59,7 +62,8 @@ const MOCK_REVIEWS: ReviewData[] = [
   },
   {
     id: "4",
-    user: { name: "Jordan Kim", username: "jordankim" },
+    user: { displayUsername: "Jordan Kim" },
+    userHref: "/user/jordankim",
     album: {
       id: "in-rainbows",
       title: "In Rainbows",
@@ -75,7 +79,8 @@ const MOCK_REVIEWS: ReviewData[] = [
   },
   {
     id: "5",
-    user: { name: "Pat Morgan", username: "patmorgan" },
+    user: { displayUsername: "Pat Morgan" },
+    userHref: "/user/patmorgan",
     album: {
       id: "blonde",
       title: "Blonde",
@@ -91,7 +96,8 @@ const MOCK_REVIEWS: ReviewData[] = [
   },
   {
     id: "6",
-    user: { name: "Jamie Lee", username: "jamielee" },
+    user: { displayUsername: "Jamie Lee" },
+    userHref: "/user/jamielee",
     album: {
       id: "gkmc",
       title: "good kid, m.A.A.d city",

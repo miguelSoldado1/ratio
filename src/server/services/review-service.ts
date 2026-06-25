@@ -107,7 +107,6 @@ export async function getAlbumReviewsService(data: AlbumReviewsInput): Promise<A
           avatarUrl: user.image,
           displayUsername: user.displayUsername,
           id: user.id,
-          name: user.name,
           username: user.username,
         },
       })
@@ -366,7 +365,6 @@ interface AlbumReviewRow {
     avatarUrl: string | null;
     displayUsername: string | null;
     id: string;
-    name: string;
     username: string | null;
   };
 }
@@ -448,10 +446,10 @@ function mapAlbumReview({ canDelete, liked, likes, review, user }: AlbumReviewRo
     rating: review.rating / 2,
     review: review.body ?? undefined,
     createdAt: review.createdAt,
+    userHref: user.username ? `/user/${user.username}` : undefined,
     user: {
       avatarUrl: user.avatarUrl ?? undefined,
-      name: user.displayUsername ?? user.name,
-      username: user.username ?? user.id,
+      displayUsername: user.displayUsername ?? user.username ?? user.id,
     },
   };
 }
@@ -462,6 +460,7 @@ function mapUserProfile(userProfile: UserProfileRow, canEdit: boolean) {
     avatarUrl: userProfile.avatarUrl ?? undefined,
     canEdit,
     displayName: userProfile.displayUsername ?? userProfile.name,
+    displayUsername: userProfile.displayUsername ?? userProfile.username ?? userProfile.id,
     id: userProfile.id,
     username: userProfile.username ?? userProfile.id,
   };

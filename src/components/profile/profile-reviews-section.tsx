@@ -43,8 +43,7 @@ export function ProfileReviewsSection({
                 createdAt={review.createdAt}
                 user={{
                   avatarUrl: profileUser.avatarUrl,
-                  name: profileUser.displayName,
-                  username: profileUser.username,
+                  displayUsername: profileUser.displayUsername,
                 }}
               />
               <div className="flex items-start gap-3">

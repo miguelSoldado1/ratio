@@ -10,8 +10,7 @@ import type { ReactNode } from "react";
 
 export interface ReviewUser {
   avatarUrl?: string;
-  name: string;
-  username: string;
+  displayUsername: string;
 }
 
 export interface ReviewAlbum {
@@ -31,6 +30,7 @@ export interface ReviewData {
   rating: number; // 1–5 (half-star increments)
   review?: string;
   user: ReviewUser;
+  userHref?: string;
 }
 
 // --- Helpers ---
@@ -67,7 +67,7 @@ interface HeaderProps {
 }
 
 function Header({ user, createdAt, href, className }: HeaderProps) {
-  const usernameClass = "font-medium text-foreground/75 text-sm";
+  const displayNameClass = "font-medium text-foreground/75 text-sm";
   const identityClass = "flex min-w-0 items-center gap-2";
   const identityLinkClass =
     "group -ml-1.5 h-8 rounded-full px-1.5 pr-2.5 [transition:color_150ms_ease,background-color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] hover:bg-primary/10 active:scale-[0.98]";
@@ -76,15 +76,15 @@ function Header({ user, createdAt, href, className }: HeaderProps) {
     <div className={cn("mb-3 flex items-center gap-2", className)}>
       {href ? (
         <a className={cn(identityClass, identityLinkClass)} href={href}>
-          <UserAvatar className="size-6 text-[11px]" height={24} name={user.name} src={user.avatarUrl} />
-          <span className={cn(usernameClass, "truncate transition-colors group-hover:text-primary")}>
-            {user.username}
+          <UserAvatar className="size-6 text-[11px]" height={24} name={user.displayUsername} src={user.avatarUrl} />
+          <span className={cn(displayNameClass, "truncate transition-colors group-hover:text-primary")}>
+            {user.displayUsername}
           </span>
         </a>
       ) : (
         <div className={identityClass}>
-          <UserAvatar className="size-6 text-[11px]" height={24} name={user.name} src={user.avatarUrl} />
-          <span className={usernameClass}>{user.username}</span>
+          <UserAvatar className="size-6 text-[11px]" height={24} name={user.displayUsername} src={user.avatarUrl} />
+          <span className={displayNameClass}>{user.displayUsername}</span>
         </div>
       )}
       <span className="text-muted-foreground text-xs">{relativeTime(createdAt)}</span>
@@ -487,10 +487,10 @@ interface ReviewCardProps extends ReviewData {
   className?: string;
 }
 
-function ReviewCard({ user, album, rating, review, likes, liked, createdAt, className }: ReviewCardProps) {
+function ReviewCard({ user, userHref, album, rating, review, likes, liked, createdAt, className }: ReviewCardProps) {
   return (
     <Root className={className}>
-      <Header createdAt={createdAt} href={`/user/${user.username}`} user={user} />
+      <Header createdAt={createdAt} href={userHref} user={user} />
       <div className="flex items-start gap-3">
         <Album album={album} className="flex-1" href={`/album/${album.id}`} />
         <Rating value={rating} />
