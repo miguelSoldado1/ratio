@@ -160,9 +160,7 @@ export function AlbumSearchTrigger({ className, compact = false, onOpen }: Album
       variant="outline"
     >
       <span className="flex min-w-0 items-center gap-2">
-        <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors group-hover:text-foreground">
-          <Search />
-        </span>
+        <Search data-icon="inline-start" />
         <span className="truncate text-sm">Search albums...</span>
       </span>
     </Button>
