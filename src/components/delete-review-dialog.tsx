@@ -10,6 +10,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { tryCatch } from "@/try-catch";
 
 interface DeleteReviewDialogProps {
   className?: string;
@@ -21,9 +22,9 @@ export function DeleteReviewDialog({ className, isDeleting, onDelete }: DeleteRe
   const [open, setOpen] = useState(false);
 
   async function handleDeleteClick() {
-    const deleted = await onDelete();
+    const { data, error } = await tryCatch(onDelete());
 
-    if (deleted) {
+    if (!(error || !data)) {
       setOpen(false);
     }
   }
