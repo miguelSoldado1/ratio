@@ -1,66 +1,203 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Search, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Input } from "@/components/ui/input";
+import { ArrowLeft, Search } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+  Command,
+  CommandDialog,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
 import { useDebounce } from "@/hooks/use-debounce";
 import { albumQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { cn } from "@/lib/utils";
 import { searchAlbums } from "@/server/functions/spotify-functions";
 
-// --- Types ---
-
 type AlbumResult = Awaited<ReturnType<typeof searchAlbums>>[number];
-
-// --- Hooks ---
 
 function useAlbumSearch(inputValue: string) {
   const debouncedQuery = useDebounce(inputValue.trim(), 300);
   const searchAlbumsFn = useServerFn(searchAlbums);
   const result = useQuery({
-    queryKey: albumQueryKeys.search(debouncedQuery),
     queryFn: () => searchAlbumsFn({ data: { query: debouncedQuery } }),
+    queryKey: albumQueryKeys.search(debouncedQuery),
     enabled: debouncedQuery.length >= 1,
-    staleTime: 60_000,
     placeholderData: (prev) => prev,
+    staleTime: 60_000,
   });
 
   return { ...result, debouncedQuery };
 }
 
-// --- Shared result list ---
+interface AlbumSearchCommandProps {
+  onOpenChange: (open: boolean) => void;
+  onSelect?: (album: AlbumResult) => void;
+  open: boolean;
+}
+
+export function AlbumSearchCommand({ onOpenChange, onSelect, open }: AlbumSearchCommandProps) {
+  const [inputValue, setInputValue] = useState("");
+  const { data: results = [], isFetching, debouncedQuery } = useAlbumSearch(inputValue);
+  const trimmedInput = inputValue.trim();
+
+  useEffect(() => {
+    if (!open) {
+      setInputValue("");
+    }
+  }, [open]);
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) {
+        return;
+      }
+
+      const target = event.target as HTMLElement | null;
+      const isTyping = target?.closest("input, textarea, select, [contenteditable='true']");
+
+      if (event.key === "/" && !isTyping) {
+        event.preventDefault();
+        onOpenChange(true);
+      }
+    }
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onOpenChange]);
+
+  function handleSelect(album: AlbumResult) {
+    onSelect?.(album);
+    onOpenChange(false);
+  }
+
+  return (
+    <CommandDialog
+      className="top-0 left-0 h-svh max-h-svh max-w-none translate-x-0 rounded-none! sm:top-18 sm:left-1/2 sm:h-auto sm:max-h-[calc(100svh-4.5rem)] sm:max-w-2xl sm:-translate-x-1/2 sm:rounded-4xl!"
+      description="Search albums."
+      onOpenChange={onOpenChange}
+      open={open}
+      title="Search albums"
+    >
+      <Command className="relative h-full rounded-none sm:h-auto sm:rounded-4xl" shouldFilter={false}>
+        <div className="flex shrink-0 items-center gap-2 border-border/70 border-b p-3 sm:block sm:border-b-0 sm:p-0">
+          <Button
+            aria-label="Go back"
+            className="shrink-0 rounded-full text-muted-foreground hover:text-foreground sm:hidden"
+            onClick={() => onOpenChange(false)}
+            size="icon-sm"
+            type="button"
+            variant="ghost"
+          >
+            <ArrowLeft />
+          </Button>
+          <CommandInput
+            autoCapitalize="none"
+            autoComplete="off"
+            autoCorrect="off"
+            inputGroupClassName="h-10 sm:h-11"
+            onValueChange={setInputValue}
+            placeholder="Search albums..."
+            spellCheck={false}
+            value={inputValue}
+            wrapperClassName="min-w-0 flex-1 p-0 sm:p-2 sm:pb-1"
+          />
+        </div>
+        {trimmedInput ? <SearchSourceHeader query={trimmedInput} /> : null}
+        <CommandList className="max-h-none min-h-0 flex-1 scroll-py-2 sm:max-h-[min(68svh,32rem)] sm:flex-none">
+          {trimmedInput ? (
+            <SearchResults
+              debouncedQuery={debouncedQuery}
+              isFetching={isFetching}
+              onSelect={handleSelect}
+              results={results}
+            />
+          ) : (
+            <CommandEmpty className="py-12 text-muted-foreground">Search for albums</CommandEmpty>
+          )}
+        </CommandList>
+      </Command>
+    </CommandDialog>
+  );
+}
+
+interface AlbumSearchTriggerProps {
+  className?: string;
+  compact?: boolean;
+  onOpen: () => void;
+}
+
+export function AlbumSearchTrigger({ className, compact = false, onOpen }: AlbumSearchTriggerProps) {
+  if (compact) {
+    return (
+      <Button
+        aria-keyshortcuts="/"
+        aria-label="Search albums"
+        className={cn("rounded-3xl text-muted-foreground hover:text-foreground active:scale-[0.97]", className)}
+        onClick={onOpen}
+        size="icon-sm"
+        type="button"
+        variant="ghost"
+      >
+        <Search />
+      </Button>
+    );
+  }
+
+  return (
+    <Button
+      aria-keyshortcuts="/"
+      aria-label="Search albums"
+      className={cn(
+        "group h-10 w-full justify-start rounded-4xl border-border/70 bg-card/40 px-2.5 text-muted-foreground shadow-none transition-[background-color,border-color,transform] hover:border-border hover:bg-muted/60 hover:text-foreground active:scale-[0.99]",
+        className
+      )}
+      onClick={onOpen}
+      type="button"
+      variant="outline"
+    >
+      <span className="flex min-w-0 items-center gap-2">
+        <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground transition-colors group-hover:text-foreground">
+          <Search />
+        </span>
+        <span className="truncate text-sm">Search albums...</span>
+      </span>
+    </Button>
+  );
+}
 
 interface SearchResultsProps {
   debouncedQuery: string;
-  emptyMessage: string;
   isFetching: boolean;
   onSelect: (album: AlbumResult) => void;
   results: AlbumResult[];
 }
 
-function SearchResults({ results, isFetching, debouncedQuery, emptyMessage, onSelect }: SearchResultsProps) {
+function SearchResults({ results, isFetching, debouncedQuery, onSelect }: SearchResultsProps) {
   if (isFetching && results.length === 0) {
-    return <p className="px-4 py-3 text-muted-foreground text-sm">Searching…</p>;
+    return <CommandEmpty className="text-muted-foreground">Searching...</CommandEmpty>;
   }
 
   if (!isFetching && debouncedQuery && results.length === 0) {
-    return <p className="px-4 py-3 text-muted-foreground text-sm">No results for "{debouncedQuery}"</p>;
+    return <CommandEmpty className="text-muted-foreground">No results for "{debouncedQuery}"</CommandEmpty>;
   }
 
   if (results.length === 0) {
-    return <p className="px-4 py-3 text-muted-foreground text-sm">{emptyMessage}</p>;
+    return <CommandEmpty className="text-muted-foreground">Search for albums</CommandEmpty>;
   }
 
   return (
-    <>
+    <CommandGroup className="pt-3">
       {results.map((album) => (
         <AlbumResultItem album={album} key={album.id} onSelect={onSelect} />
       ))}
-    </>
+      {isFetching ? <p className="px-3 py-2 text-muted-foreground text-xs">Updating results...</p> : null}
+    </CommandGroup>
   );
 }
-
-// --- Shared result item ---
 
 interface AlbumResultItemProps {
   album: AlbumResult;
@@ -68,34 +205,30 @@ interface AlbumResultItemProps {
 }
 
 function AlbumResultItem({ album, onSelect }: AlbumResultItemProps) {
+  const artists = album.artists.map((artist) => artist.name).join(", ");
+
   return (
-    <div className="px-1 py-1 transition-colors hover:bg-accent">
-      <button
-        className="flex w-full min-w-0 items-center gap-3 rounded-md px-2 py-1.5 text-left"
-        onClick={() => onSelect(album)}
-        type="button"
-      >
-        <div className="size-9 shrink-0 overflow-hidden rounded bg-muted">
-          {album.image && (
-            <img
-              alt={album.name}
-              className="size-full object-cover"
-              height={36}
-              referrerPolicy="no-referrer"
-              src={album.image}
-              width={36}
-            />
-          )}
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-medium text-foreground text-sm">{album.name}</p>
-          <p className="truncate text-muted-foreground text-xs">
-            {album.artists.map((a) => a.name).join(", ")}
-            {album.releaseDate ? ` · ${album.releaseDate.slice(0, 4)}` : ""}
-          </p>
-        </div>
-      </button>
-    </div>
+    <CommandItem className="items-center gap-3 py-2.5" onSelect={() => onSelect(album)} value={album.id}>
+      <div className="size-10 shrink-0 overflow-hidden rounded-md bg-muted">
+        {album.image ? (
+          <img
+            alt={album.name}
+            className="size-full object-cover"
+            height={40}
+            referrerPolicy="no-referrer"
+            src={album.image}
+            width={40}
+          />
+        ) : null}
+      </div>
+      <div className="min-w-0 flex-1 text-left">
+        <p className="truncate font-medium text-foreground text-sm">{album.name}</p>
+        <p className="truncate text-muted-foreground text-xs">
+          {artists}
+          {album.releaseDate ? ` · ${album.releaseDate.slice(0, 4)}` : ""}
+        </p>
+      </div>
+    </CommandItem>
   );
 }
 
@@ -126,201 +259,9 @@ function SpotifySearchSource({ className, href }: { className?: string; href: st
 
 function SearchSourceHeader({ className, query }: { className?: string; query: string }) {
   return (
-    <div className={cn("flex items-center justify-between border-border/70 border-b px-4 py-2", className)}>
+    <div className={cn("flex shrink-0 items-center justify-between border-border/70 border-b px-4 py-2", className)}>
       <span className="font-medium text-[10px] text-muted-foreground uppercase tracking-widest">Albums</span>
       <SpotifySearchSource className="-mr-2" href={getSpotifySearchUrl(query)} />
-    </div>
-  );
-}
-
-// --- Desktop input with dropdown ---
-
-interface AlbumSearchInputProps {
-  className?: string;
-  onSelect?: (album: AlbumResult) => void;
-}
-
-export function AlbumSearchInput({ className, onSelect }: AlbumSearchInputProps) {
-  const [inputValue, setInputValue] = useState("");
-  const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { data: results = [], isFetching, debouncedQuery } = useAlbumSearch(inputValue);
-
-  const showDropdown = isOpen && inputValue.trim().length >= 1;
-
-  useEffect(() => {
-    function handlePointerDown(e: PointerEvent) {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    }
-    document.addEventListener("pointerdown", handlePointerDown);
-    return () => document.removeEventListener("pointerdown", handlePointerDown);
-  }, []);
-
-  return (
-    <div className={cn("relative", className)} ref={containerRef}>
-      <div className="relative">
-        <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          autoCapitalize="none"
-          autoComplete="off"
-          autoCorrect="off"
-          className="pr-9 pl-9 [&::-webkit-search-cancel-button]:appearance-none"
-          onChange={(e) => {
-            setInputValue(e.target.value);
-            if (!isOpen) setIsOpen(true);
-          }}
-          onFocus={() => setIsOpen(true)}
-          placeholder="Search albums, artists…"
-          spellCheck={false}
-          type="search"
-          value={inputValue}
-        />
-        {inputValue && (
-          <button
-            aria-label="Clear search"
-            className="absolute top-1/2 right-3 -translate-y-1/2 text-primary transition-opacity hover:opacity-70"
-            onClick={() => {
-              setInputValue("");
-              setIsOpen(false);
-            }}
-            type="button"
-          >
-            <X className="size-3.5" />
-          </button>
-        )}
-      </div>
-      {showDropdown && (
-        <div className="fade-in-0 slide-in-from-top-1 absolute top-full left-0 z-50 mt-1.5 flex max-h-[min(70vh,560px)] w-full animate-in flex-col overflow-hidden rounded-lg border border-border bg-popover shadow-lg duration-150">
-          <SearchSourceHeader query={inputValue} />
-          <div className="scrollbar-thin overflow-y-auto [scrollbar-color:var(--border)_transparent] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-border [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar]:w-1.5">
-            <SearchResults
-              debouncedQuery={debouncedQuery}
-              emptyMessage=""
-              isFetching={isFetching}
-              onSelect={(a) => {
-                onSelect?.(a);
-                setIsOpen(false);
-                setInputValue("");
-              }}
-              results={results}
-            />
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// --- Mobile full-screen overlay ---
-
-interface AlbumSearchOverlayProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onSelect?: (album: AlbumResult) => void;
-}
-
-export function AlbumSearchOverlay({ isOpen, onClose, onSelect }: AlbumSearchOverlayProps) {
-  const [inputValue, setInputValue] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
-  const onCloseRef = useRef(onClose);
-  const { data: results = [], isFetching, debouncedQuery } = useAlbumSearch(inputValue);
-
-  // Keep ref current without adding onClose to effect deps
-  useEffect(() => {
-    onCloseRef.current = onClose;
-  });
-
-  // Focus input when overlay opens
-  useEffect(() => {
-    if (!isOpen) return;
-    const id = setTimeout(() => inputRef.current?.focus(), 50);
-    return () => clearTimeout(id);
-  }, [isOpen]);
-
-  // Escape key to close — stable dep array, no listener churn
-  useEffect(() => {
-    if (!isOpen) return;
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") onCloseRef.current();
-    }
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen]);
-
-  // Clear input and close — used by all close code paths
-  const handleClose = useCallback(() => {
-    setInputValue("");
-    onCloseRef.current();
-  }, []);
-
-  const handleResultSelect = useCallback(
-    (a: AlbumResult) => {
-      onSelect?.(a);
-      handleClose();
-    },
-    [onSelect, handleClose]
-  );
-
-  if (!isOpen) return null;
-
-  return (
-    <div className="fade-in-0 fixed inset-0 z-50 flex animate-in flex-col bg-background duration-150 lg:hidden">
-      {/* Search bar */}
-      <div className="flex items-center gap-3 border-border border-b px-4 py-3">
-        <button
-          aria-label="Back"
-          className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
-          onClick={handleClose}
-          type="button"
-        >
-          <ArrowLeft className="size-5" />
-        </button>
-        <div className="relative flex-1">
-          <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            autoCapitalize="none"
-            autoComplete="off"
-            autoCorrect="off"
-            className="pr-9 pl-9 [&::-webkit-search-cancel-button]:appearance-none"
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Search albums, artists…"
-            ref={inputRef}
-            spellCheck={false}
-            type="search"
-            value={inputValue}
-          />
-          {inputValue && (
-            <button
-              aria-label="Clear search"
-              className="absolute top-1/2 right-3 -translate-y-1/2 text-primary transition-opacity hover:opacity-70"
-              onClick={() => {
-                setInputValue("");
-                inputRef.current?.focus();
-              }}
-              type="button"
-            >
-              <X className="size-3.5" />
-            </button>
-          )}
-        </div>
-      </div>
-      {/* Results */}
-      {inputValue.trim() && <SearchSourceHeader query={inputValue} />}
-      <div className="flex-1 overflow-y-auto">
-        {inputValue.trim() ? (
-          <SearchResults
-            debouncedQuery={debouncedQuery}
-            emptyMessage="Search for albums or artists"
-            isFetching={isFetching}
-            onSelect={handleResultSelect}
-            results={results}
-          />
-        ) : (
-          <p className="px-4 py-10 text-center text-muted-foreground text-sm">Search for albums or artists</p>
-        )}
-      </div>
     </div>
   );
 }
