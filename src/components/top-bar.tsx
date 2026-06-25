@@ -37,7 +37,7 @@ export function TopBar() {
     <>
       <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} />
       <AlbumSearchCommand onOpenChange={setSearchOpen} onSelect={handleAlbumSelect} open={searchOpen} />
-      <div className="border-border/80 border-b bg-background/95 px-4 py-3 sm:px-6 xl:px-16 2xl:px-24">
+      <div className="sticky top-0 z-40 border-border/80 border-b bg-background/95 px-4 py-3 backdrop-blur-md sm:px-6 xl:px-16 2xl:px-24">
         <div className="mx-auto grid w-full max-w-375 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
           <LogoHomeLink />
           <div className="hidden min-w-0 justify-center lg:flex">
