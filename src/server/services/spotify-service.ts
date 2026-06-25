@@ -220,7 +220,7 @@ function getAlbumSearchDedupeKey(album: SpotifyAlbum) {
   return [
     normalizeAlbumSearchText(removeAdvisoryEditionMarkers(album.name)),
     album.artists.map((artist) => normalizeAlbumSearchText(artist.name)).join("|"),
-    album.release_date,
+    album.release_date.slice(0, 4),
     album.total_tracks,
   ].join("::");
 }
