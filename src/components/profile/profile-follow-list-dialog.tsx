@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { AuthDialog } from "@/components/auth/auth-dialog";
 import { Button } from "@/components/ui/button";
@@ -86,6 +86,8 @@ function ProfileFollowListDialog({
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [open, setOpen] = useState(false);
   const [pendingUserId, setPendingUserId] = useState<string>();
+  const openRef = useRef(false);
+  const shouldInvalidateListOnCloseRef = useRef(false);
   const queryClient = useQueryClient();
 
   const setUserFollowMutation = useSetUserFollowMutation();
@@ -109,6 +111,16 @@ function ProfileFollowListDialog({
     onLoadMore: fetchNextPage,
     rootMargin: "160px 0px",
   });
+
+  function handleOpenChange(nextOpen: boolean) {
+    openRef.current = nextOpen;
+    setOpen(nextOpen);
+
+    if (nextOpen || !shouldInvalidateListOnCloseRef.current) return;
+
+    shouldInvalidateListOnCloseRef.current = false;
+    queryClient.invalidateQueries({ queryKey });
+  }
 
   async function handleFollowToggle(user: FollowListUser, following: boolean) {
     if (!hasSession) return;
@@ -135,8 +147,13 @@ function ProfileFollowListDialog({
     );
     setPendingUserId(undefined);
 
+    if (openRef.current) {
+      shouldInvalidateListOnCloseRef.current = true;
+    } else {
+      queryClient.invalidateQueries({ queryKey });
+    }
+
     const staleQueryKeys = [
-      queryKey,
       userQueryKeys.profile(profileUsername, viewerUserId),
       userQueryKeys.profile(user.username, viewerUserId),
     ];
@@ -149,7 +166,7 @@ function ProfileFollowListDialog({
   return (
     <>
       <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} />
-      <Dialog onOpenChange={setOpen} open={open}>
+      <Dialog onOpenChange={handleOpenChange} open={open}>
         <DialogTrigger render={trigger} />
         <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-md">
           <DialogHeader className="shrink-0 gap-1 border-border/70 border-b px-5 py-4 pr-12">

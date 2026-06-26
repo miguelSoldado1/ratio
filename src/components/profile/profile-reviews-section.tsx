@@ -47,7 +47,7 @@ export function ProfileReviewsSection({
                 }}
               />
               <div className="flex items-start gap-3">
-                <ReviewCard.Album album={review.album} className="flex-1" href={`/album/${review.album.id}`} />
+                <ReviewCard.Album album={review.album} className="flex-1" linked />
                 <ReviewCard.Rating value={review.rating} />
               </div>
               {review.review ? <ReviewCard.Review>{review.review}</ReviewCard.Review> : null}

@@ -1,7 +1,8 @@
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
+import { AuthDialog } from "@/components/auth/auth-dialog";
 import { ProfileHeader, ProfileHeaderSkeleton } from "@/components/profile/profile-header";
 import { ProfileReviewsSection, ProfileReviewsSectionSkeleton } from "@/components/profile/profile-reviews-section";
 import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
@@ -21,6 +22,7 @@ function UserPage() {
   const { username } = Route.useParams();
   const queryClient = useQueryClient();
   const session = authClient.useSession();
+  const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const viewerUserId = session.data?.user.id;
   const hasSession = Boolean(viewerUserId);
   const profileQueryKey = userQueryKeys.profile(username, viewerUserId);
@@ -105,44 +107,54 @@ function UserPage() {
   }
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex w-full max-w-375 flex-col px-5 py-8 lg:px-10 lg:py-12 xl:px-14 2xl:px-20">
-        <ProfileHeader
-          followAction={
-            hasSession && !profile.canEdit
-              ? {
-                  isPending: isUserFollowPending,
-                  onToggle: (following) => toggleUserFollow(profile.id, following),
-                }
-              : undefined
-          }
-          followLists={{ hasSession, viewerUserId }}
-          profile={profile}
-          stats={{
-            followersCount: userProfileQuery.data.followersCount,
-            followingCount: userProfileQuery.data.followingCount,
-            reviewCount: userProfileQuery.data.reviewCount,
-          }}
-        />
-        {userReviewsQuery.isError && reviews.length === 0 ? (
-          <section className="mt-7 py-8">
-            <p className="font-medium text-sm">Reviews unavailable</p>
-            <p className="mt-1 max-w-md text-muted-foreground text-sm">Could not load reviews for this profile.</p>
-          </section>
-        ) : (
-          <ProfileReviewsSection
-            deletingReviewId={deletingReviewId}
-            displayName={profile.displayName}
-            hasSession={hasSession}
-            isFetchingNextPage={isFetchingNextPage}
-            loadMoreRef={loadMoreRef}
-            onReviewDelete={handleReviewDelete}
-            onReviewLikeToggle={handleReviewLikeToggle}
-            profileUser={profile}
-            reviews={reviews}
+    <>
+      <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} />
+      <main className="min-h-screen bg-background text-foreground">
+        <div className="mx-auto flex w-full max-w-375 flex-col px-5 py-8 lg:px-10 lg:py-12 xl:px-14 2xl:px-20">
+          <ProfileHeader
+            followAction={
+              profile.canEdit
+                ? undefined
+                : {
+                    isPending: isUserFollowPending,
+                    onToggle: (following) => {
+                      if (!hasSession) {
+                        setAuthDialogOpen(true);
+                        return false;
+                      }
+
+                      return toggleUserFollow(profile.id, following);
+                    },
+                  }
+            }
+            followLists={{ hasSession, viewerUserId }}
+            profile={profile}
+            stats={{
+              followersCount: userProfileQuery.data.followersCount,
+              followingCount: userProfileQuery.data.followingCount,
+              reviewCount: userProfileQuery.data.reviewCount,
+            }}
           />
-        )}
-      </div>
-    </main>
+          {userReviewsQuery.isError && reviews.length === 0 ? (
+            <section className="mt-7 py-8">
+              <p className="font-medium text-sm">Reviews unavailable</p>
+              <p className="mt-1 max-w-md text-muted-foreground text-sm">Could not load reviews for this profile.</p>
+            </section>
+          ) : (
+            <ProfileReviewsSection
+              deletingReviewId={deletingReviewId}
+              displayName={profile.displayName}
+              hasSession={hasSession}
+              isFetchingNextPage={isFetchingNextPage}
+              loadMoreRef={loadMoreRef}
+              onReviewDelete={handleReviewDelete}
+              onReviewLikeToggle={handleReviewLikeToggle}
+              profileUser={profile}
+              reviews={reviews}
+            />
+          )}
+        </div>
+      </main>
+    </>
   );
 }

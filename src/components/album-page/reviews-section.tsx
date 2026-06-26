@@ -84,7 +84,7 @@ export function ReviewsSection({ albumId, className }: ReviewsSectionProps) {
     <section className={className}>
       {reviews.map((review) => (
         <ReviewCard.Root className="border-border/80" key={review.id}>
-          <ReviewCard.Header createdAt={review.createdAt} href={review.userHref} user={review.user} />
+          <ReviewCard.Header createdAt={review.createdAt} user={review.user} />
           <ReviewCard.Rating value={review.rating} />
           {review.review ? <ReviewCard.Review>{review.review}</ReviewCard.Review> : null}
           <ReviewCard.Footer>

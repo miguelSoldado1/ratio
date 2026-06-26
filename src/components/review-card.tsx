@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { ChevronDown, Heart } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { RatingStarIcon } from "@/components/rating-star-icon";
@@ -11,6 +12,7 @@ import type { ReactNode } from "react";
 export interface ReviewUser {
   avatarUrl?: string;
   displayUsername: string;
+  username?: string;
 }
 
 export interface ReviewAlbum {
@@ -30,7 +32,6 @@ export interface ReviewData {
   rating: number; // 1–5 (half-star increments)
   review?: string;
   user: ReviewUser;
-  userHref?: string;
 }
 
 // --- Helpers ---
@@ -62,11 +63,10 @@ function Root({ children, className }: { children: ReactNode; className?: string
 interface HeaderProps {
   className?: string;
   createdAt: Date;
-  href?: string;
   user: ReviewUser;
 }
 
-function Header({ user, createdAt, href, className }: HeaderProps) {
+function Header({ user, createdAt, className }: HeaderProps) {
   const displayNameClass = "font-medium text-foreground/75 text-sm";
   const identityClass = "flex min-w-0 items-center gap-2";
   const identityLinkClass =
@@ -74,13 +74,17 @@ function Header({ user, createdAt, href, className }: HeaderProps) {
 
   return (
     <div className={cn("mb-3 flex items-center gap-2", className)}>
-      {href ? (
-        <a className={cn(identityClass, identityLinkClass)} href={href}>
+      {user.username ? (
+        <Link
+          className={cn(identityClass, identityLinkClass)}
+          params={{ username: user.username }}
+          to="/user/$username"
+        >
           <UserAvatar className="size-6 text-[11px]" height={24} name={user.displayUsername} src={user.avatarUrl} />
           <span className={cn(displayNameClass, "truncate transition-colors group-hover:text-primary")}>
             {user.displayUsername}
           </span>
-        </a>
+        </Link>
       ) : (
         <div className={identityClass}>
           <UserAvatar className="size-6 text-[11px]" height={24} name={user.displayUsername} src={user.avatarUrl} />
@@ -95,10 +99,10 @@ function Header({ user, createdAt, href, className }: HeaderProps) {
 interface AlbumProps {
   album: ReviewAlbum;
   className?: string;
-  href?: string;
+  linked?: boolean;
 }
 
-function Album({ album, href, className }: AlbumProps) {
+function Album({ album, linked, className }: AlbumProps) {
   const inner = (
     <>
       <div className="size-14 shrink-0 overflow-hidden bg-muted">
@@ -122,11 +126,15 @@ function Album({ album, href, className }: AlbumProps) {
     </>
   );
 
-  if (href) {
+  if (linked) {
     return (
-      <a className={cn("flex min-w-0 items-start gap-3 transition-opacity hover:opacity-80", className)} href={href}>
+      <Link
+        className={cn("flex min-w-0 items-start gap-3 transition-opacity hover:opacity-80", className)}
+        params={{ albumId: album.id }}
+        to="/album/$albumId"
+      >
         {inner}
-      </a>
+      </Link>
     );
   }
 
@@ -487,12 +495,12 @@ interface ReviewCardProps extends ReviewData {
   className?: string;
 }
 
-function ReviewCard({ user, userHref, album, rating, review, likes, liked, createdAt, className }: ReviewCardProps) {
+function ReviewCard({ user, album, rating, review, likes, liked, createdAt, className }: ReviewCardProps) {
   return (
     <Root className={className}>
-      <Header createdAt={createdAt} href={userHref} user={user} />
+      <Header createdAt={createdAt} user={user} />
       <div className="flex items-start gap-3">
-        <Album album={album} className="flex-1" href={`/album/${album.id}`} />
+        <Album album={album} className="flex-1" linked />
         <Rating value={rating} />
       </div>
       {review ? <Review>{review}</Review> : null}

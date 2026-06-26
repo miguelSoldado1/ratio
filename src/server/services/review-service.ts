@@ -452,10 +452,10 @@ function mapAlbumReview({ canDelete, liked, likes, review, user }: AlbumReviewRo
     rating: review.rating / 2,
     review: review.body ?? undefined,
     createdAt: review.createdAt,
-    userHref: user.username ? `/user/${user.username}` : undefined,
     user: {
       avatarUrl: user.avatarUrl ?? undefined,
       displayUsername: user.displayUsername ?? user.username ?? user.id,
+      username: user.username ?? undefined,
     },
   };
 }

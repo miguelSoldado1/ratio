@@ -280,8 +280,7 @@ export const albumPageReviews: ReviewData[] = [
     rating: 4.5,
     review:
       "It has the ridiculous confidence of a pop record that knows exactly how strange it is. The vocal runs feel athletic, the production keeps opening trapdoors, and somehow the whole thing still moves like a summer album.",
-    user: { displayUsername: "Noah Bell" },
-    userHref: "/user/noahbell",
+    user: { displayUsername: "Noah Bell", username: "noahbell" },
   },
   {
     album: {
@@ -297,8 +296,7 @@ export const albumPageReviews: ReviewData[] = [
     rating: 4,
     review:
       "The album is best when it sounds sunlit and slightly impossible. Sunset and Blood and Butter make the fantasy feel lived in, not staged. A few transitions are thinner than I want, but the peaks are enormous.",
-    user: { displayUsername: "Iris Vega" },
-    userHref: "/user/irisvega",
+    user: { displayUsername: "Iris Vega", username: "irisvega" },
   },
   {
     album: {
@@ -314,8 +312,7 @@ export const albumPageReviews: ReviewData[] = [
     rating: 3.5,
     review:
       "I admire the craft more than I return to it. The melodies are pristine, but the album sometimes feels like it is sprinting past the emotional center. Butterfly Net is the exception and the reason I keep coming back.",
-    user: { displayUsername: "Marta Sol" },
-    userHref: "/user/martasol",
+    user: { displayUsername: "Marta Sol", username: "martasol" },
   },
 ];
 
