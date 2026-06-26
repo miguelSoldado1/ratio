@@ -4,64 +4,64 @@ import SpotifyWebApi from "spotify-web-api-node";
 
 config({ path: ".env" });
 
-const defaultUserId = "CSvcdHs3JoHlZPSuITgzwygfNRcX4bT7";
-const defaultLimit = 36;
+// Usage: pnpm seed:profile-reviews -- --user-id=<user-id> [--limit=24] [--dry-run]
+// Required env: DATABASE_URL, SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET.
+// Optional env: SEED_PROFILE_USER_ID and SEED_PROFILE_REVIEW_LIMIT; CLI flags override them.
+// Picks a random album subset, fetches pinned Spotify IDs, and inserts missing reviews only.
+
+const defaultLimit = 24;
 const market = "US";
-const seedMarker = "[ratio seed:profile-infinite]";
 const oneHourMs = 60 * 60 * 1000;
 const reviewBodyMaxLength = 2000;
 const spotifyRetryDelaysMs = [500, 1000, 2000];
 
 const albumSpecs = [
-  { artist: "Radiohead", title: "In Rainbows", year: 2007 },
-  { artist: "Kendrick Lamar", title: "To Pimp A Butterfly", year: 2015 },
-  { artist: "Frank Ocean", title: "Blonde", year: 2016 },
-  { artist: "Joni Mitchell", title: "Blue", year: 1971 },
-  { artist: "Daft Punk", title: "Discovery", year: 2001 },
-  { artist: "Daft Punk", title: "Random Access Memories", year: 2013 },
-  { artist: "The Beatles", title: "Abbey Road", year: 1969 },
-  { artist: "Stevie Wonder", title: "Songs In The Key Of Life", year: 1976 },
-  { artist: "Fleetwood Mac", title: "Rumours", year: 1977 },
-  { artist: "Lauryn Hill", title: "The Miseducation of Lauryn Hill", year: 1998 },
-  { artist: "Radiohead", title: "OK Computer", year: 1997 },
-  { artist: "Kendrick Lamar", title: "good kid, m.A.A.d city", year: 2012 },
-  { artist: "Tyler, The Creator", title: "IGOR", year: 2019 },
-  { artist: "Madvillain", title: "Madvillainy", year: 2004 },
-  { artist: "Miles Davis", title: "Kind Of Blue", year: 1959 },
-  { artist: "Marvin Gaye", title: "What's Going On", year: 1971 },
-  { artist: "The Beach Boys", title: "Pet Sounds", year: 1966 },
-  { artist: "The Velvet Underground", title: "The Velvet Underground & Nico", year: 1967 },
-  { artist: "Nirvana", title: "Nevermind", year: 1991 },
-  { artist: "The Smiths", title: "The Queen Is Dead", year: 1986 },
-  { artist: "Talking Heads", title: "Remain in Light", year: 1980 },
-  { artist: "Slowdive", title: "Souvlaki", year: 1993 },
-  { artist: "The Strokes", title: "Is This It", year: 2001 },
-  { artist: "Frank Ocean", title: "channel ORANGE", year: 2012 },
-  { artist: "SZA", title: "Ctrl", year: 2017 },
-  { artist: "Beyonce", title: "Lemonade", year: 2016 },
-  { artist: "Lorde", title: "Melodrama", year: 2017 },
-  { artist: "Lana Del Rey", title: "Norman Fucking Rockwell!", year: 2019 },
-  { artist: "Weyes Blood", title: "Titanic Rising", year: 2019 },
-  { artist: "Fiona Apple", title: "Fetch The Bolt Cutters", year: 2020 },
-  { artist: "Tame Impala", title: "Currents", year: 2015 },
-  { artist: "Solange", title: "A Seat at the Table", year: 2016 },
-  { artist: "D'Angelo", title: "Black Messiah", year: 2014 },
-  { artist: "A Tribe Called Quest", title: "The Low End Theory", year: 1991 },
-  { artist: "Wu-Tang Clan", title: "Enter The Wu-Tang (36 Chambers)", year: 1993 },
-  { artist: "Nas", title: "Illmatic", year: 1994 },
-  { artist: "Kanye West", title: "My Beautiful Dark Twisted Fantasy", year: 2010 },
-  { artist: "D'Angelo", title: "Voodoo", year: 2000 },
-  { artist: "The Avalanches", title: "Since I Left You", year: 2000 },
-  { artist: "Portishead", title: "Dummy", year: 1994 },
-  { artist: "Massive Attack", title: "Mezzanine", year: 1998 },
-  { artist: "Bjork", title: "Homogenic", year: 1997 },
-  { artist: "Janelle Monae", title: "The ArchAndroid", year: 2010 },
-  { artist: "Kate Bush", title: "Hounds Of Love", year: 1985 },
+  { id: "5vkqYmiPBYLaalcmjujWxK", artist: "Radiohead", title: "In Rainbows", year: 2007 },
+  { id: "7ycBtnsMtyVbbwTfJwRjSP", artist: "Kendrick Lamar", title: "To Pimp A Butterfly", year: 2015 },
+  { id: "3mH6qwIy9crq0I9YQbOuDf", artist: "Frank Ocean", title: "Blonde", year: 2016 },
+  { id: "1vz94WpXDVYIEGja8cjFNa", artist: "Joni Mitchell", title: "Blue", year: 1971 },
+  { id: "2noRn2Aes5aoNVsU6iWThc", artist: "Daft Punk", title: "Discovery", year: 2001 },
+  { id: "4m2880jivSbbyEGAKfITCa", artist: "Daft Punk", title: "Random Access Memories", year: 2013 },
+  { id: "0ETFjACtuP2ADo6LFhL6HN", artist: "The Beatles", title: "Abbey Road", year: 1969 },
+  { id: "6YUCc2RiXcEKS9ibuZxjt0", artist: "Stevie Wonder", title: "Songs In The Key Of Life", year: 1976 },
+  { id: "1bt6q2SruMsBtcerNVtpZB", artist: "Fleetwood Mac", title: "Rumours", year: 1977 },
+  { id: "1BZoqf8Zje5nGdwZhOjAtD", artist: "Lauryn Hill", title: "The Miseducation of Lauryn Hill", year: 1998 },
+  { id: "6dVIqQ8qmQ5GBnJ9shOYGE", artist: "Radiohead", title: "OK Computer", year: 1997 },
+  { id: "6PBZN8cbwkqm1ERj2BGXJ1", artist: "Kendrick Lamar", title: "good kid, m.A.A.d city", year: 2012 },
+  { id: "5zi7WsKlIiUXv09tbGLKsE", artist: "Tyler, The Creator", title: "IGOR", year: 2019 },
+  { id: "19bQiwEKhXUBJWY6oV3KZk", artist: "Madvillain", title: "Madvillainy", year: 2004 },
+  { id: "1weenld61qoidwYuZ1GESA", artist: "Miles Davis", title: "Kind Of Blue", year: 1959 },
+  { id: "2v6ANhWhZBUKkg6pJJBs3B", artist: "Marvin Gaye", title: "What's Going On", year: 1971 },
+  { id: "2CNEkSE8TADXRT2AzcEt1b", artist: "The Beach Boys", title: "Pet Sounds", year: 1966 },
+  { id: "2guirTSEqLizK7j9i1MTTZ", artist: "Nirvana", title: "Nevermind", year: 1991 },
+  { id: "5Y0p2XCgRRIjna91aQE8q7", artist: "The Smiths", title: "The Queen Is Dead", year: 1986 },
+  { id: "1JvXxLsm0PxlGH4LXzqMGq", artist: "Talking Heads", title: "Remain in Light", year: 1980 },
+  { id: "53eHm1f3sFiSzWMaKOl98Z", artist: "Slowdive", title: "Souvlaki", year: 1993 },
+  { id: "2k8KgmDp9oHrmu0MIj4XDE", artist: "The Strokes", title: "Is This It", year: 2001 },
+  { id: "392p3shh2jkxUxY2VHvlH8", artist: "Frank Ocean", title: "channel ORANGE", year: 2012 },
+  { id: "76290XdXVF9rPzGdNRWdCh", artist: "SZA", title: "Ctrl", year: 2017 },
+  { id: "7dK54iZuOxXFarGhXwEXfF", artist: "Beyonce", title: "Lemonade", year: 2016 },
+  { id: "2B87zXm9bOWvAJdkJBTpzF", artist: "Lorde", title: "Melodrama", year: 2017 },
+  { id: "5XpEKORZ4y6OrCZSKsi46A", artist: "Lana Del Rey", title: "Norman Fucking Rockwell!", year: 2019 },
+  { id: "0Cuqhgy8vm96JEkBY3polk", artist: "Weyes Blood", title: "Titanic Rising", year: 2019 },
+  { id: "0fO1KemWL2uCCQmM22iKlj", artist: "Fiona Apple", title: "Fetch The Bolt Cutters", year: 2020 },
+  { id: "79dL7FLiJFOO0EoehUHQBv", artist: "Tame Impala", title: "Currents", year: 2015 },
+  { id: "3Yko2SxDk4hc6fncIBQlcM", artist: "Solange", title: "A Seat at the Table", year: 2016 },
+  { id: "5Hfbag0SsHxafx1SySFSX6", artist: "D'Angelo", title: "Black Messiah", year: 2014 },
+  { id: "1p12OAWwudgMqfMzjMvl2a", artist: "A Tribe Called Quest", title: "The Low End Theory", year: 1991 },
+  { id: "7otEvlhYLzpqiaxq3dT4Lg", artist: "Wu-Tang Clan", title: "Enter The Wu-Tang (36 Chambers)", year: 1993 },
+  { id: "3kEtdS2pH6hKcMU9Wioob1", artist: "Nas", title: "Illmatic", year: 1994 },
+  { id: "20r762YmB5HeofjMCiPMLv", artist: "Kanye West", title: "My Beautiful Dark Twisted Fantasy", year: 2010 },
+  { id: "2lO9yuuIDgBpSJzxTh3ai8", artist: "D'Angelo", title: "Voodoo", year: 2000 },
+  { id: "0YtYaaO0aipyeQl0xhAWTO", artist: "The Avalanches", title: "Since I Left You", year: 2000 },
+  { id: "3539EbNgIdEDGBKkUf4wno", artist: "Portishead", title: "Dummy", year: 1994 },
+  { id: "49MNmJhZQewjt06rpwp6QR", artist: "Massive Attack", title: "Mezzanine", year: 1998 },
+  { id: "0HMsmYvoT1h2x1C4di5faf", artist: "Bjork", title: "Homogenic", year: 1997 },
+  { id: "7MvSB0JTdtl1pSwZcgvYQX", artist: "Janelle Monae", title: "The ArchAndroid", year: 2010 },
+  { id: "5G5UwqPsxDKpxJLX4xsyuh", artist: "Kate Bush", title: "Hounds Of Love", year: 1985 },
 ];
 
-const ratingPattern = [10, 9, 8, 9, 7, 10, 8, 6, 9, 10, 7, 8];
-
-const loremIpsumSentences = [
+const loremIpsumPhrases = [
   "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
   "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
   "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
@@ -74,6 +74,16 @@ const loremIpsumSentences = [
   "Donec lobortis risus a elit, etiam tempor ut ullamcorper ligula.",
 ];
 
+const reviewBodyProfiles = [
+  null,
+  { paragraphCount: 1, targetLength: 32 },
+  { paragraphCount: 1, targetLength: 120 },
+  { paragraphCount: 1, targetLength: 520 },
+  { paragraphCount: 2, targetLength: 900 },
+  { paragraphCount: 2, targetLength: 1320 },
+  { paragraphCount: 3, targetLength: 1780 },
+];
+
 const options = getOptions();
 const databaseUrl = requireEnv("DATABASE_URL");
 const spotifyClientId = requireEnv("SPOTIFY_CLIENT_ID");
@@ -81,79 +91,77 @@ const spotifyClientSecret = requireEnv("SPOTIFY_CLIENT_SECRET");
 const db = postgres(databaseUrl, { max: 1, prepare: false });
 
 try {
+  await seedProfileReviews();
+} finally {
+  await db.end({ timeout: 1 }).catch(() => undefined);
+}
+
+async function seedProfileReviews() {
   validateOptions(options);
 
-  const [targetUser] = await db`select id from "user" where id = ${options.userId}`;
+  const [targetUser] = await db`
+    select id, name, username, display_username
+    from "user"
+    where id = ${options.userId}
+  `;
 
   if (!targetUser) {
     throw new Error(`No user found for id ${options.userId}`);
   }
 
+  console.log(`Seeding reviews for ${formatUserName(targetUser)} (${targetUser.id})`);
+
   const spotifyApi = await createAuthenticatedSpotifyApi();
-  const selectedSpecs = albumSpecs.slice(0, options.limit);
+  const selectedSpecs = getRandomAlbumSpecs(options.limit);
   const spotifyAlbums = [];
 
   for (const spec of selectedSpecs) {
-    const album = await resolveSpotifyAlbum(spotifyApi, spec);
+    const album = await fetchSpotifyAlbum(spotifyApi, spec);
     spotifyAlbums.push(album);
-    console.log(`Resolved ${album.name} by ${formatArtistNames(album.artists)} (${album.id})`);
+    console.log(`Fetched ${album.name} by ${formatArtistNames(album.artists)} (${album.id})`);
   }
+
+  const seedReviews = spotifyAlbums.map((album, index) => {
+    const createdAt = new Date(Date.now() - index * oneHourMs);
+    const rating = Math.floor(Math.random() * 10) + 1;
+    const body = buildReviewBody();
+
+    validateReviewBody(body, index);
+
+    return { album, body, createdAt, rating };
+  });
 
   if (options.dryRun) {
-    console.log(`Dry run complete. ${spotifyAlbums.length} Spotify albums resolved; no rows changed.`);
-  } else {
-    const summary = await db.begin(async (transaction) => {
-      if (options.replaceSeed) {
-        const deletedRows = await transaction`
-          delete from review
-          where user_id = ${options.userId}
-            and body like ${`${seedMarker}%`}
-          returning id
-        `;
-        console.log(`Deleted ${deletedRows.length} existing seed reviews for ${options.userId}.`);
-      }
-
-      let changedReviews = 0;
-      let skippedReviews = 0;
-
-      for (const [index, album] of spotifyAlbums.entries()) {
-        await upsertAlbum(transaction, album);
-
-        const createdAt = new Date(Date.now() - index * oneHourMs);
-        const rating = ratingPattern[index % ratingPattern.length];
-        const body = buildReviewBody(index, album);
-
-        validateReviewBody(body, index);
-
-        const changedRows = await transaction`
-          insert into review (user_id, album_id, rating, body, created_at, updated_at)
-          values (${options.userId}, ${album.id}, ${rating}, ${body}, ${createdAt}, ${createdAt})
-          on conflict (user_id, album_id) do update set
-            rating = excluded.rating,
-            body = excluded.body,
-            created_at = excluded.created_at,
-            updated_at = excluded.updated_at
-          where "review"."body" is null
-            or "review"."body" like ${`${seedMarker}%`}
-          returning id
-        `;
-
-        if (changedRows.length === 0) {
-          skippedReviews += 1;
-        } else {
-          changedReviews += 1;
-        }
-      }
-
-      return { changedReviews, skippedReviews, upsertedAlbums: spotifyAlbums.length };
-    });
-
-    console.log(
-      `Done. Upserted ${summary.upsertedAlbums} albums, changed ${summary.changedReviews} reviews, skipped ${summary.skippedReviews} non-seed existing reviews.`
-    );
+    return console.log(`Dry run complete. ${spotifyAlbums.length} Spotify albums fetched; no rows changed.`);
   }
-} finally {
-  await db.end({ timeout: 1 }).catch(() => undefined);
+
+  const summary = await db.begin(async (transaction) => {
+    let changedReviews = 0;
+    let skippedReviews = 0;
+
+    for (const { album, body, createdAt, rating } of seedReviews) {
+      await upsertAlbum(transaction, album);
+
+      const changedRows = await transaction`
+        insert into review (user_id, album_id, rating, body, created_at, updated_at)
+        values (${options.userId}, ${album.id}, ${rating}, ${body}, ${createdAt}, ${createdAt})
+        on conflict (user_id, album_id) do nothing
+        returning id
+      `;
+
+      if (changedRows.length === 0) {
+        skippedReviews += 1;
+      } else {
+        changedReviews += 1;
+      }
+    }
+
+    return { changedReviews, skippedReviews, upsertedAlbums: spotifyAlbums.length };
+  });
+
+  console.log(
+    `Done. Upserted ${summary.upsertedAlbums} albums, changed ${summary.changedReviews} reviews, skipped ${summary.skippedReviews} existing reviews.`
+  );
 }
 
 async function createAuthenticatedSpotifyApi() {
@@ -167,28 +175,18 @@ async function createAuthenticatedSpotifyApi() {
   return spotifyApi;
 }
 
-async function resolveSpotifyAlbum(spotifyApi, spec) {
-  const query = `${spec.title} ${spec.artist}`;
-  const { body } = await withSpotifyRetry(
-    () => spotifyApi.searchAlbums(query, { limit: 10, market }),
-    `Spotify search for ${spec.title} by ${spec.artist}`
-  );
-  const candidates = body.albums?.items?.filter((album) => album.album_type === "album") ?? [];
-  const candidate = candidates
-    .map((album) => ({ album, score: scoreAlbumMatch(album, spec) }))
-    .sort((left, right) => right.score - left.score)[0];
-
-  if (!candidate || candidate.score < 100) {
-    throw new Error(`Could not confidently resolve Spotify album for ${spec.title} by ${spec.artist}`);
-  }
-
+async function fetchSpotifyAlbum(spotifyApi, spec) {
   const { body: album } = await withSpotifyRetry(
-    () => spotifyApi.getAlbum(candidate.album.id, { market }),
-    `Spotify album lookup for ${candidate.album.id}`
+    () => spotifyApi.getAlbum(spec.id, { market }),
+    `Spotify album lookup for ${spec.id}`
   );
 
   if (album.album_type !== "album") {
     throw new Error(`${album.id} resolved to ${album.album_type}, not an album`);
+  }
+
+  if (!matchesAlbumSpec(album, spec)) {
+    throw new Error(`Spotify album ${spec.id} did not match ${spec.title} by ${spec.artist}`);
   }
 
   return album;
@@ -230,80 +228,54 @@ function wait(delayMs) {
   return new Promise((resolve) => setTimeout(resolve, delayMs));
 }
 
-function buildReviewBody(index, album) {
-  const profile = index % 12;
+function buildReviewBody() {
+  const profile = getRandomItem(reviewBodyProfiles);
 
-  if (profile === 2 || profile === 7 || profile === 11) {
+  if (profile === null) {
     return null;
   }
 
-  const albumLabel = `${album.name} by ${formatArtistNames(album.artists)}`;
-  const reviewText = buildReviewText(profile, index, albumLabel);
-
-  return `${seedMarker}\n\n${reviewText}`;
+  return buildLoremIpsumReview(profile);
 }
 
-function buildReviewText(profile, index, albumLabel) {
-  if (profile === 0) {
-    return `${albumLabel}. ${buildTrimmedLoremIpsum(index, 1820)}`;
-  }
+function buildLoremIpsumReview(profile) {
+  const paragraphTargetLength = Math.floor(profile.targetLength / profile.paragraphCount);
 
-  if (profile === 1) {
-    return "Lorem ipsum. Tiny note.";
-  }
-
-  if (profile === 3) {
-    return `Lorem ipsum dolor sit amet. ${albumLabel}.`;
-  }
-
-  if (profile === 4) {
-    return buildTrimmedLoremIpsum(index, 720);
-  }
-
-  if (profile === 5) {
-    return `${buildTrimmedLoremIpsum(index, 340)}\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit.`;
-  }
-
-  if (profile === 6) {
-    return "Lorem ipsum dolor sit amet.";
-  }
-
-  if (profile === 8) {
-    return `${albumLabel}. ${buildTrimmedLoremIpsum(index, 1540)}`;
-  }
-
-  if (profile === 9) {
-    return "Lorem ipsum dolor sit amet, consectetur.";
-  }
-
-  if (profile === 10) {
-    return `${buildTrimmedLoremIpsum(index, 1100)}\n\n${buildTrimmedLoremIpsum(index + 17, 220)}`;
-  }
-
-  return buildTrimmedLoremIpsum(index, 520);
+  return Array.from({ length: profile.paragraphCount }, () => buildLoremIpsumParagraph(paragraphTargetLength)).join(
+    "\n\n"
+  );
 }
 
-function buildTrimmedLoremIpsum(index, targetLength) {
-  const source = Array.from({ length: 24 }, (_, repetitionIndex) => {
-    const rotatedSentences = rotateArray(loremIpsumSentences, (index + repetitionIndex) % loremIpsumSentences.length);
-    return rotatedSentences.join(" ");
-  }).join("\n\n");
-  const maxStart = Math.max(0, source.length - targetLength - 1);
-  const trimStart = deterministicNumber(index * 37 + targetLength, maxStart);
-  const trimmed = source.slice(trimStart, trimStart + targetLength + 160).trim();
+function buildLoremIpsumParagraph(targetLength) {
+  let paragraph = "";
 
-  return trimmed.slice(0, targetLength).trim();
+  while (paragraph.length < targetLength) {
+    const phrase = getRandomItem(loremIpsumPhrases);
+    const nextParagraph = paragraph ? `${paragraph} ${phrase}` : phrase;
+
+    if (nextParagraph.length > targetLength && paragraph) {
+      break;
+    }
+
+    paragraph = nextParagraph;
+  }
+
+  return paragraph;
 }
 
-function rotateArray(values, offset) {
-  return [...values.slice(offset), ...values.slice(0, offset)];
+function getRandomItem(values) {
+  return values[Math.floor(Math.random() * values.length)];
 }
 
-function deterministicNumber(seed, maxValue) {
-  if (maxValue <= 0) return 0;
+function getRandomAlbumSpecs(limit) {
+  const specs = [...albumSpecs];
 
-  const value = Math.sin(seed + 1) * 10_000;
-  return Math.floor((value - Math.floor(value)) * (maxValue + 1));
+  for (let index = specs.length - 1; index > 0; index -= 1) {
+    const randomIndex = Math.floor(Math.random() * (index + 1));
+    [specs[index], specs[randomIndex]] = [specs[randomIndex], specs[index]];
+  }
+
+  return specs.slice(0, limit);
 }
 
 function validateReviewBody(body, index) {
@@ -340,30 +312,18 @@ async function upsertAlbum(transaction, album) {
   `;
 }
 
-function scoreAlbumMatch(album, spec) {
+function matchesAlbumSpec(album, spec) {
   const albumTitle = normalizeMatchText(album.name);
   const specTitle = normalizeMatchText(spec.title);
   const albumArtists = album.artists.map((artist) => normalizeMatchText(artist.name));
   const specArtist = normalizeMatchText(spec.artist);
-  let score = 0;
+  const titleMatches = albumTitle === specTitle || albumTitle.includes(specTitle) || specTitle.includes(albumTitle);
+  const artistMatches = albumArtists.some(
+    (artist) => artist === specArtist || artist.includes(specArtist) || specArtist.includes(artist)
+  );
+  const yearMatches = album.release_date.startsWith(String(spec.year));
 
-  if (albumTitle === specTitle) {
-    score += 100;
-  } else if (albumTitle.includes(specTitle) || specTitle.includes(albumTitle)) {
-    score += 45;
-  }
-
-  if (albumArtists.some((artist) => artist === specArtist)) {
-    score += 80;
-  } else if (albumArtists.some((artist) => artist.includes(specArtist) || specArtist.includes(artist))) {
-    score += 40;
-  }
-
-  if (album.release_date.startsWith(String(spec.year))) {
-    score += 20;
-  }
-
-  return score;
+  return titleMatches && artistMatches && yearMatches;
 }
 
 function normalizeMatchText(value) {
@@ -398,12 +358,15 @@ function formatArtistNames(artists) {
   return artists.map((artist) => artist.name).join(", ");
 }
 
+function formatUserName(user) {
+  return user.display_username || user.username || user.name;
+}
+
 function getOptions() {
   const cliOptions = {
     dryRun: false,
     limit: Number(process.env.SEED_PROFILE_REVIEW_LIMIT ?? defaultLimit),
-    replaceSeed: false,
-    userId: process.env.SEED_PROFILE_USER_ID ?? defaultUserId,
+    userId: process.env.SEED_PROFILE_USER_ID ?? "",
   };
 
   for (const argument of process.argv.slice(2)) {
@@ -413,11 +376,6 @@ function getOptions() {
 
     if (argument === "--dry-run") {
       cliOptions.dryRun = true;
-      continue;
-    }
-
-    if (argument === "--replace-seed") {
-      cliOptions.replaceSeed = true;
       continue;
     }
 
