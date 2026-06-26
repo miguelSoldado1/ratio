@@ -10,6 +10,7 @@
     "cf-typegen": "wrangler types",
     "preview": "vite preview",
     "seed:profile-reviews": "node scripts/seed-profile-reviews.mjs",
+    "seed:users-and-follows": "node scripts/seed-users-and-follows.mjs",
     "test": "vitest run",
     "lint": "ultracite check",
     "format": "ultracite fix",
