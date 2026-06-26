@@ -7,6 +7,7 @@ import { ProfileReviewsSection, ProfileReviewsSectionSkeleton } from "@/componen
 import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
 import { useReviewDelete } from "@/hooks/use-review-delete";
 import { useReviewLikeToggle } from "@/hooks/use-review-like-toggle";
+import { useUserFollowToggle } from "@/hooks/use-user-follow-toggle";
 import { authClient } from "@/lib/auth/auth-client";
 import { albumQueryKeys, userQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { getUserProfile, getUserReviews } from "@/server/functions/review-functions";
@@ -30,11 +31,12 @@ function UserPage() {
     queryKey: profileQueryKey,
   });
 
-  const getUserReviewsFn = useServerFn(getUserReviews);
   const profile = userProfileQuery.data?.user;
   const reviewsQueryKey = profile
     ? userQueryKeys.reviews(profile.id, viewerUserId)
     : userQueryKeys.reviews("", viewerUserId);
+
+  const getUserReviewsFn = useServerFn(getUserReviews);
   const userReviewsQuery = useInfiniteQuery({
     enabled: Boolean(profile),
     getNextPageParam: (lastPage) => lastPage.nextCursor,
@@ -47,6 +49,11 @@ function UserPage() {
   const handleReviewLikeToggle = useReviewLikeToggle<UserReviewsPage>({
     enabled: hasSession,
     queryKey: reviewsQueryKey,
+  });
+
+  const { isUserFollowPending, toggleUserFollow } = useUserFollowToggle({
+    enabled: hasSession,
+    queryKey: profileQueryKey,
   });
 
   const handleReviewDeleted = useCallback(
@@ -96,12 +103,20 @@ function UserPage() {
     <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex w-full max-w-375 flex-col px-5 py-8 lg:px-10 lg:py-12 xl:px-14 2xl:px-20">
         <ProfileHeader
-          avatarObjectKey={profile.avatarObjectKey}
-          avatarUrl={profile.avatarUrl}
-          canEdit={profile.canEdit}
-          displayName={profile.displayName}
-          reviewCount={userProfileQuery.data.reviewCount}
-          username={profile.username}
+          followAction={
+            hasSession && !profile.canEdit
+              ? {
+                  isPending: isUserFollowPending,
+                  onToggle: (following) => toggleUserFollow(profile.id, following),
+                }
+              : undefined
+          }
+          profile={profile}
+          stats={{
+            followersCount: userProfileQuery.data.followersCount,
+            followingCount: userProfileQuery.data.followingCount,
+            reviewCount: userProfileQuery.data.reviewCount,
+          }}
         />
         {userReviewsQuery.isError && reviews.length === 0 ? (
           <section className="mt-7 py-8">

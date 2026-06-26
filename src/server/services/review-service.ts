@@ -1,9 +1,10 @@
 import { getRequestHeaders } from "@tanstack/react-start/server";
 import { and, count, desc, eq, getTableColumns, ilike, isNotNull, lt, or, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import z from "zod";
 import { createAuth } from "@/lib/auth";
 import { createDbClient } from "@/lib/db";
-import { albums, reviewLikes, reviews, user } from "@/lib/db/schema";
+import { albums, reviewLikes, reviews, user, userFollows } from "@/lib/db/schema";
 import { ensureAlbumExistsForWrite, getMissingAlbumMetadataForWrite } from "./album-service";
 import type { AuthenticatedContext } from "../auth-middleware";
 
@@ -39,6 +40,8 @@ export interface UserReviewsPage {
 }
 
 export interface UserProfile {
+  followersCount: number;
+  followingCount: number;
   reviewCount: number;
   user: ReturnType<typeof mapUserProfile>;
 }
@@ -139,21 +142,21 @@ export async function getUserProfileService(data: UserProfileInput): Promise<Use
   const { client, db } = createDbClient();
 
   try {
-    const profile = await getUserProfileRow(db, data.username);
+    const viewerUserId = await getCurrentUserId(db);
+    const profile = await getUserProfileRow(db, data.username, viewerUserId);
 
     if (!profile) {
       throw new Error("User not found");
     }
 
-    const viewerUserId = await getCurrentUserId(db);
-    const [reviewCountRow] = await db
-      .select({ total: count(reviews.id) })
-      .from(reviews)
-      .where(eq(reviews.userId, profile.id));
-
     return {
-      reviewCount: reviewCountRow?.total ?? 0,
-      user: mapUserProfile(profile, viewerUserId === profile.id),
+      followersCount: profile.followersCount,
+      followingCount: profile.followingCount,
+      reviewCount: profile.reviewCount,
+      user: mapUserProfile(profile, {
+        canEdit: viewerUserId === profile.id,
+        followedByViewer: profile.followedByViewer,
+      }),
     };
   } finally {
     await client.end({ timeout: 1 }).catch(() => undefined);
@@ -334,18 +337,28 @@ export async function setReviewLikeService(data: ReviewLikeInput, context: Authe
   return { liked: data.liked, likes: likeCount?.likes ?? 0, reviewId: data.reviewId };
 }
 
-function getUserProfileRow(db: ReturnType<typeof createDbClient>["db"], username: string) {
+function getUserProfileRow(db: ReturnType<typeof createDbClient>["db"], username: string, viewerUserId?: string) {
+  const profileUser = alias(user, "profile_user");
+  const profileUserId = sql.raw('"profile_user"."id"');
+  const followedByViewer = viewerUserId
+    ? sql<boolean>`exists(select 1 from ${userFollows} where ${userFollows.followerId} = ${viewerUserId} and ${userFollows.followingId} = ${profileUserId})`
+    : sql<boolean>`false`;
+
   return db
     .select({
-      avatarObjectKey: user.avatarObjectKey,
-      avatarUrl: user.image,
-      displayUsername: user.displayUsername,
-      id: user.id,
-      name: user.name,
-      username: user.username,
+      avatarObjectKey: profileUser.avatarObjectKey,
+      avatarUrl: profileUser.image,
+      displayUsername: profileUser.displayUsername,
+      followedByViewer,
+      followersCount: sql<number>`(select count(*)::int from ${userFollows} where ${userFollows.followingId} = ${profileUserId})`,
+      followingCount: sql<number>`(select count(*)::int from ${userFollows} where ${userFollows.followerId} = ${profileUserId})`,
+      id: profileUser.id,
+      name: profileUser.name,
+      reviewCount: sql<number>`(select count(*)::int from ${reviews} where ${reviews.userId} = ${profileUserId})`,
+      username: profileUser.username,
     })
-    .from(user)
-    .where(eq(user.username, username))
+    .from(profileUser)
+    .where(eq(profileUser.username, username))
     .limit(1)
     .then((rows) => rows[0]);
 }
@@ -373,8 +386,12 @@ interface UserProfileRow {
   avatarObjectKey: string | null;
   avatarUrl: string | null;
   displayUsername: string | null;
+  followedByViewer: boolean;
+  followersCount: number;
+  followingCount: number;
   id: string;
   name: string;
+  reviewCount: number;
   username: string | null;
 }
 
@@ -454,13 +471,17 @@ function mapAlbumReview({ canDelete, liked, likes, review, user }: AlbumReviewRo
   };
 }
 
-function mapUserProfile(userProfile: UserProfileRow, canEdit: boolean) {
+function mapUserProfile(
+  userProfile: UserProfileRow,
+  { canEdit, followedByViewer }: { canEdit: boolean; followedByViewer: boolean }
+) {
   return {
     avatarObjectKey: canEdit ? (userProfile.avatarObjectKey ?? undefined) : undefined,
     avatarUrl: userProfile.avatarUrl ?? undefined,
     canEdit,
     displayName: userProfile.displayUsername ?? userProfile.name,
     displayUsername: userProfile.displayUsername ?? userProfile.username ?? userProfile.id,
+    followedByViewer,
     id: userProfile.id,
     username: userProfile.username ?? userProfile.id,
   };

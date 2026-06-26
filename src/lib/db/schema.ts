@@ -75,6 +75,24 @@ export const reviewLikes = pgTable(
   ]
 );
 
+export const userFollows = pgTable(
+  "user_follow",
+  {
+    followerId: text("follower_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    followingId: text("following_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.followerId, table.followingId], name: "user_follows_follower_following_pk" }),
+    index("user_follows_following_id_idx").on(table.followingId),
+    check("user_follows_no_self_follow_check", sql`${table.followerId} <> ${table.followingId}`),
+  ]
+);
+
 export const albumRelations = relations(albums, ({ many }) => ({
   reviews: many(reviews),
 }));
@@ -99,5 +117,18 @@ export const reviewLikeRelations = relations(reviewLikes, ({ one }) => ({
   user: one(user, {
     fields: [reviewLikes.userId],
     references: [user.id],
+  }),
+}));
+
+export const userFollowRelations = relations(userFollows, ({ one }) => ({
+  follower: one(user, {
+    fields: [userFollows.followerId],
+    references: [user.id],
+    relationName: "user_follow_follower",
+  }),
+  following: one(user, {
+    fields: [userFollows.followingId],
+    references: [user.id],
+    relationName: "user_follow_following",
   }),
 }));
