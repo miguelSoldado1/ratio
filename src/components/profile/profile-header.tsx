@@ -1,7 +1,9 @@
 import { EditProfileDialog } from "@/components/profile/edit-profile-dialog";
+import { ProfileFollowersDialog, ProfileFollowingDialog } from "@/components/profile/profile-follow-list-dialog";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/user-avatar";
 import { abbreviateCount, cn } from "@/lib/utils";
+import type { ComponentProps } from "react";
 import type { UserProfile } from "@/server/services/review-service";
 
 type ProfileHeaderUser = UserProfile["user"];
@@ -17,20 +19,20 @@ interface ProfileHeaderFollowAction {
   onToggle: (following: boolean) => Promise<boolean> | boolean;
 }
 
+interface ProfileHeaderFollowLists {
+  hasSession: boolean;
+  viewerUserId?: string;
+}
+
 interface ProfileHeaderProps {
   className?: string;
   followAction?: ProfileHeaderFollowAction;
+  followLists?: ProfileHeaderFollowLists;
   profile: ProfileHeaderUser;
   stats: ProfileHeaderStats;
 }
 
-export function ProfileHeader({ className, followAction, profile, stats }: ProfileHeaderProps) {
-  const profileStats = [
-    { label: stats.reviewCount === 1 ? "review" : "reviews", value: abbreviateCount(stats.reviewCount) },
-    { label: stats.followersCount === 1 ? "follower" : "followers", value: abbreviateCount(stats.followersCount) },
-    { label: "following", value: abbreviateCount(stats.followingCount) },
-  ];
-
+export function ProfileHeader({ className, followAction, followLists, profile, stats }: ProfileHeaderProps) {
   return (
     <header className={cn("border-border/80 border-b pb-7 lg:pb-9", className)}>
       <div className="grid w-full min-w-0 grid-cols-[4.5rem_minmax(0,1fr)] items-center gap-4 sm:grid-cols-[5.5rem_minmax(0,1fr)] sm:gap-5 md:grid-cols-[7rem_minmax(0,1fr)] lg:gap-6">
@@ -56,14 +58,44 @@ export function ProfileHeader({ className, followAction, profile, stats }: Profi
             ) : null}
           </div>
           <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <dl className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-2 text-sm sm:text-base">
-              {profileStats.map((item) => (
-                <div className="flex items-baseline gap-1.5" key={item.label}>
-                  <dt className="font-medium text-muted-foreground text-sm sm:text-base">{item.label}</dt>
-                  <dd className="order-first font-semibold text-foreground tabular-nums">{item.value}</dd>
-                </div>
-              ))}
-            </dl>
+            <div className="flex min-w-0 flex-wrap items-center gap-x-6 gap-y-2 text-sm sm:text-base">
+              <ProfileStat
+                label={stats.reviewCount === 1 ? "review" : "reviews"}
+                value={abbreviateCount(stats.reviewCount)}
+              />
+              {followLists ? (
+                <ProfileFollowersDialog
+                  hasSession={followLists.hasSession}
+                  profileDisplayName={profile.displayName}
+                  profileUserId={profile.id}
+                  profileUsername={profile.username}
+                  trigger={
+                    <ProfileStatButton
+                      label={stats.followersCount === 1 ? "follower" : "followers"}
+                      value={abbreviateCount(stats.followersCount)}
+                    />
+                  }
+                  viewerUserId={followLists.viewerUserId}
+                />
+              ) : (
+                <ProfileStat
+                  label={stats.followersCount === 1 ? "follower" : "followers"}
+                  value={abbreviateCount(stats.followersCount)}
+                />
+              )}
+              {followLists ? (
+                <ProfileFollowingDialog
+                  hasSession={followLists.hasSession}
+                  profileDisplayName={profile.displayName}
+                  profileUserId={profile.id}
+                  profileUsername={profile.username}
+                  trigger={<ProfileStatButton label="following" value={abbreviateCount(stats.followingCount)} />}
+                  viewerUserId={followLists.viewerUserId}
+                />
+              ) : (
+                <ProfileStat label="following" value={abbreviateCount(stats.followingCount)} />
+              )}
+            </div>
             {followAction ? (
               <Button
                 aria-pressed={profile.followedByViewer}
@@ -82,6 +114,49 @@ export function ProfileHeader({ className, followAction, profile, stats }: Profi
       </div>
     </header>
   );
+}
+
+function ProfileStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline gap-1.5">
+      <ProfileStatContent label={label} value={value} />
+    </div>
+  );
+}
+
+function ProfileStatButton({
+  className,
+  label,
+  type = "button",
+  value,
+  ...props
+}: ComponentProps<"button"> & {
+  label: string;
+  value: string;
+}) {
+  return (
+    <button
+      className={cn(
+        "flex items-baseline gap-1.5 rounded-md text-left transition-[opacity,transform] duration-150 ease-[cubic-bezier(0.23,1,0.32,1)] hover:opacity-80 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/30 active:scale-[0.98]",
+        className
+      )}
+      type={type}
+      {...props}
+    >
+      <ProfileStatContent label={label} value={value} />
+    </button>
+  );
+}
+
+function ProfileStatContent({ label, value }: { label: string; value: string }) {
+  const content = (
+    <>
+      <span className="font-medium text-muted-foreground text-sm sm:text-base">{label}</span>
+      <span className="order-first font-semibold text-foreground tabular-nums">{value}</span>
+    </>
+  );
+
+  return content;
 }
 
 export function ProfileHeaderSkeleton({ className }: { className?: string }) {

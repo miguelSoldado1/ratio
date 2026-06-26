@@ -12,10 +12,15 @@ interface UseUserFollowToggleParams {
   queryKey: QueryKey;
 }
 
+export function useSetUserFollowMutation() {
+  const setUserFollowFn = useServerFn(setUserFollow);
+
+  return useMutation({ mutationFn: setUserFollowFn });
+}
+
 export function useUserFollowToggle({ enabled, queryKey }: UseUserFollowToggleParams) {
   const queryClient = useQueryClient();
-  const setUserFollowFn = useServerFn(setUserFollow);
-  const setUserFollowMutation = useMutation({ mutationFn: setUserFollowFn });
+  const setUserFollowMutation = useSetUserFollowMutation();
 
   const toggleUserFollow = useCallback(
     async (userId: string, following: boolean) => {

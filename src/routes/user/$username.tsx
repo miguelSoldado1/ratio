@@ -57,12 +57,17 @@ function UserPage() {
   });
 
   const handleReviewDeleted = useCallback(
-    (deletedReview: { albumId: string }) =>
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: userQueryKeys.profile(username) }),
-        queryClient.invalidateQueries({ queryKey: userQueryKeys.reviews(profile?.id ?? "") }),
-        queryClient.invalidateQueries({ queryKey: albumQueryKeys.review(deletedReview.albumId) }),
-      ]).then(() => undefined),
+    async (deletedReview: { albumId: string }) => {
+      const staleQueryKeys = [
+        userQueryKeys.profile(username),
+        userQueryKeys.reviews(profile?.id ?? ""),
+        albumQueryKeys.review(deletedReview.albumId),
+      ];
+
+      await Promise.all(
+        staleQueryKeys.map((staleQueryKey) => queryClient.invalidateQueries({ queryKey: staleQueryKey }))
+      );
+    },
     [profile?.id, queryClient, username]
   );
   const { deleteReview: handleReviewDelete, deletingReviewId } = useReviewDelete({
@@ -111,6 +116,7 @@ function UserPage() {
                 }
               : undefined
           }
+          followLists={{ hasSession, viewerUserId }}
           profile={profile}
           stats={{
             followersCount: userProfileQuery.data.followersCount,

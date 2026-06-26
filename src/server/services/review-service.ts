@@ -1,18 +1,16 @@
-import { getRequestHeaders } from "@tanstack/react-start/server";
 import { and, count, desc, eq, getTableColumns, ilike, isNotNull, lt, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import z from "zod";
-import { createAuth } from "@/lib/auth";
 import { createDbClient } from "@/lib/db";
 import { albums, reviewLikes, reviews, user, userFollows } from "@/lib/db/schema";
+import { decodeCursor, encodeCursor, getOptionalCurrentUserId } from "../server-utils";
 import { ensureAlbumExistsForWrite, getMissingAlbumMetadataForWrite } from "./album-service";
 import type { AuthenticatedContext } from "../auth-middleware";
 
 // Constants
 
 const ratingBuckets: readonly ["1", "2", "3", "4", "5"] = ["1", "2", "3", "4", "5"];
-const albumReviewsPageSize = 12;
-const base64PaddingPattern = /=+$/;
+const reviewsPageSize = 12;
 const userSearchResultLimit = 5;
 
 // Schemas
@@ -92,12 +90,12 @@ export async function getAlbumReviewsService(data: AlbumReviewsInput): Promise<A
   const { client, db } = createDbClient();
 
   try {
-    const viewerUserId = await getCurrentUserId(db);
+    const viewerUserId = await getOptionalCurrentUserId(db);
     const likedByViewer = viewerUserId
       ? sql<boolean>`exists(select 1 from ${reviewLikes} where ${reviewLikes.reviewId} = ${reviews.id} and ${reviewLikes.userId} = ${viewerUserId})`
       : sql<boolean>`false`;
     const canDelete = viewerUserId ? sql<boolean>`${reviews.userId} = ${viewerUserId}` : sql<boolean>`false`;
-    const cursor = data.cursor ? decodeAlbumReviewsCursor(data.cursor) : undefined;
+    const cursor = data.cursor ? decodeReviewsCursor(data.cursor) : undefined;
     const cursorFilter = cursor ? getAlbumReviewsCursorFilter(cursor) : undefined;
 
     const albumReviews = await db
@@ -117,16 +115,16 @@ export async function getAlbumReviewsService(data: AlbumReviewsInput): Promise<A
       .innerJoin(user, eq(reviews.userId, user.id))
       .where(cursorFilter ? and(eq(reviews.albumId, data.albumId), cursorFilter) : eq(reviews.albumId, data.albumId))
       .orderBy(desc(reviews.createdAt), desc(reviews.id))
-      .limit(albumReviewsPageSize + 1);
+      .limit(reviewsPageSize + 1);
 
-    const hasNextPage = albumReviews.length > albumReviewsPageSize;
-    const pageRows = hasNextPage ? albumReviews.slice(0, albumReviewsPageSize) : albumReviews;
+    const hasNextPage = albumReviews.length > reviewsPageSize;
+    const pageRows = hasNextPage ? albumReviews.slice(0, reviewsPageSize) : albumReviews;
     const lastReview = pageRows.at(-1)?.review;
 
     return {
       nextCursor:
         hasNextPage && lastReview
-          ? encodeAlbumReviewsCursor({
+          ? encodeCursor({
               createdAt: lastReview.createdAt.toISOString(),
               id: lastReview.id,
             })
@@ -142,7 +140,7 @@ export async function getUserProfileService(data: UserProfileInput): Promise<Use
   const { client, db } = createDbClient();
 
   try {
-    const viewerUserId = await getCurrentUserId(db);
+    const viewerUserId = await getOptionalCurrentUserId(db);
     const profile = await getUserProfileRow(db, data.username, viewerUserId);
 
     if (!profile) {
@@ -206,12 +204,12 @@ export async function getUserReviewsService(data: UserReviewsInput): Promise<Use
   const { client, db } = createDbClient();
 
   try {
-    const viewerUserId = await getCurrentUserId(db);
+    const viewerUserId = await getOptionalCurrentUserId(db);
     const canDelete = viewerUserId === data.userId;
     const likedByViewer = viewerUserId
       ? sql<boolean>`exists(select 1 from ${reviewLikes} where ${reviewLikes.reviewId} = ${reviews.id} and ${reviewLikes.userId} = ${viewerUserId})`
       : sql<boolean>`false`;
-    const cursor = data.cursor ? decodeAlbumReviewsCursor(data.cursor) : undefined;
+    const cursor = data.cursor ? decodeReviewsCursor(data.cursor) : undefined;
     const cursorFilter = cursor ? getAlbumReviewsCursorFilter(cursor) : undefined;
 
     const userReviews = await db
@@ -225,16 +223,16 @@ export async function getUserReviewsService(data: UserReviewsInput): Promise<Use
       .innerJoin(albums, eq(reviews.albumId, albums.id))
       .where(cursorFilter ? and(eq(reviews.userId, data.userId), cursorFilter) : eq(reviews.userId, data.userId))
       .orderBy(desc(reviews.createdAt), desc(reviews.id))
-      .limit(albumReviewsPageSize + 1);
+      .limit(reviewsPageSize + 1);
 
-    const hasNextPage = userReviews.length > albumReviewsPageSize;
-    const pageRows = hasNextPage ? userReviews.slice(0, albumReviewsPageSize) : userReviews;
+    const hasNextPage = userReviews.length > reviewsPageSize;
+    const pageRows = hasNextPage ? userReviews.slice(0, reviewsPageSize) : userReviews;
     const lastReview = pageRows.at(-1)?.review;
 
     return {
       nextCursor:
         hasNextPage && lastReview
-          ? encodeAlbumReviewsCursor({
+          ? encodeCursor({
               createdAt: lastReview.createdAt.toISOString(),
               id: lastReview.id,
             })
@@ -418,15 +416,6 @@ interface RatingDistributionRow {
   rating: number;
 }
 
-// Auth
-
-async function getCurrentUserId(db: ReturnType<typeof createDbClient>["db"]) {
-  const auth = createAuth(db);
-  const session = await auth.api.getSession({ headers: getRequestHeaders() }).catch(() => null);
-
-  return session?.user.id;
-}
-
 // Mappers
 
 function mapAlbumRatingSummary(summary: AlbumRatingSummaryRow | undefined, distributionRows: RatingDistributionRow[]) {
@@ -540,18 +529,6 @@ function getAlbumReviewsCursorFilter(cursor: AlbumReviewsCursorPayload) {
   );
 }
 
-function encodeAlbumReviewsCursor(cursor: AlbumReviewsCursorPayload) {
-  return btoa(JSON.stringify(cursor)).replaceAll("+", "-").replaceAll("/", "_").replace(base64PaddingPattern, "");
-}
-
-function decodeAlbumReviewsCursor(cursor: string): AlbumReviewsCursorPayload {
-  try {
-    const base64Cursor = cursor.replaceAll("-", "+").replaceAll("_", "/");
-    const paddedCursor = base64Cursor.padEnd(Math.ceil(base64Cursor.length / 4) * 4, "=");
-    const parsedCursor: unknown = JSON.parse(atob(paddedCursor));
-
-    return albumReviewsCursorPayloadSchema.parse(parsedCursor);
-  } catch {
-    throw new Error("Invalid reviews cursor");
-  }
+function decodeReviewsCursor(cursor: string): AlbumReviewsCursorPayload {
+  return decodeCursor(cursor, albumReviewsCursorPayloadSchema, "Invalid reviews cursor");
 }

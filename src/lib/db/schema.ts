@@ -88,7 +88,8 @@ export const userFollows = pgTable(
   },
   (table) => [
     primaryKey({ columns: [table.followerId, table.followingId], name: "user_follows_follower_following_pk" }),
-    index("user_follows_following_id_idx").on(table.followingId),
+    index("user_follows_follower_created_following_idx").on(table.followerId, table.createdAt, table.followingId),
+    index("user_follows_following_created_follower_idx").on(table.followingId, table.createdAt, table.followerId),
     check("user_follows_no_self_follow_check", sql`${table.followerId} <> ${table.followingId}`),
   ]
 );
