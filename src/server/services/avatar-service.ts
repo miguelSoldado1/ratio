@@ -3,6 +3,8 @@ import { user } from "@/lib/db/schema";
 import { deleteAvatarObject, getAvatarPublicUrl, isUserAvatarObjectKey } from "../avatar-storage";
 import type { AuthenticatedContext } from "../auth-middleware";
 
+// Types
+
 export interface SetAvatarInput {
   objectKey: string;
 }
@@ -12,6 +14,8 @@ export interface AvatarMutationResult {
   avatarUrl: string | undefined;
   cleanupFailed: boolean;
 }
+
+// Services
 
 export async function setMyAvatarService(data: SetAvatarInput, context: AuthenticatedContext) {
   if (!isUserAvatarObjectKey(data.objectKey, context.user.id)) {
@@ -72,6 +76,8 @@ export async function removeMyAvatarService(context: AuthenticatedContext) {
 
   return { avatarObjectKey: undefined, avatarUrl: undefined, cleanupFailed } satisfies AvatarMutationResult;
 }
+
+// Helpers
 
 async function deleteAvatarObjectSafely(objectKey: string) {
   try {

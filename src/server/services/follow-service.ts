@@ -3,8 +3,8 @@ import { alias } from "drizzle-orm/pg-core";
 import z from "zod";
 import { getDb } from "@/lib/db";
 import { user, userFollows } from "@/lib/db/schema";
+import { type FollowableUserRow, getFollowedByViewerSql, mapFollowableUser } from "../followable-user";
 import { decodeCursor, encodeCursor, getCreatedAtIdCursorFilter, getOptionalCurrentUserId } from "../server-utils";
-import { type FollowableUserRow, getFollowedByViewerSql, mapFollowableUser } from "./followable-user-service";
 import type { Db } from "@/lib/db";
 import type { AuthenticatedContext } from "../auth-middleware";
 

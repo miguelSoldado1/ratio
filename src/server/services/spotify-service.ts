@@ -8,6 +8,8 @@ type SpotifyAlbumTracks = SpotifyApi.AlbumTracksResponse;
 type SpotifyAlbumTrack = SpotifyAlbumDetails["tracks"]["items"][number];
 type SpotifyApiClient = ReturnType<typeof createSpotifyApi>;
 
+// Types
+
 export interface SpotifyAlbumPersistenceMetadata {
   artistNames: string[];
   coverUrl: string | null;
@@ -64,6 +66,8 @@ export async function getAlbumPersistenceMetadata(albumId: string): Promise<Spot
 
   return mapSpotifyAlbumPersistenceMetadata(album);
 }
+
+// Helpers
 
 async function getSpotifyAlbum(albumId: string) {
   try {

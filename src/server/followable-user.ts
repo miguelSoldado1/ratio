@@ -1,6 +1,8 @@
 import { sql } from "drizzle-orm";
 import { userFollows } from "@/lib/db/schema";
 
+// Types
+
 export interface FollowableUserRow {
   followedByViewer: boolean;
   user: {
@@ -12,11 +14,15 @@ export interface FollowableUserRow {
   };
 }
 
+// Helpers
+
 export function getFollowedByViewerSql(viewerUserId: string | undefined, listedUserId: ReturnType<typeof sql.raw>) {
   return viewerUserId
     ? sql<boolean>`exists(select 1 from ${userFollows} where ${userFollows.followerId} = ${viewerUserId} and ${userFollows.followingId} = ${listedUserId})`
     : sql<boolean>`false`;
 }
+
+// Mappers
 
 export function mapFollowableUser(row: FollowableUserRow) {
   return {

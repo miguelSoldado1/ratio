@@ -3,9 +3,13 @@ import { albums } from "@/lib/db/schema";
 import { getAlbumPersistenceMetadata } from "./spotify-service";
 import type { Db } from "@/lib/db";
 
+// Types
+
 type DbTransaction = Parameters<Parameters<Db["transaction"]>[0]>[0];
 type AlbumWriteDb = Db | DbTransaction;
 type AlbumWriteMetadata = Awaited<ReturnType<typeof getAlbumPersistenceMetadata>>;
+
+// Services
 
 export async function getMissingAlbumMetadataForWrite(albumId: string, db: Db): Promise<AlbumWriteMetadata | null> {
   const [existingAlbum] = await db.select({ id: albums.id }).from(albums).where(eq(albums.id, albumId)).limit(1);

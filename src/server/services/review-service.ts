@@ -3,9 +3,9 @@ import { alias } from "drizzle-orm/pg-core";
 import z from "zod";
 import { getDb } from "@/lib/db";
 import { albums, reviewLikes, reviews, user, userFollows } from "@/lib/db/schema";
+import { type FollowableUserRow, getFollowedByViewerSql, mapFollowableUser } from "../followable-user";
 import { decodeCursor, encodeCursor, getCreatedAtIdCursorFilter, getOptionalCurrentUserId } from "../server-utils";
 import { ensureAlbumExistsForWrite, getMissingAlbumMetadataForWrite } from "./album-service";
-import { type FollowableUserRow, getFollowedByViewerSql, mapFollowableUser } from "./followable-user-service";
 import type { Db } from "@/lib/db";
 import type { AuthenticatedContext } from "../auth-middleware";
 
@@ -372,6 +372,8 @@ export async function setReviewLikeService(data: ReviewLikeInput, context: Authe
 
   return { liked: data.liked, likes: likeCount?.likes ?? 0, reviewId: data.reviewId };
 }
+
+// Helpers
 
 function getUserProfileRow(db: Db, username: string, viewerUserId?: string) {
   const profileUser = alias(user, "profile_user");
