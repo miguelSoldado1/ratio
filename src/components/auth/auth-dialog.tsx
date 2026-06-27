@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { LastUsedBadge } from "@/components/last-used-badge";
 import { Button } from "@/components/ui/button";
@@ -27,9 +27,9 @@ const GoogleIcon = (props: SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-const AppleIcon = (props: SVGProps<SVGSVGElement>) => (
+const DiscordIcon = (props: SVGProps<SVGSVGElement>) => (
   <svg aria-hidden="true" fill="currentColor" viewBox="0 0 24 24" {...props}>
-    <path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701" />
+    <path d="M20.317 4.369A19.79 19.79 0 0 0 15.373 2.8a13.73 13.73 0 0 0-.633 1.299 18.43 18.43 0 0 0-5.48 0A12.9 12.9 0 0 0 8.627 2.8a19.736 19.736 0 0 0-4.947 1.572C.55 9.002-.304 13.515.12 17.963a19.956 19.956 0 0 0 6.063 3.038 14.68 14.68 0 0 0 1.297-2.083 12.91 12.91 0 0 1-2.043-.976c.171-.124.338-.253.5-.386a14.15 14.15 0 0 0 12.126 0c.164.134.331.263.5.386-.651.382-1.337.71-2.045.977.376.733.81 1.43 1.298 2.082a19.918 19.918 0 0 0 6.064-3.039c.499-5.157-.851-9.629-3.563-13.593ZM8.02 15.226c-1.182 0-2.157-1.08-2.157-2.407 0-1.328.956-2.408 2.157-2.408 1.21 0 2.176 1.09 2.157 2.408 0 1.327-.956 2.407-2.157 2.407Zm7.96 0c-1.183 0-2.157-1.08-2.157-2.407 0-1.328.955-2.408 2.157-2.408 1.21 0 2.176 1.09 2.156 2.408 0 1.327-.946 2.407-2.156 2.407Z" />
   </svg>
 );
 
@@ -41,8 +41,8 @@ const SpotifyIcon = (props: SVGProps<SVGSVGElement>) => (
 
 const providers = [
   { icon: GoogleIcon, id: "google", label: "Google" },
-  { icon: AppleIcon, id: "apple", label: "Apple" },
   { icon: SpotifyIcon, id: "spotify", label: "Spotify" },
+  { icon: DiscordIcon, id: "discord", label: "Discord" },
 ] as const;
 
 type AuthProvider = (typeof providers)[number];
@@ -57,6 +57,22 @@ export function AuthDialog({ onOpenChange, open }: AuthDialogProps) {
   const [pendingProvider, setPendingProvider] = useState<AuthProviderId | null>(null);
   const lastUsedMethod = authClient.getLastUsedLoginMethod();
   const returnUrl = getCurrentAuthReturnUrl();
+
+  useEffect(() => {
+    function resetPendingProvider() {
+      setPendingProvider(null);
+    }
+
+    if (open) {
+      resetPendingProvider();
+    }
+
+    window.addEventListener("pageshow", resetPendingProvider);
+
+    return () => {
+      window.removeEventListener("pageshow", resetPendingProvider);
+    };
+  }, [open]);
 
   async function continueWithProvider(provider: AuthProviderId) {
     setPendingProvider(provider);

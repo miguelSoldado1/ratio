@@ -11,8 +11,8 @@ interface __BaseEnv_Env {
 	SPOTIFY_CLIENT_SECRET: string;
 	GOOGLE_CLIENT_ID: string;
 	GOOGLE_CLIENT_SECRET: string;
-	APPLE_CLIENT_ID: string;
-	APPLE_CLIENT_SECRET: string;
+	DISCORD_CLIENT_ID: string;
+	DISCORD_CLIENT_SECRET: string;
 	CLOUDFLARE_ACCOUNT_ID: string;
 	CLOUDFLARE_ACCESS_KEY_ID: string;
 	CLOUDFLARE_SECRET_ACCESS_KEY: string;
@@ -27,7 +27,7 @@ type StringifyValues<EnvType extends Record<string, unknown>> = {
 	[Binding in keyof EnvType]: EnvType[Binding] extends string ? EnvType[Binding] : string;
 };
 declare namespace NodeJS {
-	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "DATABASE_URL" | "BETTER_AUTH_SECRET" | "BETTER_AUTH_URL" | "SPOTIFY_CLIENT_ID" | "SPOTIFY_CLIENT_SECRET" | "GOOGLE_CLIENT_ID" | "GOOGLE_CLIENT_SECRET" | "APPLE_CLIENT_ID" | "APPLE_CLIENT_SECRET" | "CLOUDFLARE_ACCOUNT_ID" | "CLOUDFLARE_ACCESS_KEY_ID" | "CLOUDFLARE_SECRET_ACCESS_KEY" | "CLOUDFLARE_R2_BUCKET_NAME" | "CLOUDFLARE_R2_PUBLIC_URL">> {}
+	interface ProcessEnv extends StringifyValues<Pick<Cloudflare.Env, "DATABASE_URL" | "BETTER_AUTH_SECRET" | "BETTER_AUTH_URL" | "SPOTIFY_CLIENT_ID" | "SPOTIFY_CLIENT_SECRET" | "GOOGLE_CLIENT_ID" | "GOOGLE_CLIENT_SECRET" | "DISCORD_CLIENT_ID" | "DISCORD_CLIENT_SECRET" | "CLOUDFLARE_ACCOUNT_ID" | "CLOUDFLARE_ACCESS_KEY_ID" | "CLOUDFLARE_SECRET_ACCESS_KEY" | "CLOUDFLARE_R2_BUCKET_NAME" | "CLOUDFLARE_R2_PUBLIC_URL">> {}
 }
 
 // Begin runtime types

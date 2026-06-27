@@ -66,18 +66,16 @@ export function createAuth(db: Db) {
           };
         },
       },
-      apple: {
-        clientId: env.APPLE_CLIENT_ID,
-        clientSecret: env.APPLE_CLIENT_SECRET,
+      discord: {
+        clientId: env.DISCORD_CLIENT_ID,
+        clientSecret: env.DISCORD_CLIENT_SECRET,
         mapProfileToUser: async (profile) => {
-          const baseUsername = profile.email
-            ? profile.email.split("@")[0].toLowerCase()
-            : `user_${profile.sub.slice(-8)}`;
+          const baseUsername = profile.username || `user_${profile.id.slice(-8)}`;
           const finalUsername = await generateUniqueUsername(db, baseUsername);
 
           return {
             username: finalUsername,
-            displayUsername: limitDisplayUsername(profile.name || profile.email || baseUsername),
+            displayUsername: limitDisplayUsername(profile.global_name || profile.username || baseUsername),
           };
         },
       },
