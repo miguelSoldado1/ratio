@@ -12,7 +12,9 @@ let localDb: Db | undefined;
 
 export async function getDb() {
   if (isCloudflareWorkersRuntime()) {
-    return createDrizzleClient(postgres(await getHyperdriveDatabaseUrl(), { max: 1, prepare: false }));
+    return createDrizzleClient(
+      postgres(await getHyperdriveDatabaseUrl(), { fetch_types: false, max: 1, prepare: true })
+    );
   }
 
   localDb ??= createLocalDb();
