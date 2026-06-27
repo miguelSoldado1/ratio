@@ -1,15 +1,22 @@
-import { Link } from "@tanstack/react-router";
-import { LogIn, LogOut } from "lucide-react";
+import { Link, useNavigate } from "@tanstack/react-router";
+import { ChevronDown, LogIn, LogOut, Settings } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { AuthDialog } from "@/components/auth/auth-dialog";
 import { GlobalSearch } from "@/components/global-search/global-search";
 import { GlobalSearchTrigger } from "@/components/global-search/global-search-trigger";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { UserAvatar } from "@/components/user-avatar";
 import { authClient } from "@/lib/auth/auth-client";
 import { useAuthRedirectErrorToast } from "@/lib/auth/use-auth-redirect-error-toast";
-import { cn } from "@/lib/utils";
 
 function LogoHomeLink() {
   return (
@@ -41,7 +48,7 @@ export function TopBar() {
           </div>
           <div className="flex min-w-0 items-center justify-end gap-1.5">
             <GlobalSearchTrigger className="lg:hidden" compact onOpen={() => setSearchOpen(true)} />
-            <HeaderAuthActions compact onAuthClick={() => setAuthDialogOpen(true)} />
+            <HeaderAuthActions onAuthClick={() => setAuthDialogOpen(true)} />
           </div>
         </div>
       </div>
@@ -50,11 +57,11 @@ export function TopBar() {
 }
 
 interface HeaderAuthActionsProps {
-  compact?: boolean;
   onAuthClick: () => void;
 }
 
-function HeaderAuthActions({ compact = false, onAuthClick }: HeaderAuthActionsProps) {
+function HeaderAuthActions({ onAuthClick }: HeaderAuthActionsProps) {
+  const navigate = useNavigate();
   const session = authClient.useSession();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const user = session.data?.user;
@@ -98,47 +105,66 @@ function HeaderAuthActions({ compact = false, onAuthClick }: HeaderAuthActionsPr
   const profileUsername = user.username?.toLowerCase();
   const avatar = (
     <UserAvatar
-      alt={compact ? displayName : ""}
-      className="size-8 text-xs"
+      alt={displayName}
+      className="size-7 text-[11px]"
       fallbackInitial="A"
-      height={32}
+      height={28}
       name={displayName}
       src={user.image}
     />
   );
 
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center rounded-full bg-muted/40 p-0.5">
       {profileUsername ? (
         <Link
           aria-label={`View ${displayName}'s profile`}
-          className={cn(
-            "inline-flex min-w-0 items-center gap-2 rounded-full transition-[opacity,transform] hover:opacity-85 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/30 active:scale-[0.97]",
-            compact ? "size-8 justify-center" : "max-w-52 pr-2"
-          )}
+          className="inline-flex size-8 min-w-0 items-center justify-center rounded-full transition-[background-color,transform] hover:bg-background/80 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/30 active:scale-[0.97] lg:w-auto lg:max-w-52 lg:justify-start lg:gap-2 lg:px-1 lg:pr-2"
           params={{ username: profileUsername }}
           to="/user/$username"
         >
           {avatar}
-          {compact ? null : <span className="truncate text-muted-foreground text-sm">{displayName}</span>}
+          <span className="hidden min-w-0 truncate text-muted-foreground text-sm lg:inline">{displayName}</span>
         </Link>
       ) : (
-        <div className={cn("inline-flex min-w-0 items-center gap-2", compact ? "size-8" : "max-w-52 pr-2")}>
+        <div className="inline-flex size-8 min-w-0 items-center justify-center lg:w-auto lg:max-w-52 lg:justify-start lg:gap-2 lg:px-1 lg:pr-2">
           {avatar}
+          <span className="hidden min-w-0 truncate text-muted-foreground text-sm lg:inline">{displayName}</span>
         </div>
       )}
-      <Button
-        aria-label="Sign out"
-        className="rounded-full text-muted-foreground hover:text-foreground active:scale-[0.97]"
-        disabled={isSigningOut}
-        onClick={handleSignOut}
-        size="icon-sm"
-        title="Sign out"
-        type="button"
-        variant="ghost"
-      >
-        <LogOut />
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              aria-label="Open account menu"
+              className="size-8 rounded-full px-0 text-muted-foreground hover:bg-background/80 active:scale-[0.97]"
+              type="button"
+              variant="ghost"
+            />
+          }
+        >
+          <ChevronDown />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="min-w-48">
+          <DropdownMenuGroup>
+            <DropdownMenuItem
+              onClick={() => {
+                navigate({ to: "/settings" });
+              }}
+            >
+              <Settings />
+              Account settings
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+          <DropdownMenuSeparator />
+          <DropdownMenuGroup>
+            <DropdownMenuItem disabled={isSigningOut} onClick={handleSignOut}>
+              <LogOut />
+              Sign out
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
