@@ -1,7 +1,7 @@
 import { createMiddleware } from "@tanstack/react-start";
 import { getRequestHeaders } from "@tanstack/react-start/server";
 import { createAuth } from "@/lib/auth";
-import { createDbClient } from "@/lib/db";
+import { getDb } from "@/lib/db";
 import type { Db } from "@/lib/db";
 
 export interface AuthenticatedContext {
@@ -12,18 +12,13 @@ export interface AuthenticatedContext {
 }
 
 export const authMiddleware = createMiddleware().server(async ({ next }) => {
-  const { client, db } = createDbClient();
+  const db = await getDb();
+  const auth = createAuth(db);
+  const session = await auth.api.getSession({ headers: getRequestHeaders() });
 
-  try {
-    const auth = createAuth(db);
-    const session = await auth.api.getSession({ headers: getRequestHeaders() });
-
-    if (!session?.user) {
-      throw new Error("Unauthorized");
-    }
-
-    return await next({ context: { db, user: session.user } satisfies AuthenticatedContext });
-  } finally {
-    await client.end({ timeout: 1 }).catch(() => undefined);
+  if (!session?.user) {
+    throw new Error("Unauthorized");
   }
+
+  return await next({ context: { db, user: session.user } satisfies AuthenticatedContext });
 });

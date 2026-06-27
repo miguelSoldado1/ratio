@@ -10,6 +10,12 @@
       "id": "0ac8aedf7d20434c89dfd625bab620c1"
     }
   ],
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "818e83343b7f4ec4a1c9808e30075445"
+    }
+  ],
   "observability": {
     "enabled": true,
     "logs": {

@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { env } from "@/env";
 import { createAuth } from "@/lib/auth";
 import { avatarFileTypes, avatarMaxFileSize } from "@/lib/avatar";
-import { createDbClient } from "@/lib/db";
+import { getDb } from "@/lib/db";
 import { createAvatarObjectKey, createR2Client, getAvatarPublicUrl } from "@/server/avatar-storage";
 
 const uploadRouter: Router = {
@@ -20,29 +20,24 @@ const uploadRouter: Router = {
         },
       }),
       onBeforeUpload: async ({ file, req }) => {
-        const { client, db } = createDbClient();
+        const db = await getDb();
+        const auth = createAuth(db);
+        const session = await auth.api.getSession({ headers: req.headers });
 
-        try {
-          const auth = createAuth(db);
-          const session = await auth.api.getSession({ headers: req.headers });
-
-          if (!session?.user) {
-            throw new RejectUpload("Sign in to upload a profile photo.");
-          }
-
-          const objectKey = createAvatarObjectKey({ fileType: file.type, userId: session.user.id });
-
-          return {
-            metadata: { userId: session.user.id },
-            objectInfo: {
-              cacheControl: "public, max-age=31536000, immutable",
-              key: objectKey,
-              metadata: { userId: session.user.id },
-            },
-          };
-        } finally {
-          await client.end({ timeout: 1 }).catch(() => undefined);
+        if (!session?.user) {
+          throw new RejectUpload("Sign in to upload a profile photo.");
         }
+
+        const objectKey = createAvatarObjectKey({ fileType: file.type, userId: session.user.id });
+
+        return {
+          metadata: { userId: session.user.id },
+          objectInfo: {
+            cacheControl: "public, max-age=31536000, immutable",
+            key: objectKey,
+            metadata: { userId: session.user.id },
+          },
+        };
       },
     }),
   },

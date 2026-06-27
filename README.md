@@ -39,10 +39,14 @@ This app is configured for Cloudflare Workers through the Cloudflare Vite plugin
 1. Log in with `pnpm wrangler login`.
 2. Confirm the `CACHE` KV namespace binding in `wrangler.jsonc`. If you need to recreate it, run `pnpm wrangler kv namespace create CACHE` and replace the binding `id` with the generated value.
 3. Optionally create a preview namespace with `pnpm wrangler kv namespace create CACHE --preview` and add its `preview_id` to the same binding.
-4. Set production secrets with `pnpm wrangler secret put DATABASE_URL`, `pnpm wrangler secret put BETTER_AUTH_SECRET`, and repeat for each OAuth secret.
-5. Set non-secret production values, such as `BETTER_AUTH_URL`, as Wrangler vars or secrets.
-6. Run `pnpm run build` to validate the Worker bundle.
-7. Deploy with `pnpm run deploy`.
+4. Create a Hyperdrive config from Supabase's direct Postgres connection string on port `5432`, then replace the `HYPERDRIVE` binding `id` in `wrangler.jsonc` with the generated config id. Do not use Supabase's transaction pooler on port `6543` for Hyperdrive.
+5. Regenerate Worker types with `pnpm wrangler types`.
+6. Keep `DATABASE_URL` in `.env` for local development, Drizzle Kit, migrations, and seed scripts. Worker runtime DB access uses the `HYPERDRIVE` binding instead.
+7. Set production secrets with `pnpm wrangler secret put BETTER_AUTH_SECRET`, and repeat for each OAuth secret.
+8. Set non-secret production values, such as `BETTER_AUTH_URL`, as Wrangler vars or secrets.
+9. Run `pnpm run build` to validate the Worker bundle.
+10. Deploy with `pnpm run deploy`.
+11. Smoke-test the OAuth callback path after deploy.
 
 ### R2 avatar uploads and CORS
 

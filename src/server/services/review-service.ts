@@ -1,10 +1,11 @@
 import { and, count, desc, eq, getTableColumns, ilike, isNotNull, lt, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import z from "zod";
-import { createDbClient } from "@/lib/db";
+import { getDb } from "@/lib/db";
 import { albums, reviewLikes, reviews, user, userFollows } from "@/lib/db/schema";
 import { decodeCursor, encodeCursor, getOptionalCurrentUserId } from "../server-utils";
 import { ensureAlbumExistsForWrite, getMissingAlbumMetadataForWrite } from "./album-service";
+import type { Db } from "@/lib/db";
 import type { AuthenticatedContext } from "../auth-middleware";
 
 // Constants
@@ -87,189 +88,165 @@ export interface ReviewLikeInput extends DeleteReviewInput {
 // Services
 
 export async function getAlbumReviewsService(data: AlbumReviewsInput): Promise<AlbumReviewsPage> {
-  const { client, db } = createDbClient();
+  const db = await getDb();
+  const viewerUserId = await getOptionalCurrentUserId(db);
+  const likedByViewer = viewerUserId
+    ? sql<boolean>`exists(select 1 from ${reviewLikes} where ${reviewLikes.reviewId} = ${reviews.id} and ${reviewLikes.userId} = ${viewerUserId})`
+    : sql<boolean>`false`;
+  const canDelete = viewerUserId ? sql<boolean>`${reviews.userId} = ${viewerUserId}` : sql<boolean>`false`;
+  const cursor = data.cursor ? decodeReviewsCursor(data.cursor) : undefined;
+  const cursorFilter = cursor ? getAlbumReviewsCursorFilter(cursor) : undefined;
 
-  try {
-    const viewerUserId = await getOptionalCurrentUserId(db);
-    const likedByViewer = viewerUserId
-      ? sql<boolean>`exists(select 1 from ${reviewLikes} where ${reviewLikes.reviewId} = ${reviews.id} and ${reviewLikes.userId} = ${viewerUserId})`
-      : sql<boolean>`false`;
-    const canDelete = viewerUserId ? sql<boolean>`${reviews.userId} = ${viewerUserId}` : sql<boolean>`false`;
-    const cursor = data.cursor ? decodeReviewsCursor(data.cursor) : undefined;
-    const cursorFilter = cursor ? getAlbumReviewsCursorFilter(cursor) : undefined;
+  const albumReviews = await db
+    .select({
+      liked: likedByViewer,
+      likes: sql<number>`(select count(*)::int from ${reviewLikes} where ${reviewLikes.reviewId} = ${reviews.id})`,
+      canDelete,
+      review: getTableColumns(reviews),
+      user: {
+        avatarUrl: user.image,
+        displayUsername: user.displayUsername,
+        id: user.id,
+        username: user.username,
+      },
+    })
+    .from(reviews)
+    .innerJoin(user, eq(reviews.userId, user.id))
+    .where(cursorFilter ? and(eq(reviews.albumId, data.albumId), cursorFilter) : eq(reviews.albumId, data.albumId))
+    .orderBy(desc(reviews.createdAt), desc(reviews.id))
+    .limit(reviewsPageSize + 1);
 
-    const albumReviews = await db
-      .select({
-        liked: likedByViewer,
-        likes: sql<number>`(select count(*)::int from ${reviewLikes} where ${reviewLikes.reviewId} = ${reviews.id})`,
-        canDelete,
-        review: getTableColumns(reviews),
-        user: {
-          avatarUrl: user.image,
-          displayUsername: user.displayUsername,
-          id: user.id,
-          username: user.username,
-        },
-      })
-      .from(reviews)
-      .innerJoin(user, eq(reviews.userId, user.id))
-      .where(cursorFilter ? and(eq(reviews.albumId, data.albumId), cursorFilter) : eq(reviews.albumId, data.albumId))
-      .orderBy(desc(reviews.createdAt), desc(reviews.id))
-      .limit(reviewsPageSize + 1);
+  const hasNextPage = albumReviews.length > reviewsPageSize;
+  const pageRows = hasNextPage ? albumReviews.slice(0, reviewsPageSize) : albumReviews;
+  const lastReview = pageRows.at(-1)?.review;
 
-    const hasNextPage = albumReviews.length > reviewsPageSize;
-    const pageRows = hasNextPage ? albumReviews.slice(0, reviewsPageSize) : albumReviews;
-    const lastReview = pageRows.at(-1)?.review;
-
-    return {
-      nextCursor:
-        hasNextPage && lastReview
-          ? encodeCursor({
-              createdAt: lastReview.createdAt.toISOString(),
-              id: lastReview.id,
-            })
-          : null,
-      reviews: pageRows.map(mapAlbumReview),
-    };
-  } finally {
-    await client.end({ timeout: 1 }).catch(() => undefined);
-  }
+  return {
+    nextCursor:
+      hasNextPage && lastReview
+        ? encodeCursor({
+            createdAt: lastReview.createdAt.toISOString(),
+            id: lastReview.id,
+          })
+        : null,
+    reviews: pageRows.map(mapAlbumReview),
+  };
 }
 
 export async function getUserProfileService(data: UserProfileInput): Promise<UserProfile> {
-  const { client, db } = createDbClient();
+  const db = await getDb();
+  const viewerUserId = await getOptionalCurrentUserId(db);
+  const profile = await getUserProfileRow(db, data.username, viewerUserId);
 
-  try {
-    const viewerUserId = await getOptionalCurrentUserId(db);
-    const profile = await getUserProfileRow(db, data.username, viewerUserId);
-
-    if (!profile) {
-      throw new Error("User not found");
-    }
-
-    return {
-      followersCount: profile.followersCount,
-      followingCount: profile.followingCount,
-      reviewCount: profile.reviewCount,
-      user: mapUserProfile(profile, {
-        canEdit: viewerUserId === profile.id,
-        followedByViewer: profile.followedByViewer,
-      }),
-    };
-  } finally {
-    await client.end({ timeout: 1 }).catch(() => undefined);
+  if (!profile) {
+    throw new Error("User not found");
   }
+
+  return {
+    followersCount: profile.followersCount,
+    followingCount: profile.followingCount,
+    reviewCount: profile.reviewCount,
+    user: mapUserProfile(profile, {
+      canEdit: viewerUserId === profile.id,
+      followedByViewer: profile.followedByViewer,
+    }),
+  };
 }
 
 export async function searchUsersService(data: UserSearchInput): Promise<UserSearchResult[]> {
-  const { client, db } = createDbClient();
+  const db = await getDb();
+  const normalizedQuery = data.query.toLowerCase();
+  const escapedQuery = escapeLikePattern(data.query);
+  const containsPattern = `%${escapedQuery}%`;
+  const prefixPattern = `${escapedQuery}%`;
 
-  try {
-    const normalizedQuery = data.query.toLowerCase();
-    const escapedQuery = escapeLikePattern(data.query);
-    const containsPattern = `%${escapedQuery}%`;
-    const prefixPattern = `${escapedQuery}%`;
-
-    const userRows = await db
-      .select({
-        avatarUrl: user.image,
-        displayUsername: user.displayUsername,
-        username: user.username,
-      })
-      .from(user)
-      .where(
-        and(
-          isNotNull(user.username),
-          or(ilike(user.username, containsPattern), ilike(user.displayUsername, containsPattern))
-        )
+  const userRows = await db
+    .select({
+      avatarUrl: user.image,
+      displayUsername: user.displayUsername,
+      username: user.username,
+    })
+    .from(user)
+    .where(
+      and(
+        isNotNull(user.username),
+        or(ilike(user.username, containsPattern), ilike(user.displayUsername, containsPattern))
       )
-      .orderBy(
-        sql<number>`case
-          when lower(${user.username}) = ${normalizedQuery} then 0
-          when ${user.username} ilike ${prefixPattern} then 1
-          when ${user.displayUsername} ilike ${prefixPattern} then 2
-          else 3
-        end`,
-        user.username
-      )
-      .limit(userSearchResultLimit);
+    )
+    .orderBy(
+      sql<number>`case
+        when lower(${user.username}) = ${normalizedQuery} then 0
+        when ${user.username} ilike ${prefixPattern} then 1
+        when ${user.displayUsername} ilike ${prefixPattern} then 2
+        else 3
+      end`,
+      user.username
+    )
+    .limit(userSearchResultLimit);
 
-    return userRows.flatMap(mapUserSearchResult);
-  } finally {
-    await client.end({ timeout: 1 }).catch(() => undefined);
-  }
+  return userRows.flatMap(mapUserSearchResult);
 }
 
 export async function getUserReviewsService(data: UserReviewsInput): Promise<UserReviewsPage> {
-  const { client, db } = createDbClient();
+  const db = await getDb();
+  const viewerUserId = await getOptionalCurrentUserId(db);
+  const canDelete = viewerUserId === data.userId;
+  const likedByViewer = viewerUserId
+    ? sql<boolean>`exists(select 1 from ${reviewLikes} where ${reviewLikes.reviewId} = ${reviews.id} and ${reviewLikes.userId} = ${viewerUserId})`
+    : sql<boolean>`false`;
+  const cursor = data.cursor ? decodeReviewsCursor(data.cursor) : undefined;
+  const cursorFilter = cursor ? getAlbumReviewsCursorFilter(cursor) : undefined;
 
-  try {
-    const viewerUserId = await getOptionalCurrentUserId(db);
-    const canDelete = viewerUserId === data.userId;
-    const likedByViewer = viewerUserId
-      ? sql<boolean>`exists(select 1 from ${reviewLikes} where ${reviewLikes.reviewId} = ${reviews.id} and ${reviewLikes.userId} = ${viewerUserId})`
-      : sql<boolean>`false`;
-    const cursor = data.cursor ? decodeReviewsCursor(data.cursor) : undefined;
-    const cursorFilter = cursor ? getAlbumReviewsCursorFilter(cursor) : undefined;
+  const userReviews = await db
+    .select({
+      album: getTableColumns(albums),
+      liked: likedByViewer,
+      likes: sql<number>`(select count(*)::int from ${reviewLikes} where ${reviewLikes.reviewId} = ${reviews.id})`,
+      review: getTableColumns(reviews),
+    })
+    .from(reviews)
+    .innerJoin(albums, eq(reviews.albumId, albums.id))
+    .where(cursorFilter ? and(eq(reviews.userId, data.userId), cursorFilter) : eq(reviews.userId, data.userId))
+    .orderBy(desc(reviews.createdAt), desc(reviews.id))
+    .limit(reviewsPageSize + 1);
 
-    const userReviews = await db
-      .select({
-        album: getTableColumns(albums),
-        liked: likedByViewer,
-        likes: sql<number>`(select count(*)::int from ${reviewLikes} where ${reviewLikes.reviewId} = ${reviews.id})`,
-        review: getTableColumns(reviews),
-      })
-      .from(reviews)
-      .innerJoin(albums, eq(reviews.albumId, albums.id))
-      .where(cursorFilter ? and(eq(reviews.userId, data.userId), cursorFilter) : eq(reviews.userId, data.userId))
-      .orderBy(desc(reviews.createdAt), desc(reviews.id))
-      .limit(reviewsPageSize + 1);
+  const hasNextPage = userReviews.length > reviewsPageSize;
+  const pageRows = hasNextPage ? userReviews.slice(0, reviewsPageSize) : userReviews;
+  const lastReview = pageRows.at(-1)?.review;
 
-    const hasNextPage = userReviews.length > reviewsPageSize;
-    const pageRows = hasNextPage ? userReviews.slice(0, reviewsPageSize) : userReviews;
-    const lastReview = pageRows.at(-1)?.review;
-
-    return {
-      nextCursor:
-        hasNextPage && lastReview
-          ? encodeCursor({
-              createdAt: lastReview.createdAt.toISOString(),
-              id: lastReview.id,
-            })
-          : null,
-      reviews: pageRows.map((row) => mapUserReview(row, canDelete)),
-    };
-  } finally {
-    await client.end({ timeout: 1 }).catch(() => undefined);
-  }
+  return {
+    nextCursor:
+      hasNextPage && lastReview
+        ? encodeCursor({
+            createdAt: lastReview.createdAt.toISOString(),
+            id: lastReview.id,
+          })
+        : null,
+    reviews: pageRows.map((row) => mapUserReview(row, canDelete)),
+  };
 }
 
 export async function getAlbumRatingSummaryService({ albumId }: AlbumIdInput) {
-  const { client, db } = createDbClient();
+  const db = await getDb();
   const ratingBucket = sql<number>`least(5, greatest(1, ceil(${reviews.rating}::numeric / 2)))::integer`;
 
-  try {
-    const [summary] = await db
-      .select({
-        average: sql<number | null>`(avg(${reviews.rating}) / 2)::float`,
-        total: count(reviews.id),
-      })
-      .from(reviews)
-      .where(eq(reviews.albumId, albumId));
+  const [summary] = await db
+    .select({
+      average: sql<number | null>`(avg(${reviews.rating}) / 2)::float`,
+      total: count(reviews.id),
+    })
+    .from(reviews)
+    .where(eq(reviews.albumId, albumId));
 
-    const distribution = await db
-      .select({
-        count: count(reviews.id),
-        rating: ratingBucket,
-      })
-      .from(reviews)
-      .where(eq(reviews.albumId, albumId))
-      .groupBy(ratingBucket);
+  const distribution = await db
+    .select({
+      count: count(reviews.id),
+      rating: ratingBucket,
+    })
+    .from(reviews)
+    .where(eq(reviews.albumId, albumId))
+    .groupBy(ratingBucket);
 
-    return mapAlbumRatingSummary(summary, distribution);
-  } finally {
-    await client.end({ timeout: 1 }).catch(() => undefined);
-  }
+  return mapAlbumRatingSummary(summary, distribution);
 }
 
 export async function hasMyAlbumReviewService(data: AlbumIdInput, context: AuthenticatedContext) {
@@ -335,7 +312,7 @@ export async function setReviewLikeService(data: ReviewLikeInput, context: Authe
   return { liked: data.liked, likes: likeCount?.likes ?? 0, reviewId: data.reviewId };
 }
 
-function getUserProfileRow(db: ReturnType<typeof createDbClient>["db"], username: string, viewerUserId?: string) {
+function getUserProfileRow(db: Db, username: string, viewerUserId?: string) {
   const profileUser = alias(user, "profile_user");
   const profileUserId = sql.raw('"profile_user"."id"');
   const followedByViewer = viewerUserId

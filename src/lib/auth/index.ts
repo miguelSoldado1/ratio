@@ -4,7 +4,7 @@ import { lastLoginMethod, username } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { eq } from "drizzle-orm";
 import { env } from "@/env";
-import { createDbClient } from "../db";
+import { getDb } from "../db";
 import * as schema from "../db/schema";
 import { isDisplayUsernameValid, limitDisplayUsername, trimDisplayUsername } from "./profile-identity";
 import type { Db } from "../db";
@@ -107,14 +107,10 @@ export function createAuth(db: Db) {
 }
 
 export async function handleAuthRequest(request: Request) {
-  const { client, db } = createDbClient();
+  const db = await getDb();
   const auth = createAuth(db);
 
-  try {
-    return await auth.handler(request);
-  } finally {
-    await client.end({ timeout: 1 }).catch(() => undefined);
-  }
+  return await auth.handler(request);
 }
 
 async function generateUniqueUsername(db: Db, baseUsername: string): Promise<string> {

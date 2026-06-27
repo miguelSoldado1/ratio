@@ -46,15 +46,15 @@ Avoid Better Auth's migrate command for this project because it mutates the data
 
 ## Worker Compatibility
 
-Cloudflare Worker compatibility is the riskiest database integration. The current local DB client uses `postgres`, which may need to be replaced or wrapped with a Worker-compatible Postgres connection path such as Cloudflare Hyperdrive or another supported driver.
+Cloudflare Worker database access goes through the `HYPERDRIVE` binding in `wrangler.jsonc`. Local development, Drizzle Kit migrations, and seed scripts continue to use `DATABASE_URL` directly.
 
-Validate this with a deployed Worker test query before building app features on top.
+Create the Hyperdrive config from Supabase's direct Postgres connection string on port `5432`, not the Supabase transaction pooler on port `6543`. Replace the placeholder Hyperdrive config id in `wrangler.jsonc`, then run `pnpm wrangler types`.
+
+Do not introduce a module-scoped Worker DB singleton. `src/lib/db/index.ts` exposes `getDb()`: local development reuses a singleton client, while Cloudflare Worker requests create a request-scoped `postgres`/Drizzle client from the `HYPERDRIVE` binding. Hyperdrive owns the underlying origin pool and Worker invocation cleanup, so server functions should not carry explicit `client.end()` boilerplate.
 
 Deployment note from the initial Cloudflare rollout: a module-scoped `postgres` client failed in Workers during OAuth callback handling with `Cannot perform I/O on behalf of a different request`, surfaced by Better Auth as a failed `verification` query while parsing OAuth state.
 
-The current mitigation is to create and close the `postgres` client per auth request and to use `prepare: false` for the Supabase transaction pooler on port `6543`. If DB usage expands beyond auth, revisit this before adding shared module-level DB clients.
-
-Cloudflare Hyperdrive is a likely production-grade fix because it provides a Worker-native Postgres binding/connection proxy. Another option is moving to an edge-compatible HTTP driver where possible.
+After deploy, smoke-test the OAuth callback path because that was where the previous Worker request-lifetime issue surfaced.
 
 ## Ratings Backend
 

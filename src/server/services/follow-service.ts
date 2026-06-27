@@ -1,9 +1,10 @@
 import { and, desc, eq, isNotNull, lt, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import z from "zod";
-import { createDbClient } from "@/lib/db";
+import { getDb } from "@/lib/db";
 import { user, userFollows } from "@/lib/db/schema";
 import { decodeCursor, encodeCursor, getOptionalCurrentUserId } from "../server-utils";
+import type { Db } from "@/lib/db";
 import type { AuthenticatedContext } from "../auth-middleware";
 
 // Constants
@@ -54,83 +55,73 @@ export interface SetUserFollowInput {
 // Services
 
 export async function getUserFollowersService(data: UserFollowsInput): Promise<UserFollowsPage> {
-  const { client, db } = createDbClient();
-
-  try {
-    const viewerUserId = await getOptionalCurrentUserId(db);
-    const targetUser = await getUserExists(db, data.userId);
-    if (!targetUser) {
-      throw new Error("User not found");
-    }
-
-    const cursor = data.cursor ? decodeUserFollowsCursor(data.cursor) : undefined;
-    const cursorFilter = cursor ? getUserFollowsCursorFilter(cursor, userFollows.followerId) : undefined;
-    const followerUser = alias(user, "follower_user");
-    const followerUserId = sql.raw('"follower_user"."id"');
-    const followedByViewer = getFollowedByViewerSql(viewerUserId, followerUserId);
-
-    const followerRows = await db
-      .select({
-        followedByViewer,
-        followCreatedAt: userFollows.createdAt,
-        user: {
-          avatarUrl: followerUser.image,
-          displayUsername: followerUser.displayUsername,
-          id: followerUser.id,
-          name: followerUser.name,
-          username: followerUser.username,
-        },
-      })
-      .from(userFollows)
-      .innerJoin(followerUser, eq(userFollows.followerId, followerUser.id))
-      .where(and(eq(userFollows.followingId, data.userId), isNotNull(followerUser.username), cursorFilter ?? undefined))
-      .orderBy(desc(userFollows.createdAt), desc(userFollows.followerId))
-      .limit(userFollowsPageSize + 1);
-
-    return mapUserFollowsPage(followerRows, (row) => row.user.id);
-  } finally {
-    await client.end({ timeout: 1 }).catch(() => undefined);
+  const db = await getDb();
+  const viewerUserId = await getOptionalCurrentUserId(db);
+  const targetUser = await getUserExists(db, data.userId);
+  if (!targetUser) {
+    throw new Error("User not found");
   }
+
+  const cursor = data.cursor ? decodeUserFollowsCursor(data.cursor) : undefined;
+  const cursorFilter = cursor ? getUserFollowsCursorFilter(cursor, userFollows.followerId) : undefined;
+  const followerUser = alias(user, "follower_user");
+  const followerUserId = sql.raw('"follower_user"."id"');
+  const followedByViewer = getFollowedByViewerSql(viewerUserId, followerUserId);
+
+  const followerRows = await db
+    .select({
+      followedByViewer,
+      followCreatedAt: userFollows.createdAt,
+      user: {
+        avatarUrl: followerUser.image,
+        displayUsername: followerUser.displayUsername,
+        id: followerUser.id,
+        name: followerUser.name,
+        username: followerUser.username,
+      },
+    })
+    .from(userFollows)
+    .innerJoin(followerUser, eq(userFollows.followerId, followerUser.id))
+    .where(and(eq(userFollows.followingId, data.userId), isNotNull(followerUser.username), cursorFilter ?? undefined))
+    .orderBy(desc(userFollows.createdAt), desc(userFollows.followerId))
+    .limit(userFollowsPageSize + 1);
+
+  return mapUserFollowsPage(followerRows, (row) => row.user.id);
 }
 
 export async function getUserFollowingService(data: UserFollowsInput): Promise<UserFollowsPage> {
-  const { client, db } = createDbClient();
-
-  try {
-    const viewerUserId = await getOptionalCurrentUserId(db);
-    const targetUser = await getUserExists(db, data.userId);
-    if (!targetUser) {
-      throw new Error("User not found");
-    }
-
-    const cursor = data.cursor ? decodeUserFollowsCursor(data.cursor) : undefined;
-    const cursorFilter = cursor ? getUserFollowsCursorFilter(cursor, userFollows.followingId) : undefined;
-    const followingUser = alias(user, "following_user");
-    const followingUserId = sql.raw('"following_user"."id"');
-    const followedByViewer = getFollowedByViewerSql(viewerUserId, followingUserId);
-
-    const followingRows = await db
-      .select({
-        followedByViewer,
-        followCreatedAt: userFollows.createdAt,
-        user: {
-          avatarUrl: followingUser.image,
-          displayUsername: followingUser.displayUsername,
-          id: followingUser.id,
-          name: followingUser.name,
-          username: followingUser.username,
-        },
-      })
-      .from(userFollows)
-      .innerJoin(followingUser, eq(userFollows.followingId, followingUser.id))
-      .where(and(eq(userFollows.followerId, data.userId), isNotNull(followingUser.username), cursorFilter ?? undefined))
-      .orderBy(desc(userFollows.createdAt), desc(userFollows.followingId))
-      .limit(userFollowsPageSize + 1);
-
-    return mapUserFollowsPage(followingRows, (row) => row.user.id);
-  } finally {
-    await client.end({ timeout: 1 }).catch(() => undefined);
+  const db = await getDb();
+  const viewerUserId = await getOptionalCurrentUserId(db);
+  const targetUser = await getUserExists(db, data.userId);
+  if (!targetUser) {
+    throw new Error("User not found");
   }
+
+  const cursor = data.cursor ? decodeUserFollowsCursor(data.cursor) : undefined;
+  const cursorFilter = cursor ? getUserFollowsCursorFilter(cursor, userFollows.followingId) : undefined;
+  const followingUser = alias(user, "following_user");
+  const followingUserId = sql.raw('"following_user"."id"');
+  const followedByViewer = getFollowedByViewerSql(viewerUserId, followingUserId);
+
+  const followingRows = await db
+    .select({
+      followedByViewer,
+      followCreatedAt: userFollows.createdAt,
+      user: {
+        avatarUrl: followingUser.image,
+        displayUsername: followingUser.displayUsername,
+        id: followingUser.id,
+        name: followingUser.name,
+        username: followingUser.username,
+      },
+    })
+    .from(userFollows)
+    .innerJoin(followingUser, eq(userFollows.followingId, followingUser.id))
+    .where(and(eq(userFollows.followerId, data.userId), isNotNull(followingUser.username), cursorFilter ?? undefined))
+    .orderBy(desc(userFollows.createdAt), desc(userFollows.followingId))
+    .limit(userFollowsPageSize + 1);
+
+  return mapUserFollowsPage(followingRows, (row) => row.user.id);
 }
 
 export async function setUserFollowService(data: SetUserFollowInput, context: AuthenticatedContext) {
@@ -164,7 +155,7 @@ export async function setUserFollowService(data: SetUserFollowInput, context: Au
   };
 }
 
-async function getUserExists(db: ReturnType<typeof createDbClient>["db"], userId: string) {
+async function getUserExists(db: Db, userId: string) {
   const [targetUser] = await db.select({ id: user.id }).from(user).where(eq(user.id, userId)).limit(1);
 
   return targetUser;
