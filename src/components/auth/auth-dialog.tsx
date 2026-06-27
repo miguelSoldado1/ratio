@@ -40,8 +40,8 @@ const SpotifyIcon = (props: SVGProps<SVGSVGElement>) => (
 );
 
 const providers = [
-  { icon: GoogleIcon, id: "google", label: "Google" },
   { icon: SpotifyIcon, id: "spotify", label: "Spotify" },
+  { icon: GoogleIcon, id: "google", label: "Google" },
   { icon: DiscordIcon, id: "discord", label: "Discord" },
 ] as const;
 
