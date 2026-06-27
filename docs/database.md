@@ -52,6 +52,8 @@ Create the Hyperdrive config from Supabase's direct Postgres connection string o
 
 Do not introduce a module-scoped Worker DB singleton. `src/lib/db/index.ts` exposes `getDb()`: local development reuses a singleton client, while Cloudflare Worker requests create a request-scoped `postgres`/Drizzle client from the `HYPERDRIVE` binding. Hyperdrive owns the underlying origin pool and Worker invocation cleanup, so server functions should not carry explicit `client.end()` boilerplate.
 
+Hyperdrive query caching is available for future read-heavy endpoints, but keep it opt-in per query. Prefer it for shared public reads such as anonymous feeds, trending albums, popular reviews, and short-lived rating summaries. Avoid it for auth/session reads, viewer-specific booleans such as `likedByViewer` and `followedByViewer`, and mutation-adjacent checks where users expect immediate freshness.
+
 Deployment note from the initial Cloudflare rollout: a module-scoped `postgres` client failed in Workers during OAuth callback handling with `Cannot perform I/O on behalf of a different request`, surfaced by Better Auth as a failed `verification` query while parsing OAuth state.
 
 After deploy, smoke-test the OAuth callback path because that was where the previous Worker request-lifetime issue surfaced.
