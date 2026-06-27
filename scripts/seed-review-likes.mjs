@@ -3,12 +3,12 @@ import postgres from "postgres";
 
 config({ path: ".env" });
 
-// Usage: pnpm seed:review-likes -- --review-id=<review-id> [--count=24] [--dry-run]
+// Usage: pnpm seed:review-likes -- --review-id=<review-id> [--limit=24] [--dry-run]
 // Required env: DATABASE_URL.
-// Optional env: SEED_REVIEW_LIKES_REVIEW_ID and SEED_REVIEW_LIKES_COUNT; CLI flags override them.
+// Optional env: SEED_REVIEW_LIKES_REVIEW_ID and SEED_REVIEW_LIKES_LIMIT; CLI flags override them.
 // Randomly samples existing users, excluding the review author and users who already liked the review.
 
-const defaultCount = 24;
+const defaultLimit = 24;
 const options = getOptions();
 const databaseUrl = requireEnv("DATABASE_URL");
 const db = postgres(databaseUrl, { max: 1, prepare: false });
@@ -49,15 +49,15 @@ async function seedReviewLikes() {
           and review_like.user_id = "user".id
       )
     order by random()
-    limit ${options.count}
+    limit ${options.limit}
   `;
 
   console.log(
     `Prepared ${candidates.length} random likes for review ${review.id} by ${formatUserName(review)} (${review.user_id}).`
   );
 
-  if (candidates.length < options.count) {
-    console.warn(`Only ${candidates.length} eligible users are available for the requested ${options.count} likes.`);
+  if (candidates.length < options.limit) {
+    console.warn(`Only ${candidates.length} eligible users are available for the requested ${options.limit} likes.`);
   }
 
   if (options.dryRun) {
@@ -90,7 +90,7 @@ async function seedReviewLikes() {
 
 function getOptions() {
   const cliOptions = {
-    count: Number(process.env.SEED_REVIEW_LIKES_COUNT ?? defaultCount),
+    limit: Number(process.env.SEED_REVIEW_LIKES_LIMIT ?? defaultLimit),
     dryRun: false,
     reviewId: process.env.SEED_REVIEW_LIKES_REVIEW_ID ?? "",
   };
@@ -105,8 +105,8 @@ function getOptions() {
       continue;
     }
 
-    if (argument.startsWith("--count=")) {
-      cliOptions.count = Number(argument.slice("--count=".length));
+    if (argument.startsWith("--limit=")) {
+      cliOptions.limit = Number(argument.slice("--limit=".length));
       continue;
     }
 
@@ -126,8 +126,8 @@ function validateOptions(cliOptions) {
     throw new Error("Review id is required");
   }
 
-  if (!Number.isInteger(cliOptions.count) || cliOptions.count < 1) {
-    throw new Error("Count must be a positive integer");
+  if (!Number.isInteger(cliOptions.limit) || cliOptions.limit < 1) {
+    throw new Error("Limit must be a positive integer");
   }
 }
 
