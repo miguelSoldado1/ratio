@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ChevronDown, Heart } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { RatingStarIcon } from "@/components/rating-star-icon";
+import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/user-avatar";
 import { useDebounce } from "@/hooks/use-debounce";
 import { abbreviateCount, cn } from "@/lib/utils";
@@ -472,17 +473,25 @@ function Likes({ count, disabled = false, liked = false, onShowLikes, onToggle, 
 
     if (canShowLikes) {
       return (
-        <button
+        <Button
           aria-label={`Show people who liked this review, ${like.count} ${likeLabel}`}
           className={cn(
-            "group -ml-2 flex h-8 items-center gap-1.5 rounded-full px-2 text-muted-foreground/80 [transition:color_150ms_ease,background-color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] hover:bg-primary/10 hover:text-primary focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 active:scale-[0.97]",
+            "group -ml-2 h-8 gap-1.5 px-2 text-[13px] text-muted-foreground/80 [transition:color_150ms_ease,background-color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] hover:bg-primary/10 hover:text-primary active:scale-[0.97] [&_svg:not([class*='size-'])]:size-3.5",
             className
           )}
           onClick={onShowLikes}
+          size="sm"
           type="button"
+          variant="ghost"
         >
-          {compactContent}
-        </button>
+          <Heart
+            className="stroke-muted-foreground/70 [transition:color_150ms_ease,stroke_150ms_ease] group-hover:stroke-primary"
+            data-icon="inline-start"
+          />
+          <span className="tabular-nums [transition:color_150ms_ease]" key={like.count}>
+            {abbreviateCount(like.count)}
+          </span>
+        </Button>
       );
     }
 
@@ -494,23 +503,26 @@ function Likes({ count, disabled = false, liked = false, onShowLikes, onToggle, 
   }
 
   return (
-    <div className={cn("-ml-2 flex h-8 items-center gap-1", className)}>
-      <button
+    <div className={cn("-ml-2 flex h-8 items-center gap-0", className)}>
+      <Button
         aria-label={like.liked ? "Unlike review" : "Like review"}
         aria-pressed={like.liked}
         className={cn(
-          "group flex h-8 items-center gap-1.5 rounded-full px-2 font-semibold text-[13px] [transition:color_150ms_ease,background-color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)]",
+          "group h-8 gap-1.5 pr-1 pl-2 font-semibold text-[13px] [transition:color_150ms_ease,background-color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] active:translate-y-0 [&_svg:not([class*='size-'])]:size-3.5",
           getLikeButtonClass({ disabled })
         )}
         onClick={like.toggle}
+        size="sm"
         type="button"
+        variant="ghost"
       >
         <Heart
           className={cn(
-            "size-3.5 [transition:color_150ms_ease,fill_150ms_ease,stroke_150ms_ease]",
+            "[transition:color_150ms_ease,fill_150ms_ease,stroke_150ms_ease]",
             like.justLiked && "animate-heart-pop",
             getLikeHeartClass({ disabled, liked: like.liked })
           )}
+          data-icon="inline-start"
           onAnimationEnd={like.clearJustLiked}
         />
         <span
@@ -521,20 +533,20 @@ function Likes({ count, disabled = false, liked = false, onShowLikes, onToggle, 
         >
           {like.liked ? "Liked" : "Like"}
         </span>
-      </button>
+      </Button>
       {canShowLikes ? (
-        <button
+        <Button
           aria-label={`Show people who liked this review, ${like.count} ${likeLabel}`}
-          className={cn(
-            "flex h-8 items-center rounded-full px-1.5 text-[13px] text-muted-foreground tabular-nums outline-none [transition:color_150ms_ease,background-color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] hover:bg-primary/10 hover:text-primary focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 active:scale-[0.97]"
-          )}
+          className="h-8 px-1 text-[13px] text-muted-foreground tabular-nums [transition:color_150ms_ease,background-color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] hover:bg-primary/10 hover:text-primary active:scale-[0.97]"
           onClick={onShowLikes}
+          size="sm"
           type="button"
+          variant="ghost"
         >
           {likeCount}
-        </button>
+        </Button>
       ) : (
-        <span className="flex h-8 items-center px-1.5 text-[13px] text-muted-foreground tabular-nums">{likeCount}</span>
+        <span className="flex h-8 items-center px-1 text-[13px] text-muted-foreground tabular-nums">{likeCount}</span>
       )}
     </div>
   );
