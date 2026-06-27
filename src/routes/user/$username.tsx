@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { AuthDialog } from "@/components/auth/auth-dialog";
 import { ProfileHeader, ProfileHeaderSkeleton } from "@/components/profile/profile-header";
 import { ProfileReviewsSection, ProfileReviewsSectionSkeleton } from "@/components/profile/profile-reviews-section";
@@ -26,6 +26,8 @@ function UserPage() {
   const viewerUserId = session.data?.user.id;
   const hasSession = Boolean(viewerUserId);
   const profileQueryKey = userQueryKeys.profile(username, viewerUserId);
+
+  const viewer = useMemo(() => ({ hasSession, userId: viewerUserId }), [hasSession, viewerUserId]);
 
   const getUserProfileFn = useServerFn(getUserProfile);
   const userProfileQuery = useQuery({
@@ -144,13 +146,13 @@ function UserPage() {
             <ProfileReviewsSection
               deletingReviewId={deletingReviewId}
               displayName={profile.displayName}
-              hasSession={hasSession}
               isFetchingNextPage={isFetchingNextPage}
               loadMoreRef={loadMoreRef}
               onReviewDelete={handleReviewDelete}
               onReviewLikeToggle={handleReviewLikeToggle}
               profileUser={profile}
               reviews={reviews}
+              viewer={viewer}
             />
           )}
         </div>

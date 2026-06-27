@@ -31,6 +31,11 @@ const reviewLikeSchema = z.object({
   reviewId: z.uuid(),
 });
 
+const reviewLikesSchema = z.object({
+  cursor: z.string().trim().min(1).optional(),
+  reviewId: z.uuid(),
+});
+
 const deleteReviewSchema = z.object({
   reviewId: z.uuid(),
 });
@@ -64,6 +69,10 @@ export const getAlbumRatingSummary = createServerFn()
 export const getUserReviews = createServerFn()
   .validator(userReviewsSchema)
   .handler(({ data }) => reviewService.getUserReviewsService(data));
+
+export const getReviewLikes = createServerFn()
+  .validator(reviewLikesSchema)
+  .handler(({ data }) => reviewService.getReviewLikesService(data));
 
 export const getUserProfile = createServerFn()
   .validator(userProfileSchema)

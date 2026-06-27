@@ -1,9 +1,10 @@
-import { and, desc, eq, isNotNull, lt, or, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import z from "zod";
 import { getDb } from "@/lib/db";
 import { user, userFollows } from "@/lib/db/schema";
-import { decodeCursor, encodeCursor, getOptionalCurrentUserId } from "../server-utils";
+import { decodeCursor, encodeCursor, getCreatedAtIdCursorFilter, getOptionalCurrentUserId } from "../server-utils";
+import { type FollowableUserRow, getFollowedByViewerSql, mapFollowableUser } from "./followable-user-service";
 import type { Db } from "@/lib/db";
 import type { AuthenticatedContext } from "../auth-middleware";
 
@@ -25,16 +26,8 @@ interface UserFollowsCursorPayload {
   id: string;
 }
 
-interface UserFollowsRow {
+interface UserFollowsRow extends FollowableUserRow {
   followCreatedAt: Date;
-  followedByViewer: boolean;
-  user: {
-    avatarUrl: string | null;
-    displayUsername: string | null;
-    id: string;
-    name: string;
-    username: string | null;
-  };
 }
 
 export interface UserFollowsInput {
@@ -44,7 +37,7 @@ export interface UserFollowsInput {
 
 export interface UserFollowsPage {
   nextCursor: string | null;
-  users: ReturnType<typeof mapUserFollow>[];
+  users: ReturnType<typeof mapFollowableUser>[];
 }
 
 export interface SetUserFollowInput {
@@ -161,14 +154,6 @@ async function getUserExists(db: Db, userId: string) {
   return targetUser;
 }
 
-// Viewer state
-
-function getFollowedByViewerSql(viewerUserId: string | undefined, listedUserId: ReturnType<typeof sql.raw>) {
-  return viewerUserId
-    ? sql<boolean>`exists(select 1 from ${userFollows} where ${userFollows.followerId} = ${viewerUserId} and ${userFollows.followingId} = ${listedUserId})`
-    : sql<boolean>`false`;
-}
-
 // Mappers
 
 function mapUserFollowsPage(rows: UserFollowsRow[], getCursorId: (row: UserFollowsRow) => string): UserFollowsPage {
@@ -184,17 +169,7 @@ function mapUserFollowsPage(rows: UserFollowsRow[], getCursorId: (row: UserFollo
             id: getCursorId(lastRow),
           })
         : null,
-    users: pageRows.map(mapUserFollow),
-  };
-}
-
-function mapUserFollow(row: UserFollowsRow) {
-  return {
-    avatarUrl: row.user.avatarUrl ?? undefined,
-    displayName: row.user.displayUsername ?? row.user.name,
-    followedByViewer: row.followedByViewer,
-    id: row.user.id,
-    username: row.user.username ?? row.user.id,
+    users: pageRows.map(mapFollowableUser),
   };
 }
 
@@ -204,12 +179,7 @@ function getUserFollowsCursorFilter(
   cursor: UserFollowsCursorPayload,
   cursorIdColumn: typeof userFollows.followerId | typeof userFollows.followingId
 ) {
-  const cursorCreatedAt = new Date(cursor.createdAt);
-
-  return or(
-    lt(userFollows.createdAt, cursorCreatedAt),
-    and(eq(userFollows.createdAt, cursorCreatedAt), lt(cursorIdColumn, cursor.id))
-  );
+  return getCreatedAtIdCursorFilter(cursor, { createdAt: userFollows.createdAt, id: cursorIdColumn });
 }
 
 function decodeUserFollowsCursor(cursor: string): UserFollowsCursorPayload {

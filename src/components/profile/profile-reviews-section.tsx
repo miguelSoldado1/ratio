@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { DeleteReviewDialog } from "@/components/delete-review-dialog";
 import { ReviewCard } from "@/components/review-card";
 import { ReviewCardSkeleton } from "@/components/review-card-skeleton";
+import { ReviewLikesDialog } from "@/components/review-likes-dialog";
 import { cn } from "@/lib/utils";
 import type { RefObject } from "react";
 import type { UserProfile, UserReviewsPage } from "@/server/services/review-service";
@@ -11,68 +13,84 @@ type ProfileUser = UserProfile["user"];
 interface ProfileReviewsSectionProps {
   deletingReviewId: string | null;
   displayName: string;
-  hasSession: boolean;
   isFetchingNextPage: boolean;
   loadMoreRef: RefObject<HTMLDivElement | null>;
   onReviewDelete: (reviewId: string) => Promise<boolean>;
   onReviewLikeToggle: (reviewId: string, liked: boolean) => boolean | Promise<boolean | undefined> | undefined;
   profileUser: ProfileUser;
   reviews: ProfileReview[];
+  viewer: {
+    hasSession: boolean;
+    userId?: string;
+  };
 }
 
 export function ProfileReviewsSection({
   deletingReviewId,
   displayName,
-  hasSession,
   isFetchingNextPage,
   loadMoreRef,
   onReviewDelete,
   onReviewLikeToggle,
   profileUser,
   reviews,
+  viewer,
 }: ProfileReviewsSectionProps) {
+  const [likesReviewId, setLikesReviewId] = useState<string>();
+
   return (
-    <section className="mt-7">
-      {reviews.length === 0 ? (
-        <EmptyReviews displayName={displayName} />
-      ) : (
-        <>
-          {reviews.map((review) => (
-            <ReviewCard.Root className="border-border/80" key={review.id}>
-              <ReviewCard.Header
-                createdAt={review.createdAt}
-                user={{
-                  avatarUrl: profileUser.avatarUrl,
-                  displayUsername: profileUser.displayUsername,
-                }}
-              />
-              <div className="flex items-start gap-3">
-                <ReviewCard.Album album={review.album} className="flex-1" linked />
-                <ReviewCard.Rating value={review.rating} />
-              </div>
-              {review.review ? <ReviewCard.Review>{review.review}</ReviewCard.Review> : null}
-              <ReviewCard.Footer>
-                <ReviewCard.Likes
-                  count={review.likes}
-                  disabled={!hasSession}
-                  liked={review.liked}
-                  onToggle={hasSession ? (liked) => onReviewLikeToggle(review.id, liked) : undefined}
+    <>
+      <section className="mt-7">
+        {reviews.length === 0 ? (
+          <EmptyReviews displayName={displayName} />
+        ) : (
+          <>
+            {reviews.map((review) => (
+              <ReviewCard.Root className="border-border/80" key={review.id}>
+                <ReviewCard.Header
+                  createdAt={review.createdAt}
+                  user={{
+                    avatarUrl: profileUser.avatarUrl,
+                    displayUsername: profileUser.displayUsername,
+                  }}
                 />
-                {review.canDelete ? (
-                  <DeleteReviewDialog
-                    className="-mr-2 ml-auto"
-                    isDeleting={deletingReviewId === review.id}
-                    onDelete={() => onReviewDelete(review.id)}
+                <div className="flex items-start gap-3">
+                  <ReviewCard.Album album={review.album} className="flex-1" linked />
+                  <ReviewCard.Rating value={review.rating} />
+                </div>
+                {review.review ? <ReviewCard.Review>{review.review}</ReviewCard.Review> : null}
+                <ReviewCard.Footer>
+                  <ReviewCard.Likes
+                    count={review.likes}
+                    disabled={!viewer.hasSession}
+                    liked={review.liked}
+                    onShowLikes={() => setLikesReviewId(review.id)}
+                    onToggle={viewer.hasSession ? (liked) => onReviewLikeToggle(review.id, liked) : undefined}
                   />
-                ) : null}
-              </ReviewCard.Footer>
-            </ReviewCard.Root>
-          ))}
-          <div aria-hidden="true" className="h-px" ref={loadMoreRef} />
-          {isFetchingNextPage ? <ProfileReviewsSectionSkeleton className="mt-0" count={2} /> : null}
-        </>
-      )}
-    </section>
+                  {review.canDelete ? (
+                    <DeleteReviewDialog
+                      className="-mr-2 ml-auto"
+                      isDeleting={deletingReviewId === review.id}
+                      onDelete={() => onReviewDelete(review.id)}
+                    />
+                  ) : null}
+                </ReviewCard.Footer>
+              </ReviewCard.Root>
+            ))}
+            <div aria-hidden="true" className="h-px" ref={loadMoreRef} />
+            {isFetchingNextPage ? <ProfileReviewsSectionSkeleton className="mt-0" count={2} /> : null}
+          </>
+        )}
+      </section>
+      <ReviewLikesDialog
+        onOpenChange={(open) => {
+          if (!open) setLikesReviewId(undefined);
+        }}
+        open={Boolean(likesReviewId)}
+        reviewId={likesReviewId}
+        viewer={viewer}
+      />
+    </>
   );
 }
 

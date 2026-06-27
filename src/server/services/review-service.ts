@@ -3,14 +3,16 @@ import { alias } from "drizzle-orm/pg-core";
 import z from "zod";
 import { getDb } from "@/lib/db";
 import { albums, reviewLikes, reviews, user, userFollows } from "@/lib/db/schema";
-import { decodeCursor, encodeCursor, getOptionalCurrentUserId } from "../server-utils";
+import { decodeCursor, encodeCursor, getCreatedAtIdCursorFilter, getOptionalCurrentUserId } from "../server-utils";
 import { ensureAlbumExistsForWrite, getMissingAlbumMetadataForWrite } from "./album-service";
+import { type FollowableUserRow, getFollowedByViewerSql, mapFollowableUser } from "./followable-user-service";
 import type { Db } from "@/lib/db";
 import type { AuthenticatedContext } from "../auth-middleware";
 
 // Constants
 
 const ratingBuckets: readonly ["1", "2", "3", "4", "5"] = ["1", "2", "3", "4", "5"];
+const reviewLikesPageSize = 24;
 const reviewsPageSize = 12;
 const userSearchResultLimit = 5;
 
@@ -21,6 +23,11 @@ const albumReviewsCursorPayloadSchema = z.object({
   id: z.uuid(),
 });
 
+const reviewLikesCursorPayloadSchema = z.object({
+  createdAt: z.iso.datetime(),
+  id: z.string().trim().min(1).max(128),
+});
+
 // Types
 
 interface AlbumReviewsCursorPayload {
@@ -28,9 +35,19 @@ interface AlbumReviewsCursorPayload {
   id: string;
 }
 
+interface ReviewLikesCursorPayload {
+  createdAt: string;
+  id: string;
+}
+
 export interface AlbumReviewsPage {
   nextCursor: string | null;
   reviews: ReturnType<typeof mapAlbumReview>[];
+}
+
+export interface ReviewLikesPage {
+  nextCursor: string | null;
+  users: ReturnType<typeof mapFollowableUser>[];
 }
 
 export interface UserReviewsPage {
@@ -83,6 +100,10 @@ export interface DeleteReviewInput {
 
 export interface ReviewLikeInput extends DeleteReviewInput {
   liked: boolean;
+}
+
+export interface ReviewLikesInput extends DeleteReviewInput {
+  cursor?: string;
 }
 
 // Services
@@ -223,6 +244,46 @@ export async function getUserReviewsService(data: UserReviewsInput): Promise<Use
         : null,
     reviews: pageRows.map((row) => mapUserReview(row, canDelete)),
   };
+}
+
+export async function getReviewLikesService(data: ReviewLikesInput): Promise<ReviewLikesPage> {
+  const db = await getDb();
+  const viewerUserId = await getOptionalCurrentUserId(db);
+  const [targetReview] = await db
+    .select({ id: reviews.id })
+    .from(reviews)
+    .where(eq(reviews.id, data.reviewId))
+    .limit(1);
+
+  if (!targetReview) {
+    throw new Error("Review not found");
+  }
+
+  const cursor = data.cursor ? decodeReviewLikesCursor(data.cursor) : undefined;
+  const cursorFilter = cursor ? getReviewLikesCursorFilter(cursor) : undefined;
+  const likedUser = alias(user, "liked_user");
+  const likedUserId = sql.raw('"liked_user"."id"');
+  const followedByViewer = getFollowedByViewerSql(viewerUserId, likedUserId);
+
+  const likeRows = await db
+    .select({
+      followedByViewer,
+      likeCreatedAt: reviewLikes.createdAt,
+      user: {
+        avatarUrl: likedUser.image,
+        displayUsername: likedUser.displayUsername,
+        id: likedUser.id,
+        name: likedUser.name,
+        username: likedUser.username,
+      },
+    })
+    .from(reviewLikes)
+    .innerJoin(likedUser, eq(reviewLikes.userId, likedUser.id))
+    .where(and(eq(reviewLikes.reviewId, data.reviewId), isNotNull(likedUser.username), cursorFilter ?? undefined))
+    .orderBy(desc(reviewLikes.createdAt), desc(reviewLikes.userId))
+    .limit(reviewLikesPageSize + 1);
+
+  return mapReviewLikesPage(likeRows);
 }
 
 export async function getAlbumRatingSummaryService({ albumId }: AlbumIdInput) {
@@ -370,6 +431,10 @@ interface UserProfileRow {
   username: string | null;
 }
 
+interface ReviewLikeUserRow extends FollowableUserRow {
+  likeCreatedAt: Date;
+}
+
 interface UserSearchRow {
   avatarUrl: string | null;
   displayUsername: string | null;
@@ -486,6 +551,23 @@ function mapUserReview({ album, liked, likes, review }: UserReviewRow, canDelete
   };
 }
 
+function mapReviewLikesPage(rows: ReviewLikeUserRow[]): ReviewLikesPage {
+  const hasNextPage = rows.length > reviewLikesPageSize;
+  const pageRows = hasNextPage ? rows.slice(0, reviewLikesPageSize) : rows;
+  const lastRow = pageRows.at(-1);
+
+  return {
+    nextCursor:
+      hasNextPage && lastRow
+        ? encodeCursor({
+            createdAt: lastRow.likeCreatedAt.toISOString(),
+            id: lastRow.user.id,
+          })
+        : null,
+    users: pageRows.map(mapFollowableUser),
+  };
+}
+
 function formatRatingTotal(total: number) {
   const countLabel = total === 1 ? "rating" : "ratings";
 
@@ -508,4 +590,12 @@ function getAlbumReviewsCursorFilter(cursor: AlbumReviewsCursorPayload) {
 
 function decodeReviewsCursor(cursor: string): AlbumReviewsCursorPayload {
   return decodeCursor(cursor, albumReviewsCursorPayloadSchema, "Invalid reviews cursor");
+}
+
+function getReviewLikesCursorFilter(cursor: ReviewLikesCursorPayload) {
+  return getCreatedAtIdCursorFilter(cursor, { createdAt: reviewLikes.createdAt, id: reviewLikes.userId });
+}
+
+function decodeReviewLikesCursor(cursor: string): ReviewLikesCursorPayload {
+  return decodeCursor(cursor, reviewLikesCursorPayloadSchema, "Invalid review likes cursor");
 }

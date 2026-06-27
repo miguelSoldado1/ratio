@@ -7,6 +7,11 @@ export const albumQueryKeys = {
   search: (query: string) => ["album-search", query] as const,
 };
 
+export const reviewQueryKeys = {
+  likes: (reviewId: string, viewerUserId?: string) =>
+    viewerUserId ? (["review", reviewId, "likes", viewerUserId] as const) : (["review", reviewId, "likes"] as const),
+};
+
 export const userQueryKeys = {
   followers: (profileUserId: string, viewerUserId?: string) =>
     viewerUserId

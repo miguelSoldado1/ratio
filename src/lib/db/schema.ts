@@ -70,6 +70,7 @@ export const reviewLikes = pgTable(
   },
   (table) => [
     primaryKey({ columns: [table.reviewId, table.userId], name: "review_likes_review_user_pk" }),
+    index("review_likes_review_created_user_idx").on(table.reviewId, table.createdAt, table.userId),
     index("review_likes_review_id_idx").on(table.reviewId),
     index("review_likes_user_id_idx").on(table.userId),
   ]

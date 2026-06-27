@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback } from "react";
 import { toast } from "sonner";
+import { reviewQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { setReviewLike } from "@/server/functions/review-functions";
 import { tryCatch } from "@/try-catch";
 import type { InfiniteData, QueryKey } from "@tanstack/react-query";
@@ -55,6 +56,8 @@ export function useReviewLikeToggle<TPage extends ReviewLikePage>({ enabled, que
           })),
         };
       });
+
+      await queryClient.invalidateQueries({ queryKey: reviewQueryKeys.likes(updatedReview.reviewId) });
     },
     [enabled, queryClient, queryKey, setReviewLikeMutation]
   );

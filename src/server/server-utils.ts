@@ -1,5 +1,7 @@
 import { getRequestHeaders } from "@tanstack/react-start/server";
+import { and, eq, lt, or } from "drizzle-orm";
 import { createAuth } from "@/lib/auth";
+import type { AnyColumn } from "drizzle-orm/column";
 import type { ZodType } from "zod";
 import type { Db } from "@/lib/db";
 
@@ -30,4 +32,19 @@ export function decodeCursor<TPayload>(cursor: string, schema: ZodType<TPayload>
   } catch {
     throw new Error(errorMessage);
   }
+}
+
+export function getCreatedAtIdCursorFilter(
+  cursor: { createdAt: string; id: string },
+  columns: {
+    createdAt: AnyColumn<{ data: Date }>;
+    id: AnyColumn<{ data: string }>;
+  }
+) {
+  const cursorCreatedAt = new Date(cursor.createdAt);
+
+  return or(
+    lt(columns.createdAt, cursorCreatedAt),
+    and(eq(columns.createdAt, cursorCreatedAt), lt(columns.id, cursor.id))
+  );
 }

@@ -258,6 +258,7 @@ interface LikesProps {
   count: number;
   disabled?: boolean;
   liked?: boolean;
+  onShowLikes?: () => void;
   onToggle?: (liked: boolean) => boolean | Promise<boolean | undefined> | undefined;
 }
 
@@ -441,42 +442,101 @@ function useDebouncedOptimisticLike({ count, liked, onToggle }: UseDebouncedOpti
   };
 }
 
-function Likes({ count, disabled = false, liked = false, onToggle, className }: LikesProps) {
+function Likes({ count, disabled = false, liked = false, onShowLikes, onToggle, className }: LikesProps) {
   const like = useDebouncedOptimisticLike({ count, liked, onToggle });
+  const likeLabel = like.count === 1 ? "like" : "likes";
+  const canShowLikes = like.count > 0 && Boolean(onShowLikes);
+
+  const likeCount = (
+    <span
+      className={cn(
+        "inline-block [transition:color_150ms_ease]",
+        like.countDir === "up" && "animate-count-up",
+        like.countDir === "down" && "animate-count-down"
+      )}
+      key={like.count}
+    >
+      {abbreviateCount(like.count)} {likeLabel}
+    </span>
+  );
+
+  if (disabled) {
+    const compactContent = (
+      <>
+        <Heart className="size-3.5 stroke-muted-foreground/70 [transition:color_150ms_ease,stroke_150ms_ease]" />
+        <span className="text-[13px] tabular-nums [transition:color_150ms_ease]" key={like.count}>
+          {abbreviateCount(like.count)}
+        </span>
+      </>
+    );
+
+    if (canShowLikes) {
+      return (
+        <button
+          aria-label={`Show people who liked this review, ${like.count} ${likeLabel}`}
+          className={cn(
+            "group -ml-2 flex h-8 items-center gap-1.5 rounded-full px-2 text-muted-foreground/80 [transition:color_150ms_ease,background-color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] hover:bg-primary/10 hover:text-primary focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 active:scale-[0.97]",
+            className
+          )}
+          onClick={onShowLikes}
+          type="button"
+        >
+          {compactContent}
+        </button>
+      );
+    }
+
+    return (
+      <div className={cn("-ml-2 flex h-8 items-center gap-1.5 px-2 text-muted-foreground/80", className)}>
+        {compactContent}
+      </div>
+    );
+  }
 
   return (
-    <button
-      aria-label={like.liked ? "Unlike review" : "Like review"}
-      aria-pressed={like.liked}
-      className={cn(
-        "group -ml-2 flex h-8 items-center gap-1.5 rounded-full px-2 [transition:color_150ms_ease,background-color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)]",
-        getLikeButtonClass({ disabled }),
-        className
-      )}
-      disabled={disabled}
-      onClick={like.toggle}
-      type="button"
-    >
-      <Heart
+    <div className={cn("-ml-2 flex h-8 items-center gap-1", className)}>
+      <button
+        aria-label={like.liked ? "Unlike review" : "Like review"}
+        aria-pressed={like.liked}
         className={cn(
-          "size-3.5 [transition:color_150ms_ease,fill_150ms_ease,stroke_150ms_ease]",
-          like.justLiked && "animate-heart-pop",
-          getLikeHeartClass({ disabled, liked: like.liked })
+          "group flex h-8 items-center gap-1.5 rounded-full px-2 font-semibold text-[13px] [transition:color_150ms_ease,background-color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)]",
+          getLikeButtonClass({ disabled })
         )}
-        onAnimationEnd={like.clearJustLiked}
-      />
-      <span
-        className={cn(
-          "text-[13px] tabular-nums [transition:color_150ms_ease]",
-          like.countDir === "up" && "animate-count-up",
-          like.countDir === "down" && "animate-count-down",
-          getLikeCountClass({ disabled, liked: like.liked })
-        )}
-        key={like.count}
+        onClick={like.toggle}
+        type="button"
       >
-        {abbreviateCount(like.count)}
-      </span>
-    </button>
+        <Heart
+          className={cn(
+            "size-3.5 [transition:color_150ms_ease,fill_150ms_ease,stroke_150ms_ease]",
+            like.justLiked && "animate-heart-pop",
+            getLikeHeartClass({ disabled, liked: like.liked })
+          )}
+          onAnimationEnd={like.clearJustLiked}
+        />
+        <span
+          className={cn(
+            "inline-block min-w-8 [transition:color_150ms_ease]",
+            getLikeCountClass({ disabled, liked: like.liked })
+          )}
+        >
+          {like.liked ? "Liked" : "Like"}
+        </span>
+      </button>
+      {canShowLikes ? (
+        <button
+          aria-label={`Show people who liked this review, ${like.count} ${likeLabel}`}
+          className={cn(
+            "flex h-8 items-center rounded-full px-1.5 text-[13px] text-muted-foreground tabular-nums outline-none [transition:color_150ms_ease,background-color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] hover:bg-primary/10 hover:text-primary focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 active:scale-[0.97]"
+          )}
+          onClick={onShowLikes}
+          type="button"
+        >
+          {likeCount}
+        </button>
+      ) : (
+        <span className="flex h-8 items-center px-1.5 text-[13px] text-muted-foreground tabular-nums">{likeCount}</span>
+      )}
+    </div>
   );
 }
 
