@@ -293,7 +293,7 @@ function getLikeCountClass({ disabled, liked }: { disabled: boolean; liked: bool
 function getLikeButtonClass({ disabled }: { disabled: boolean }) {
   if (disabled) return "cursor-default";
 
-  return "cursor-pointer hover:bg-primary/10 active:scale-[0.97]";
+  return "cursor-pointer active:scale-[0.97]";
 }
 
 function useDebouncedOptimisticLike({ count, liked, onToggle }: UseDebouncedOptimisticLikeParams) {
@@ -457,62 +457,22 @@ function Likes({ count, disabled = false, liked = false, onShowLikes, onToggle, 
       )}
       key={like.count}
     >
-      {abbreviateCount(like.count)} {likeLabel}
+      {abbreviateCount(like.count)}
     </span>
   );
 
-  if (disabled) {
-    const compactContent = (
-      <>
-        <Heart className="size-3.5 stroke-muted-foreground/70 [transition:color_150ms_ease,stroke_150ms_ease]" />
-        <span className="text-[13px] tabular-nums [transition:color_150ms_ease]" key={like.count}>
-          {abbreviateCount(like.count)}
-        </span>
-      </>
-    );
-
-    if (canShowLikes) {
-      return (
-        <Button
-          aria-label={`Show people who liked this review, ${like.count} ${likeLabel}`}
-          className={cn(
-            "group -ml-2 h-8 gap-1.5 px-2 text-[13px] text-muted-foreground/80 [transition:color_150ms_ease,background-color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] hover:bg-primary/10 hover:text-primary active:scale-[0.97] [&_svg:not([class*='size-'])]:size-3.5",
-            className
-          )}
-          onClick={onShowLikes}
-          size="sm"
-          type="button"
-          variant="ghost"
-        >
-          <Heart
-            className="stroke-muted-foreground/70 [transition:color_150ms_ease,stroke_150ms_ease] group-hover:stroke-primary"
-            data-icon="inline-start"
-          />
-          <span className="tabular-nums [transition:color_150ms_ease]" key={like.count}>
-            {abbreviateCount(like.count)}
-          </span>
-        </Button>
-      );
-    }
-
-    return (
-      <div className={cn("-ml-2 flex h-8 items-center gap-1.5 px-2 text-muted-foreground/80", className)}>
-        {compactContent}
-      </div>
-    );
-  }
-
   return (
-    <div className={cn("-ml-2 flex h-8 items-center gap-0", className)}>
+    <div className={cn("-ml-2 flex h-8 items-center", className)}>
       <Button
         aria-label={like.liked ? "Unlike review" : "Like review"}
         aria-pressed={like.liked}
         className={cn(
-          "group h-8 gap-1.5 pr-1 pl-2 font-semibold text-[13px] [transition:color_150ms_ease,background-color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] active:translate-y-0 [&_svg:not([class*='size-'])]:size-3.5",
+          "group h-8 w-6 p-0 [transition:color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] hover:bg-transparent active:translate-y-0 dark:hover:bg-transparent [&_svg:not([class*='size-'])]:size-3.5",
           getLikeButtonClass({ disabled })
         )}
+        disabled={disabled}
         onClick={like.toggle}
-        size="sm"
+        size="icon-sm"
         type="button"
         variant="ghost"
       >
@@ -525,19 +485,14 @@ function Likes({ count, disabled = false, liked = false, onShowLikes, onToggle, 
           data-icon="inline-start"
           onAnimationEnd={like.clearJustLiked}
         />
-        <span
-          className={cn(
-            "inline-block min-w-8 [transition:color_150ms_ease]",
-            getLikeCountClass({ disabled, liked: like.liked })
-          )}
-        >
-          {like.liked ? "Liked" : "Like"}
-        </span>
       </Button>
       {canShowLikes ? (
         <Button
           aria-label={`Show people who liked this review, ${like.count} ${likeLabel}`}
-          className="h-8 px-1 text-[13px] text-muted-foreground tabular-nums [transition:color_150ms_ease,background-color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] hover:bg-primary/10 hover:text-primary active:scale-[0.97]"
+          className={cn(
+            "h-8 pr-1 pl-0 text-[13px] tabular-nums [transition:color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] hover:bg-transparent hover:text-primary active:scale-[0.99] dark:hover:bg-transparent",
+            getLikeCountClass({ disabled: false, liked: like.liked })
+          )}
           onClick={onShowLikes}
           size="sm"
           type="button"
@@ -546,7 +501,14 @@ function Likes({ count, disabled = false, liked = false, onShowLikes, onToggle, 
           {likeCount}
         </Button>
       ) : (
-        <span className="flex h-8 items-center px-1 text-[13px] text-muted-foreground tabular-nums">{likeCount}</span>
+        <span
+          className={cn(
+            "flex h-8 items-center px-1 text-[13px] tabular-nums",
+            getLikeCountClass({ disabled, liked: like.liked })
+          )}
+        >
+          {likeCount}
+        </span>
       )}
     </div>
   );
