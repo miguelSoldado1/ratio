@@ -16,6 +16,7 @@ const seedStartedAt = new Date();
 const defaultSeed = "ratio-feed-v1";
 const spotifyMarket = "US";
 const targetReviewCount = 96;
+const viewerReviewCount = 8;
 const dryRunPreviewCount = 30;
 const maxCurrentReviewAgeHours = 7 * 24;
 const maxOldTrendingReviewAgeHours = 21 * 24;
@@ -258,6 +259,10 @@ async function seedFeed() {
 
   progress.step("prepare scenario");
   console.log(`Preparing feed seed for ${formatUserName(viewer)} (${viewer.id}).`);
+  if (!viewer.username) {
+    console.warn("The target user has no username, so their reviews will not appear in the feed.");
+  }
+
   console.log(`Using ${options.randomize ? "randomized" : "deterministic"} feed scenario with seed "${options.seed}".`);
   console.log(
     `Will upsert ${seedAuthors.length + seedLikers.length} seed users, ${seedAlbumIds.length} albums, ${reviewPlans.length} reviews, and ${followedAuthors.length} follows.`
@@ -265,10 +270,10 @@ async function seedFeed() {
 
   if (options.dryRun) {
     for (const spec of reviewPlans.slice(0, dryRunPreviewCount)) {
-      const author = seedAuthors[spec.author];
+      const authorName = spec.viewerAuthor ? formatUserName(viewer) : formatSeedUserName(seedAuthors[spec.author]);
       const albumId = seedAlbumIds[spec.album];
       console.log(
-        `Would seed ${formatSeedUserName(author)} on Spotify album ${albumId}: ${spec.totalLikes} likes, ${spec.recentLikes} recent, ${spec.body ? "written" : "rating-only"}.`
+        `Would seed ${authorName} on Spotify album ${albumId}: ${spec.totalLikes} likes, ${spec.recentLikes} recent, ${spec.body ? "written" : "rating-only"}.`
       );
     }
 
@@ -467,14 +472,14 @@ async function upsertReviews(transaction, reviewPlans) {
   const seededReviews = [];
 
   for (const spec of reviewPlans) {
-    const author = seedAuthors[spec.author];
+    const authorId = spec.viewerAuthor ? options.userId : seedAuthors[spec.author].id;
     const albumId = seedAlbumIds[spec.album];
     const body = spec.body ? reviewBodies[spec.body] : null;
     const createdAt = new Date(seedStartedAt.getTime() - spec.createdHoursAgo * oneHourMs);
 
     const [review] = await transaction`
       insert into review (user_id, album_id, rating, body, created_at, updated_at)
-      values (${author.id}, ${albumId}, ${spec.rating}, ${body}, ${createdAt}, ${createdAt})
+      values (${authorId}, ${albumId}, ${spec.rating}, ${body}, ${createdAt}, ${createdAt})
       on conflict (user_id, album_id) do update set
         rating = excluded.rating,
         body = excluded.body,
@@ -645,9 +650,24 @@ function getReviewPlans(rng, randomize) {
     plans.push(spec);
   }
 
+  plans.push(...getViewerReviewSpecs());
+
   const finalPlans = randomize ? plans.map((spec, index) => randomizeReviewSpec(spec, index, rng)) : plans;
 
   return randomize ? shuffle(finalPlans, rng) : finalPlans;
+}
+
+function getViewerReviewSpecs() {
+  return Array.from({ length: viewerReviewCount }, (_, index) => ({
+    album: (index * 2 + 5) % seedAlbumIds.length,
+    body: index % 3 === 0 ? null : reviewBodyKeys[(index + 2) % reviewBodyKeys.length],
+    createdHoursAgo: getGeneratedNumber(index, 2, maxCurrentReviewAgeHours),
+    rating: 10 - (index % 6),
+    recentLikes: index % 2 === 0 ? 3 + index : 0,
+    totalLikes: index % 2 === 0 ? 8 + index * 2 : index,
+    viewerAuthor: true,
+    viewerLiked: false,
+  }));
 }
 
 function getGeneratedReviewSpec(attempt, index) {
