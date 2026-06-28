@@ -28,7 +28,7 @@ Use this as a directional order, not a locked feature spec.
 - Admin v1 should stay small: enough to remove bad reviews/ratings, not a full dashboard.
 - Build reusable user-list UI where possible for followers, following, and liked-by views.
 - Notifications should come before advanced feed work because they make the social loop feel alive.
-- Home feed v1 is intentionally conservative: no feed-specific schema changes, bounded candidate queries, deterministic ranking, and no Spotify personalization.
+- Home feed v1 is intentionally conservative: no feed-specific schema changes, bounded candidate queries, deterministic ranking, seen-ID cursor pagination, and no Spotify personalization. The cursor design is acceptable for v1 because the candidate windows are small; replace it with cached candidate IDs or a materialized feed/ranking store if feed scale grows.
 - `/review/:reviewId` should be the canonical target for shared reviews.
 
 ## Post-Launch Work

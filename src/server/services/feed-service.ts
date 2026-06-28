@@ -18,7 +18,7 @@ const recentLikeWindowDays = 7;
 const maxPerAlbum = 2;
 const maxPerAuthor = 2;
 const maxRatingOnlyRatio = 0.15;
-const maxCursorSeenReviewIds = feedPageSize * 3;
+const maxCursorSeenReviewIds = feedPageSize * 5;
 
 // Source boosts decide how strongly candidate origin matters before item-level scoring.
 // Keep these small-ish, usually 0-10, so source can break ties without overpowering recency.
@@ -43,8 +43,6 @@ const feedScoreWeights = {
 // Schemas
 
 const feedCursorPayloadSchema = z.object({
-  activityAt: z.iso.datetime(),
-  id: z.uuid(),
   seenReviewIds: z.array(z.uuid()).max(maxCursorSeenReviewIds).optional(),
 });
 
@@ -53,8 +51,6 @@ const feedCursorPayloadSchema = z.object({
 type FeedCandidateSource = "followed" | "recent" | "recent-like";
 
 interface FeedCursorPayload {
-  activityAt: string;
-  id: string;
   seenReviewIds?: string[];
 }
 
@@ -220,7 +216,6 @@ function getRecentReviewCandidates(
   db: Db,
   { cursor, limit, reviewCreatedCutoff, source, viewerUserId }: GetRecentReviewCandidatesParams
 ) {
-  const cursorFilter = cursor ? getReviewCreatedCursorFilter(cursor) : undefined;
   const seenReviewsFilter = getSeenReviewsFilter(cursor);
 
   return db
@@ -231,7 +226,7 @@ function getRecentReviewCandidates(
     .from(reviews)
     .innerJoin(albums, eq(reviews.albumId, albums.id))
     .innerJoin(user, eq(reviews.userId, user.id))
-    .where(and(isNotNull(user.username), gt(reviews.createdAt, reviewCreatedCutoff), cursorFilter, seenReviewsFilter))
+    .where(and(isNotNull(user.username), gt(reviews.createdAt, reviewCreatedCutoff), seenReviewsFilter))
     .orderBy(desc(reviews.createdAt), desc(reviews.id))
     .limit(limit)
     .then((rows) => rows.map((row) => ({ ...row, source })));
@@ -241,7 +236,6 @@ function getFollowedReviewCandidates(
   db: Db,
   { cursor, limit, reviewCreatedCutoff, viewerUserId }: GetFollowedReviewCandidatesParams
 ) {
-  const cursorFilter = cursor ? getReviewCreatedCursorFilter(cursor) : undefined;
   const seenReviewsFilter = getSeenReviewsFilter(cursor);
 
   return db
@@ -253,7 +247,7 @@ function getFollowedReviewCandidates(
     .innerJoin(userFollows, and(eq(userFollows.followerId, viewerUserId), eq(userFollows.followingId, reviews.userId)))
     .innerJoin(albums, eq(reviews.albumId, albums.id))
     .innerJoin(user, eq(reviews.userId, user.id))
-    .where(and(isNotNull(user.username), gt(reviews.createdAt, reviewCreatedCutoff), cursorFilter, seenReviewsFilter))
+    .where(and(isNotNull(user.username), gt(reviews.createdAt, reviewCreatedCutoff), seenReviewsFilter))
     .orderBy(desc(reviews.createdAt), desc(reviews.id))
     .limit(limit)
     .then((rows) => rows.map((row) => ({ ...row, source: "followed" as const })));
@@ -263,7 +257,6 @@ function getRecentLikeCandidates(
   db: Db,
   { cursor, limit, recentLikeCutoff, viewerUserId }: GetRecentLikeCandidatesParams
 ) {
-  const cursorFilter = cursor ? getReviewLikeCursorFilter(cursor) : undefined;
   const seenReviewsFilter = getSeenReviewsFilter(cursor);
 
   return db
@@ -275,7 +268,7 @@ function getRecentLikeCandidates(
     .innerJoin(reviews, eq(reviewLikes.reviewId, reviews.id))
     .innerJoin(albums, eq(reviews.albumId, albums.id))
     .innerJoin(user, eq(reviews.userId, user.id))
-    .where(and(isNotNull(user.username), gt(reviewLikes.createdAt, recentLikeCutoff), cursorFilter, seenReviewsFilter))
+    .where(and(isNotNull(user.username), gt(reviewLikes.createdAt, recentLikeCutoff), seenReviewsFilter))
     .orderBy(desc(reviewLikes.createdAt), desc(reviewLikes.reviewId))
     .limit(limit)
     .then((rows) => rows.map((row) => ({ ...row, source: "recent-like" as const })));
@@ -429,17 +422,10 @@ function getSourceRank(source: FeedCandidateSource) {
 // Mappers
 
 function mapFeedPage(candidates: FeedCandidate[], seenReviewIds: string[]): FeedPage {
-  const lastCandidate = candidates.at(-1);
   const nextSeenReviewIds = getNextSeenReviewIds(seenReviewIds, candidates);
 
   return {
-    nextCursor: lastCandidate
-      ? encodeCursor({
-          activityAt: lastCandidate.activityAt.toISOString(),
-          id: lastCandidate.review.id,
-          seenReviewIds: nextSeenReviewIds,
-        })
-      : null,
+    nextCursor: candidates.length ? encodeCursor({ seenReviewIds: nextSeenReviewIds }) : null,
     reviews: candidates.map(mapFeedReview),
   };
 }
@@ -468,14 +454,6 @@ function mapFeedReview(candidate: FeedCandidate) {
 }
 
 // Cursors
-
-function getReviewCreatedCursorFilter(cursor: FeedCursorPayload): SQL {
-  return sql`(${reviews.createdAt} < ${cursor.activityAt} or (${reviews.createdAt} = ${cursor.activityAt} and ${reviews.id} < ${cursor.id}))`;
-}
-
-function getReviewLikeCursorFilter(cursor: FeedCursorPayload): SQL {
-  return sql`(${reviewLikes.createdAt} < ${cursor.activityAt} or (${reviewLikes.createdAt} = ${cursor.activityAt} and ${reviewLikes.reviewId} < ${cursor.id}))`;
-}
 
 function getSeenReviewsFilter(cursor?: FeedCursorPayload): SQL | undefined {
   return cursor?.seenReviewIds?.length ? notInArray(reviews.id, cursor.seenReviewIds) : undefined;
