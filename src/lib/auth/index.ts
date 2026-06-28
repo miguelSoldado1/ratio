@@ -4,6 +4,7 @@ import { lastLoginMethod, username } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { eq } from "drizzle-orm";
 import { env } from "@/env";
+import { deleteAvatarObject } from "@/server/avatar-storage";
 import { getDb } from "../db";
 import * as schema from "../db/schema";
 import { isDisplayUsernameValid, limitDisplayUsername, trimDisplayUsername } from "./profile-identity";
@@ -24,6 +25,21 @@ export function createAuth(db: Db) {
         },
       },
       deleteUser: {
+        beforeDelete: async (deletedUser) => {
+          const [currentUser] = await db
+            .select({ avatarObjectKey: schema.user.avatarObjectKey })
+            .from(schema.user)
+            .where(eq(schema.user.id, deletedUser.id))
+            .limit(1);
+
+          if (!currentUser?.avatarObjectKey) return;
+
+          try {
+            await deleteAvatarObject(currentUser.avatarObjectKey);
+          } catch (error) {
+            console.warn("Failed to delete avatar object during account deletion", error);
+          }
+        },
         enabled: true,
       },
     },
@@ -46,7 +62,7 @@ export function createAuth(db: Db) {
     },
     account: {
       accountLinking: {
-        trustedProviders: ["spotify"],
+        trustedProviders: ["spotify", "google", "discord"],
         disableImplicitLinking: true,
       },
     },

@@ -29,3 +29,7 @@ export const userQueryKeys = {
       : (["user", reviewedUserId, "reviews"] as const),
   search: (query: string) => ["user-search", query] as const,
 };
+
+export const accountQueryKeys = {
+  providers: () => ["account", "providers"] as const,
+};
