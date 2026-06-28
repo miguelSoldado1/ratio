@@ -26,7 +26,7 @@ export function GlobalSearch({ onOpenChange, open }: GlobalSearchProps) {
   const { data: albumResults = [], isFetching: isFetchingAlbums } = useQuery({
     queryFn: () => searchAlbumsFn({ data: { query: debouncedQuery } }),
     queryKey: albumQueryKeys.search(debouncedQuery),
-    enabled: debouncedQuery.length >= 1,
+    enabled: debouncedQuery.length >= 2,
     placeholderData: (prev) => prev,
   });
 
@@ -34,7 +34,7 @@ export function GlobalSearch({ onOpenChange, open }: GlobalSearchProps) {
   const { data: userResults = [], isFetching: isFetchingUsers } = useQuery({
     queryFn: () => searchUsersFn({ data: { query: debouncedQuery } }),
     queryKey: userQueryKeys.search(debouncedQuery),
-    enabled: debouncedQuery.length >= 1,
+    enabled: debouncedQuery.length >= 2,
     placeholderData: (prev) => prev,
   });
 

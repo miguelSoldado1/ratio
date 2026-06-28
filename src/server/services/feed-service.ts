@@ -8,7 +8,7 @@ import type { Db } from "@/lib/db";
 
 // Constants
 
-const feedPageSize = 30;
+const feedPageSize = 20;
 const globalRecentCandidateLimit = 90;
 const globalLikedCandidateLimit = 60;
 const followedCandidateLimit = 90;
