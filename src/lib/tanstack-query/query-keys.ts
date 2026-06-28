@@ -12,6 +12,10 @@ export const reviewQueryKeys = {
     viewerUserId ? (["review", reviewId, "likes", viewerUserId] as const) : (["review", reviewId, "likes"] as const),
 };
 
+export const feedQueryKeys = {
+  root: (viewerUserId?: string) => (viewerUserId ? (["feed", viewerUserId] as const) : (["feed"] as const)),
+};
+
 export const userQueryKeys = {
   followers: (profileUserId: string, viewerUserId?: string) =>
     viewerUserId

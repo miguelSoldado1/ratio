@@ -15,7 +15,7 @@ Use this as a directional order, not a locked feature spec.
 4. User search
 5. Followers
 6. Notifications v1
-7. Real home feed
+7. Real home feed (v1 built: deterministic review feed, no schema changes)
 8. Single review route
 9. Basic review sharing
 10. Liked-by dialog
@@ -28,6 +28,7 @@ Use this as a directional order, not a locked feature spec.
 - Admin v1 should stay small: enough to remove bad reviews/ratings, not a full dashboard.
 - Build reusable user-list UI where possible for followers, following, and liked-by views.
 - Notifications should come before advanced feed work because they make the social loop feel alive.
+- Home feed v1 is intentionally conservative: no feed-specific schema changes, bounded candidate queries, deterministic ranking, and no Spotify personalization.
 - `/review/:reviewId` should be the canonical target for shared reviews.
 
 ## Post-Launch Work
@@ -36,6 +37,8 @@ Do not block the first production release on these unless the product direction 
 
 ```text
 - Advanced feed algorithm
+- Anonymous feed caching through a separate cached Hyperdrive binding or app-level cache
+- Feed indexes and denormalized counters once usage data justifies them
 - Spotify-personalized feed
 - Realtime notifications
 - Instagram image card generation

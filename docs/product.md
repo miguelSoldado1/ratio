@@ -69,29 +69,52 @@ All album pages (`/album/:spotifyId`) are publicly accessible and shareable. The
 
 ## Feed Algorithm
 
-### Cold Start
+### V1 Home Feed
 
-When no Spotify account is linked, no personalisation signal is available. Show:
+The root route (`/`) is the single home feed for anonymous and authenticated users. It intentionally uses no feed-specific schema changes for the first production release.
 
-1. Recent ratings from people the user follows, if authenticated
-2. Trending albums this week, using most ratings/likes in a rolling 7-day window
-3. Highly rated recent releases
+The feed uses a deterministic candidate/ranking/filtering pipeline:
 
-### Warm Feed
+1. Fetch bounded candidate sets from cheap read queries.
+2. Merge and deduplicate candidates by review ID.
+3. Hydrate like counts with one grouped query over the bounded candidate review IDs.
+4. Score candidates in application code.
+5. Apply diversity filters.
+6. Return review cards with cursor pagination.
 
-When Spotify is linked, pull from Spotify:
+Anonymous users receive a blend of:
 
-- `me/top/artists`: long and medium term
-- `me/player/recently-played`: last 50 tracks, deduplicated to unique albums
-- `me/albums`: saved library
+- recent reviews in the current lookback window
+- reviews with recent likes
 
-Surface albums from those artists that have community activity on Ratio. Blend with social feed from people the user follows.
+Authenticated users receive the anonymous candidate sources plus:
 
-Decay and variety rules:
+- recent reviews from people they follow
 
-- Cap per-artist representation in a single feed load, e.g. max 2 albums per artist
-- Apply recency decay on `recently-played` so binge-listening one artist does not flood the feed
-- If `recently-played` is thin, fall back to `top-artists` only
+The scoring weights live in `src/server/services/feed-service.ts` near the feed constants so they can be tuned without changing query logic. Current signals are:
+
+- recency
+- followed author
+- written review body vs rating-only activity
+- total likes
+- recent likes
+- candidate source
+
+Rating-only activity is allowed but capped so it can appear for social/meme behavior without overwhelming written reviews. Repeated albums and repeated authors are also capped per page.
+
+Feed pagination is deterministic and carries recently returned review IDs in the cursor so later pages do not return duplicate reviews. Cursor size is capped to keep URLs and `not in` filters bounded.
+
+### Deferred Feed Work
+
+Do not block the first production release on these:
+
+- Add anonymous/public feed caching through a separate cached Hyperdrive binding or app-level cache; the main Hyperdrive binding keeps query caching disabled for freshness.
+- Add global indexes if feed latency grows, especially `review(created_at, id)` and `review_like(created_at, review_id)`.
+- Add denormalized counters only when measured load justifies the write/storage cost, e.g. `review.likeCount`, `review.lastActivityAt`, or rolling aggregates.
+- Add album-level trend signals such as recent album review counts.
+- Add Spotify-personalized candidate sources once Spotify-linked personalization is in scope.
+- Add seen/impression tracking if the product needs stronger long-term duplicate suppression.
+- Add explanations such as "because you follow..." only if the feed needs more transparency.
 
 ## Rating Display
 
