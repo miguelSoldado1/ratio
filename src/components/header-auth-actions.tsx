@@ -47,14 +47,13 @@ export function HeaderAuthActions({ onAuthClick }: HeaderAuthActionsProps) {
     return (
       <div className="flex items-center rounded-full bg-muted/40 p-0.5">
         <Button
-          aria-label="Sign in"
-          className="h-8 w-8 gap-0 rounded-full px-0 text-muted-foreground hover:bg-background/80 hover:text-foreground active:scale-[0.97] lg:w-auto lg:gap-1.5 lg:px-3"
+          className="h-8 gap-1.5 rounded-full px-2.5 text-muted-foreground hover:bg-background/80 hover:text-foreground active:scale-[0.97] sm:px-3"
           onClick={onAuthClick}
           type="button"
           variant="ghost"
         >
           <LogIn className="size-4" />
-          <span className="hidden text-sm lg:inline">Sign in</span>
+          <span className="text-sm">Sign in</span>
         </Button>
       </div>
     );
