@@ -34,6 +34,7 @@ const feedScoreWeights = {
   body: 8, // Higher: written reviews beat rating-only activity more often. Typical range: 4-14.
   followedAuthor: 18, // Higher: signed-in feeds become more social and less discovery-heavy. Typical range: 8-24.
   like: 2, // Multiplies log(total likes). Higher favors established popular reviews. Typical range: 0.5-4.
+  ownAuthor: -12, // More negative keeps signed-in home from becoming the viewer's profile. Typical range: -20 to 0.
   ratingOnly: -6, // More negative hides rating-only activity. Move toward 0 to show more ratings. Typical range: -12 to 0.
   recentLike: 8, // Multiplies log(recent likes). Higher makes old reviews resurface from fresh activity. Typical range: 3-12.
   recencyBase: 40, // Higher makes very fresh activity dominate. Typical range: 20-60.
@@ -323,10 +324,11 @@ function scoreFeedCandidate(candidate: FeedCandidate, { now, viewerUserId }: Ran
   const followedAuthorBoost = viewerUserId && candidate.followedAuthor ? feedScoreWeights.followedAuthor : 0;
   const bodyBoost = hasBody ? feedScoreWeights.body : feedScoreWeights.ratingOnly;
   const likeBoost = Math.log1p(candidate.likes) * feedScoreWeights.like;
+  const ownAuthorBoost = viewerUserId === candidate.review.userId ? feedScoreWeights.ownAuthor : 0;
   const recentLikeBoost = Math.log1p(candidate.recentLikes) * feedScoreWeights.recentLike;
   const sourceBoost = candidate.sourceRank;
 
-  return recencyScore + followedAuthorBoost + bodyBoost + likeBoost + recentLikeBoost + sourceBoost;
+  return recencyScore + followedAuthorBoost + bodyBoost + likeBoost + ownAuthorBoost + recentLikeBoost + sourceBoost;
 }
 
 function applyDiversityFilters(candidates: FeedCandidate[]) {
