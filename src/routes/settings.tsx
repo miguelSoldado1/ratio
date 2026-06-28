@@ -1,14 +1,11 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { LogIn } from "lucide-react";
-import { useState } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { AuthDialog } from "@/components/auth/auth-dialog";
 import { DeleteAccountSection } from "@/components/settings/delete-account-section";
 import { SessionsSection } from "@/components/settings/sessions-section";
 import { SettingsHeader } from "@/components/settings/settings-header";
 import { SignInMethodsTable } from "@/components/settings/sign-in-methods-table";
-import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { authClient } from "@/lib/auth/auth-client";
 import { getAuthErrorMessage } from "@/lib/auth/auth-errors";
@@ -20,13 +17,13 @@ import type { AuthProviderId } from "@/lib/auth/providers";
 export const Route = createFileRoute("/settings")({ component: SettingsPage });
 
 function SettingsPage() {
+  const navigate = useNavigate();
   const session = authClient.useSession();
   const queryClient = useQueryClient();
   const [pendingProvider, setPendingProvider] = useState<AuthProviderId | null>(null);
   const [unlinkingProvider, setUnlinkingProvider] = useState<AuthProviderId | null>(null);
   const [isRevokingOtherSessions, setIsRevokingOtherSessions] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
-  const [authDialogOpen, setAuthDialogOpen] = useState(false);
 
   const accountsQuery = useQuery({
     enabled: Boolean(session.data?.user),
@@ -38,6 +35,12 @@ function SettingsPage() {
   const linkedAccounts = accountsQuery.data ?? [];
   const linkedProviderIds = new Set(linkedAccounts.map((account) => account.providerId));
   const linkedProviderCount = authProviders.filter((provider) => linkedProviderIds.has(provider.id)).length;
+
+  useEffect(() => {
+    if (!(session.isPending || session.data?.user)) {
+      navigate({ replace: true, to: "/" });
+    }
+  }, [navigate, session.data?.user, session.isPending]);
 
   async function handleLinkProvider(providerId: AuthProviderId) {
     setPendingProvider(providerId);
@@ -130,31 +133,13 @@ function SettingsPage() {
     window.location.href = "/";
   }
 
-  if (session.isPending) {
+  if (session.isPending || !session.data?.user) {
     return (
       <main className="mx-auto flex w-full max-w-5xl flex-col px-4 py-8 sm:px-6 xl:px-0">
         <div className="flex min-h-56 items-center justify-center">
           <Spinner />
         </div>
       </main>
-    );
-  }
-
-  if (!session.data?.user) {
-    return (
-      <>
-        <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} />
-        <main className="mx-auto flex w-full max-w-5xl flex-col gap-8 px-4 py-8 sm:px-6 xl:px-0">
-          <SettingsHeader />
-          <section className="flex flex-col items-start gap-4 border-border border-t pt-6">
-            <p className="text-muted-foreground text-sm">Sign in to manage account settings.</p>
-            <Button onClick={() => setAuthDialogOpen(true)} size="sm" type="button">
-              <LogIn data-icon="inline-start" />
-              Sign in
-            </Button>
-          </section>
-        </main>
-      </>
     );
   }
 
