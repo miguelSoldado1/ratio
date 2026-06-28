@@ -58,6 +58,7 @@ interface FeedCursorPayload {
 interface FeedCandidateRow {
   activityAt: Date;
   album: typeof albums.$inferSelect;
+  canDelete: boolean;
   followedAuthor: boolean;
   liked: boolean;
   review: typeof reviews.$inferSelect;
@@ -276,6 +277,7 @@ function getRecentLikeCandidates(
 }
 
 function getFeedCandidateSelect({ viewerUserId }: GetFeedCandidateSelectParams) {
+  const canDelete = viewerUserId ? sql<boolean>`${reviews.userId} = ${viewerUserId}` : sql<boolean>`false`;
   const liked = viewerUserId
     ? sql<boolean>`exists(select 1 from ${reviewLikes} where ${reviewLikes.reviewId} = ${reviews.id} and ${reviewLikes.userId} = ${viewerUserId})`
     : sql<boolean>`false`;
@@ -285,6 +287,7 @@ function getFeedCandidateSelect({ viewerUserId }: GetFeedCandidateSelectParams) 
 
   return {
     album: getTableColumns(albums),
+    canDelete,
     followedAuthor,
     liked,
     review: getTableColumns(reviews),
@@ -404,6 +407,7 @@ function mergeCandidateRows(rows: FeedCandidateRow[]): MergedFeedCandidate[] {
     candidatesById.set(row.review.id, {
       ...existing,
       activityAt: row.activityAt > existing.activityAt ? row.activityAt : existing.activityAt,
+      canDelete: existing.canDelete || row.canDelete,
       followedAuthor: existing.followedAuthor || row.followedAuthor,
       liked: existing.liked || row.liked,
       source: sourceRank > existing.sourceRank ? row.source : existing.source,
@@ -441,6 +445,7 @@ function mapFeedReview(candidate: FeedCandidate) {
       title: candidate.album.title,
       year: String(candidate.album.releaseYear),
     },
+    canDelete: candidate.canDelete,
     createdAt: candidate.review.createdAt,
     id: candidate.review.id,
     liked: candidate.liked,

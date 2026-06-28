@@ -1,18 +1,20 @@
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { FeedReviewsSection, FeedReviewsSectionSkeleton } from "@/components/feed/feed-reviews-section";
 import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
+import { useReviewDelete } from "@/hooks/use-review-delete";
 import { useReviewLikeToggle } from "@/hooks/use-review-like-toggle";
 import { authClient } from "@/lib/auth/auth-client";
-import { feedQueryKeys } from "@/lib/tanstack-query/query-keys";
+import { albumQueryKeys, feedQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { getFeed } from "@/server/functions/feed-functions";
 import type { FeedPage as FeedPageData } from "@/server/services/feed-service";
 
 export const Route = createFileRoute("/")({ component: FeedPage });
 
 function FeedPage() {
+  const queryClient = useQueryClient();
   const session = authClient.useSession();
   const viewerUserId = session.data?.user.id;
   const hasSession = Boolean(viewerUserId);
@@ -30,6 +32,20 @@ function FeedPage() {
   const handleReviewLikeToggle = useReviewLikeToggle<FeedPageData>({
     enabled: hasSession,
     queryKey: feedQueryKey,
+  });
+
+  const handleReviewDeleted = useCallback(
+    async (deletedReview: { albumId: string }) => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: feedQueryKey }),
+        queryClient.invalidateQueries({ queryKey: albumQueryKeys.review(deletedReview.albumId) }),
+      ]);
+    },
+    [feedQueryKey, queryClient]
+  );
+
+  const { deleteReview: handleReviewDelete, deletingReviewId } = useReviewDelete({
+    onDeleted: handleReviewDeleted,
   });
 
   const reviews = feedQuery.data?.pages.flatMap((page) => page.reviews) ?? [];
@@ -68,8 +84,10 @@ function FeedPage() {
       <div className="mx-auto flex w-full max-w-375 flex-col px-5 pt-0 pb-8 lg:px-10 lg:pb-12 xl:px-14 2xl:px-20">
         <FeedReviewsSection
           className="mt-0"
+          deletingReviewId={deletingReviewId}
           isFetchingNextPage={isFetchingNextPage}
           loadMoreRef={loadMoreRef}
+          onReviewDelete={handleReviewDelete}
           onReviewLikeToggle={handleReviewLikeToggle}
           reviews={reviews}
           viewer={viewer}

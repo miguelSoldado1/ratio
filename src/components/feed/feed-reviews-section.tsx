@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { DeleteReviewDialog } from "@/components/delete-review-dialog";
 import { ReviewCard } from "@/components/review-card";
 import { ReviewCardSkeleton } from "@/components/review-card-skeleton";
 import { ReviewLikesDialog } from "@/components/review-likes-dialog";
@@ -11,8 +12,10 @@ type FeedReview = FeedPage["reviews"][number];
 
 interface FeedReviewsSectionProps {
   className?: string;
+  deletingReviewId: string | null;
   isFetchingNextPage: boolean;
   loadMoreRef: RefObject<HTMLDivElement | null>;
+  onReviewDelete: (reviewId: string) => Promise<boolean>;
   onReviewLikeToggle: (reviewId: string, liked: boolean) => boolean | Promise<boolean | undefined> | undefined;
   reviews: FeedReview[];
   viewer: {
@@ -23,8 +26,10 @@ interface FeedReviewsSectionProps {
 
 export function FeedReviewsSection({
   className,
+  deletingReviewId,
   isFetchingNextPage,
   loadMoreRef,
+  onReviewDelete,
   onReviewLikeToggle,
   reviews,
   viewer,
@@ -54,6 +59,13 @@ export function FeedReviewsSection({
                     onShowLikes={() => setLikesReviewId(review.id)}
                     onToggle={viewer.hasSession ? (liked) => onReviewLikeToggle(review.id, liked) : undefined}
                   />
+                  {review.canDelete ? (
+                    <DeleteReviewDialog
+                      className="-mr-2 ml-auto"
+                      isDeleting={deletingReviewId === review.id}
+                      onDelete={() => onReviewDelete(review.id)}
+                    />
+                  ) : null}
                 </ReviewCard.Footer>
               </ReviewCard.Root>
             ))}
