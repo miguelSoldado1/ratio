@@ -13,7 +13,6 @@ import { MobileAlbumHeader } from "@/components/album-page/mobile-album-header";
 import { RatingsPanel } from "@/components/album-page/ratings-panel";
 import { ReviewsSection } from "@/components/album-page/reviews-section";
 import { TrackList } from "@/components/album-page/track-list";
-import { albumPageData } from "@/lib/album-page-mock";
 import { albumQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { getAlbumDetails } from "@/server/functions/spotify-functions";
 
@@ -40,7 +39,6 @@ function AlbumPage() {
   if (albumDetailsQuery.isError) return null;
 
   const { album, tracks } = albumDetailsQuery.data;
-  const coverUrl = album.coverUrl ?? albumPageData.album.coverUrl;
   const artist = getAlbumArtistNames(album);
   const releaseYear = getAlbumReleaseYear(album);
   const albumRuntime = getAlbumRuntimeLabel(album);
@@ -48,16 +46,9 @@ function AlbumPage() {
   return (
     <main className="min-h-screen bg-background text-foreground" data-album-id={albumId}>
       <div className="mx-auto grid w-full max-w-375 gap-8 px-5 py-6 lg:grid-cols-[minmax(240px,340px)_1fr] lg:px-10 xl:gap-12 xl:px-14 2xl:px-20">
-        <MobileAlbumHeader album={album} albumId={albumId} coverUrl={coverUrl} />
+        <MobileAlbumHeader album={album} albumId={albumId} coverUrl={album.coverUrl} />
         <aside className="hidden lg:sticky lg:top-20 lg:block lg:self-start">
-          <img
-            alt={`${album.title} album cover`}
-            className="aspect-square w-full object-cover"
-            height={640}
-            referrerPolicy="no-referrer"
-            src={coverUrl}
-            width={640}
-          />
+          <AlbumCover albumTitle={album.title} coverUrl={album.coverUrl} />
           <TrackList className="mt-6" tracks={tracks} />
         </aside>
         <section className="min-w-0 pt-3 lg:pt-10">
@@ -83,5 +74,24 @@ function AlbumPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+function AlbumCover({ albumTitle, coverUrl }: { albumTitle: string; coverUrl: string | null }) {
+  if (!coverUrl) {
+    return (
+      <div aria-label={`${albumTitle} album cover unavailable`} className="aspect-square w-full bg-muted" role="img" />
+    );
+  }
+
+  return (
+    <img
+      alt={`${albumTitle} album cover`}
+      className="aspect-square w-full object-cover"
+      height={640}
+      referrerPolicy="no-referrer"
+      src={coverUrl}
+      width={640}
+    />
   );
 }

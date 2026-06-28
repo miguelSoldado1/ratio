@@ -8,7 +8,7 @@ type SpotifyAlbum = SpotifyAlbumDetails["album"];
 interface MobileAlbumHeaderProps {
   album: SpotifyAlbum;
   albumId: string;
-  coverUrl: string;
+  coverUrl: string | null;
 }
 
 export function MobileAlbumHeader({ album, albumId, coverUrl }: MobileAlbumHeaderProps) {
@@ -19,14 +19,22 @@ export function MobileAlbumHeader({ album, albumId, coverUrl }: MobileAlbumHeade
   return (
     <section className="lg:hidden">
       <div className="grid grid-cols-[112px_1fr] gap-4 sm:grid-cols-[144px_1fr]">
-        <img
-          alt={`${album.title} album cover`}
-          className="aspect-square w-full object-cover"
-          height={288}
-          referrerPolicy="no-referrer"
-          src={coverUrl}
-          width={288}
-        />
+        {coverUrl ? (
+          <img
+            alt={`${album.title} album cover`}
+            className="aspect-square w-full object-cover"
+            height={288}
+            referrerPolicy="no-referrer"
+            src={coverUrl}
+            width={288}
+          />
+        ) : (
+          <div
+            aria-label={`${album.title} album cover unavailable`}
+            className="aspect-square w-full bg-muted"
+            role="img"
+          />
+        )}
         <div className="min-w-0 self-end">
           <h1 className="font-semibold text-2xl leading-tight tracking-normal sm:text-3xl">{album.title}</h1>
           <p className="mt-2 text-muted-foreground text-sm">
