@@ -4,7 +4,7 @@ import z from "zod";
 import { getDb } from "@/lib/db";
 import { user, userFollows } from "@/lib/db/schema";
 import { type FollowableUserRow, getFollowedByViewerSql, mapFollowableUser } from "../followable-user";
-import { decodeCursor, encodeCursor, getCreatedAtIdCursorFilter, getOptionalCurrentUserId } from "../server-utils";
+import { decodeCursor, encodeCursor, getCreatedAtIdCursorFilter, getOptionalCurrentUser } from "../server-utils";
 import type { Db } from "@/lib/db";
 import type { AuthenticatedContext } from "../auth-middleware";
 
@@ -49,9 +49,10 @@ export interface SetUserFollowInput {
 
 export async function getUserFollowersService(data: UserFollowsInput): Promise<UserFollowsPage> {
   const db = await getDb();
-  const viewerUserId = await getOptionalCurrentUserId(db);
+  const currentUser = await getOptionalCurrentUser(db);
+  const viewerUserId = currentUser?.id;
   const targetUser = await getUserExists(db, data.userId);
-  if (!targetUser) {
+  if (!targetUser || (targetUser.banned && !currentUser?.isAdmin)) {
     throw new Error("User not found");
   }
 
@@ -75,7 +76,14 @@ export async function getUserFollowersService(data: UserFollowsInput): Promise<U
     })
     .from(userFollows)
     .innerJoin(followerUser, eq(userFollows.followerId, followerUser.id))
-    .where(and(eq(userFollows.followingId, data.userId), isNotNull(followerUser.username), cursorFilter ?? undefined))
+    .where(
+      and(
+        eq(userFollows.followingId, data.userId),
+        isNotNull(followerUser.username),
+        sql`${followerUser.banned} is not true`,
+        cursorFilter ?? undefined
+      )
+    )
     .orderBy(desc(userFollows.createdAt), desc(userFollows.followerId))
     .limit(userFollowsPageSize + 1);
 
@@ -84,9 +92,10 @@ export async function getUserFollowersService(data: UserFollowsInput): Promise<U
 
 export async function getUserFollowingService(data: UserFollowsInput): Promise<UserFollowsPage> {
   const db = await getDb();
-  const viewerUserId = await getOptionalCurrentUserId(db);
+  const currentUser = await getOptionalCurrentUser(db);
+  const viewerUserId = currentUser?.id;
   const targetUser = await getUserExists(db, data.userId);
-  if (!targetUser) {
+  if (!targetUser || (targetUser.banned && !currentUser?.isAdmin)) {
     throw new Error("User not found");
   }
 
@@ -110,7 +119,14 @@ export async function getUserFollowingService(data: UserFollowsInput): Promise<U
     })
     .from(userFollows)
     .innerJoin(followingUser, eq(userFollows.followingId, followingUser.id))
-    .where(and(eq(userFollows.followerId, data.userId), isNotNull(followingUser.username), cursorFilter ?? undefined))
+    .where(
+      and(
+        eq(userFollows.followerId, data.userId),
+        isNotNull(followingUser.username),
+        sql`${followingUser.banned} is not true`,
+        cursorFilter ?? undefined
+      )
+    )
     .orderBy(desc(userFollows.createdAt), desc(userFollows.followingId))
     .limit(userFollowsPageSize + 1);
 
@@ -123,7 +139,7 @@ export async function setUserFollowService(data: SetUserFollowInput, context: Au
   }
 
   const targetUser = await getUserExists(context.db, data.userId);
-  if (!targetUser) {
+  if (!targetUser || targetUser.banned) {
     throw new Error("User not found");
   }
 
@@ -149,7 +165,11 @@ export async function setUserFollowService(data: SetUserFollowInput, context: Au
 }
 
 async function getUserExists(db: Db, userId: string) {
-  const [targetUser] = await db.select({ id: user.id }).from(user).where(eq(user.id, userId)).limit(1);
+  const [targetUser] = await db
+    .select({ banned: user.banned, id: user.id })
+    .from(user)
+    .where(eq(user.id, userId))
+    .limit(1);
 
   return targetUser;
 }
@@ -193,8 +213,26 @@ async function getUserFollowCounts(context: AuthenticatedContext, userId: string
   const followTargetUserId = sql.raw('"follow_target_user"."id"');
   const [counts] = await context.db
     .select({
-      followersCount: sql<number>`(select count(*)::int from ${userFollows} where ${userFollows.followingId} = ${followTargetUserId})`,
-      followingCount: sql<number>`(select count(*)::int from ${userFollows} where ${userFollows.followerId} = ${followTargetUserId})`,
+      followersCount: sql<number>`(
+        select count(*)::int
+        from ${userFollows}
+        where ${userFollows.followingId} = ${followTargetUserId}
+          and exists(
+            select 1 from ${user}
+            where ${user.id} = ${userFollows.followerId}
+              and ${user.banned} is not true
+          )
+      )`,
+      followingCount: sql<number>`(
+        select count(*)::int
+        from ${userFollows}
+        where ${userFollows.followerId} = ${followTargetUserId}
+          and exists(
+            select 1 from ${user}
+            where ${user.id} = ${userFollows.followingId}
+              and ${user.banned} is not true
+          )
+      )`,
     })
     .from(followTargetUser)
     .where(eq(followTargetUser.id, userId))

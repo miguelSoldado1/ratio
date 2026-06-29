@@ -3,6 +3,7 @@ import { DeleteReviewDialog } from "@/components/delete-review-dialog";
 import { ReviewCard } from "@/components/review-card";
 import { ReviewCardSkeleton } from "@/components/review-card-skeleton";
 import { ReviewLikesDialog } from "@/components/review-likes-dialog";
+import { useAdminMode } from "@/hooks/use-admin-mode";
 import { cn } from "@/lib/utils";
 import type { RefObject } from "react";
 import type { UserProfile, UserReviewsPage } from "@/server/services/review-service";
@@ -37,6 +38,7 @@ export function ProfileReviewsSection({
   viewer,
 }: ProfileReviewsSectionProps) {
   const [likesReviewId, setLikesReviewId] = useState<string>();
+  const { adminModeEnabled, isAdmin } = useAdminMode();
 
   return (
     <>
@@ -67,11 +69,12 @@ export function ProfileReviewsSection({
                     onShowLikes={() => setLikesReviewId(review.id)}
                     onToggle={viewer.hasSession ? (liked) => onReviewLikeToggle(review.id, liked) : undefined}
                   />
-                  {review.canDelete ? (
+                  {review.canDelete || (isAdmin && adminModeEnabled) ? (
                     <DeleteReviewDialog
                       className="-mr-2 ml-auto"
                       isDeleting={deletingReviewId === review.id}
                       onDelete={() => onReviewDelete(review.id)}
+                      variant={review.canDelete ? "own" : "admin"}
                     />
                   ) : null}
                 </ReviewCard.Footer>

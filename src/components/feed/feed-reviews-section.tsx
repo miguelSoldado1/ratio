@@ -4,6 +4,7 @@ import { ReviewCard } from "@/components/review-card";
 import { ReviewCardSkeleton } from "@/components/review-card-skeleton";
 import { ReviewLikesDialog } from "@/components/review-likes-dialog";
 import { Spinner } from "@/components/ui/spinner";
+import { useAdminMode } from "@/hooks/use-admin-mode";
 import { cn } from "@/lib/utils";
 import type { RefObject } from "react";
 import type { FeedPage } from "@/server/services/feed-service";
@@ -35,6 +36,7 @@ export function FeedReviewsSection({
   viewer,
 }: FeedReviewsSectionProps) {
   const [likesReviewId, setLikesReviewId] = useState<string>();
+  const { adminModeEnabled, isAdmin } = useAdminMode();
 
   return (
     <>
@@ -59,11 +61,12 @@ export function FeedReviewsSection({
                     onShowLikes={() => setLikesReviewId(review.id)}
                     onToggle={viewer.hasSession ? (liked) => onReviewLikeToggle(review.id, liked) : undefined}
                   />
-                  {review.canDelete ? (
+                  {review.canDelete || (isAdmin && adminModeEnabled) ? (
                     <DeleteReviewDialog
                       className="-mr-2 ml-auto"
                       isDeleting={deletingReviewId === review.id}
                       onDelete={() => onReviewDelete(review.id)}
+                      variant={review.canDelete ? "own" : "admin"}
                     />
                   ) : null}
                 </ReviewCard.Footer>

@@ -1,6 +1,6 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { APIError, betterAuth } from "better-auth";
-import { lastLoginMethod, username } from "better-auth/plugins";
+import { admin, lastLoginMethod, username } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { eq } from "drizzle-orm";
 import { env } from "@/env";
@@ -115,6 +115,7 @@ export function createAuth(db: Db) {
         displayUsernameValidator: isDisplayUsernameValid,
       }),
       lastLoginMethod(),
+      admin(),
       tanstackStartCookies(),
     ],
   });

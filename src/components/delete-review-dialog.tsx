@@ -16,10 +16,23 @@ interface DeleteReviewDialogProps {
   className?: string;
   isDeleting: boolean;
   onDelete: () => Promise<boolean>;
+  variant?: "admin" | "own";
 }
 
-export function DeleteReviewDialog({ className, isDeleting, onDelete }: DeleteReviewDialogProps) {
+const deleteReviewCopy = {
+  admin: {
+    description: "This removes another user's review from Ratio. This cannot be undone.",
+    title: "Delete this review as admin?",
+  },
+  own: {
+    description: "This cannot be undone.",
+    title: "Delete your review?",
+  },
+};
+
+export function DeleteReviewDialog({ className, isDeleting, onDelete, variant = "own" }: DeleteReviewDialogProps) {
   const [open, setOpen] = useState(false);
+  const copy = deleteReviewCopy[variant];
 
   async function handleDeleteClick() {
     const { data, error } = await tryCatch(onDelete());
@@ -48,8 +61,8 @@ export function DeleteReviewDialog({ className, isDeleting, onDelete }: DeleteRe
       </Button>
       <DialogContent className="sm:max-w-95">
         <DialogHeader className="pr-7">
-          <DialogTitle>Delete review?</DialogTitle>
-          <DialogDescription>This removes your rating, written review, and any likes on it.</DialogDescription>
+          <DialogTitle>{copy.title}</DialogTitle>
+          <DialogDescription>{copy.description}</DialogDescription>
         </DialogHeader>
         <DialogFooter>
           <Button disabled={isDeleting} onClick={() => setOpen(false)} type="button" variant="outline">

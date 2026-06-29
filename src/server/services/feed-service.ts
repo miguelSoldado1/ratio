@@ -1,4 +1,5 @@
 import { and, desc, eq, getTableColumns, gt, inArray, isNotNull, notInArray, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import z from "zod";
 import { getDb } from "@/lib/db";
 import { albums, reviewLikes, reviews, user, userFollows } from "@/lib/db/schema";
@@ -228,7 +229,14 @@ function getRecentReviewCandidates(
     .from(reviews)
     .innerJoin(albums, eq(reviews.albumId, albums.id))
     .innerJoin(user, eq(reviews.userId, user.id))
-    .where(and(isNotNull(user.username), gt(reviews.createdAt, reviewCreatedCutoff), seenReviewsFilter))
+    .where(
+      and(
+        isNotNull(user.username),
+        getVisibleReviewAuthorFilter(),
+        gt(reviews.createdAt, reviewCreatedCutoff),
+        seenReviewsFilter
+      )
+    )
     .orderBy(desc(reviews.createdAt), desc(reviews.id))
     .limit(limit)
     .then((rows) => rows.map((row) => ({ ...row, source })));
@@ -249,7 +257,14 @@ function getFollowedReviewCandidates(
     .innerJoin(userFollows, and(eq(userFollows.followerId, viewerUserId), eq(userFollows.followingId, reviews.userId)))
     .innerJoin(albums, eq(reviews.albumId, albums.id))
     .innerJoin(user, eq(reviews.userId, user.id))
-    .where(and(isNotNull(user.username), gt(reviews.createdAt, reviewCreatedCutoff), seenReviewsFilter))
+    .where(
+      and(
+        isNotNull(user.username),
+        getVisibleReviewAuthorFilter(),
+        gt(reviews.createdAt, reviewCreatedCutoff),
+        seenReviewsFilter
+      )
+    )
     .orderBy(desc(reviews.createdAt), desc(reviews.id))
     .limit(limit)
     .then((rows) => rows.map((row) => ({ ...row, source: "followed" as const })));
@@ -260,6 +275,7 @@ function getRecentLikeCandidates(
   { cursor, limit, recentLikeCutoff, viewerUserId }: GetRecentLikeCandidatesParams
 ) {
   const seenReviewsFilter = getSeenReviewsFilter(cursor);
+  const likedUser = alias(user, "liked_user");
 
   return db
     .select({
@@ -270,7 +286,16 @@ function getRecentLikeCandidates(
     .innerJoin(reviews, eq(reviewLikes.reviewId, reviews.id))
     .innerJoin(albums, eq(reviews.albumId, albums.id))
     .innerJoin(user, eq(reviews.userId, user.id))
-    .where(and(isNotNull(user.username), gt(reviewLikes.createdAt, recentLikeCutoff), seenReviewsFilter))
+    .innerJoin(likedUser, eq(reviewLikes.userId, likedUser.id))
+    .where(
+      and(
+        isNotNull(user.username),
+        getVisibleReviewAuthorFilter(),
+        sql`${likedUser.banned} is not true`,
+        gt(reviewLikes.createdAt, recentLikeCutoff),
+        seenReviewsFilter
+      )
+    )
     .orderBy(desc(reviewLikes.createdAt), desc(reviewLikes.reviewId))
     .limit(limit)
     .then((rows) => rows.map((row) => ({ ...row, source: "recent-like" as const })));
@@ -377,7 +402,8 @@ async function hydrateCandidateLikeStats(
       reviewId: reviewLikes.reviewId,
     })
     .from(reviewLikes)
-    .where(inArray(reviewLikes.reviewId, reviewIds))
+    .innerJoin(user, eq(reviewLikes.userId, user.id))
+    .where(and(inArray(reviewLikes.reviewId, reviewIds), sql`${user.banned} is not true`))
     .groupBy(reviewLikes.reviewId);
   const likeStatsByReviewId = new Map(likeStats.map((stats) => [stats.reviewId, stats]));
 
@@ -464,6 +490,10 @@ function mapFeedReview(candidate: FeedCandidate) {
 
 function getSeenReviewsFilter(cursor?: FeedCursorPayload): SQL | undefined {
   return cursor?.seenReviewIds?.length ? notInArray(reviews.id, cursor.seenReviewIds) : undefined;
+}
+
+function getVisibleReviewAuthorFilter(): SQL {
+  return sql`${user.banned} is not true`;
 }
 
 function decodeFeedCursor(cursor: string): FeedCursorPayload {

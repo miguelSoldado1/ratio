@@ -4,7 +4,13 @@ import z from "zod";
 import { getDb } from "@/lib/db";
 import { albums, reviewLikes, reviews, user, userFollows } from "@/lib/db/schema";
 import { type FollowableUserRow, getFollowedByViewerSql, mapFollowableUser } from "../followable-user";
-import { decodeCursor, encodeCursor, getCreatedAtIdCursorFilter, getOptionalCurrentUserId } from "../server-utils";
+import {
+  decodeCursor,
+  encodeCursor,
+  getCreatedAtIdCursorFilter,
+  getOptionalCurrentUser,
+  getOptionalCurrentUserId,
+} from "../server-utils";
 import { ensureAlbumExistsForWrite, getMissingAlbumMetadataForWrite } from "./album-service";
 import type { Db } from "@/lib/db";
 import type { AuthenticatedContext } from "../auth-middleware";
@@ -117,11 +123,12 @@ export async function getAlbumReviewsService(data: AlbumReviewsInput): Promise<A
   const canDelete = viewerUserId ? sql<boolean>`${reviews.userId} = ${viewerUserId}` : sql<boolean>`false`;
   const cursor = data.cursor ? decodeReviewsCursor(data.cursor) : undefined;
   const cursorFilter = cursor ? getAlbumReviewsCursorFilter(cursor) : undefined;
+  const reviewFilter = and(eq(reviews.albumId, data.albumId), getVisibleUserFilter(user), cursorFilter);
 
   const albumReviews = await db
     .select({
       liked: likedByViewer,
-      likes: sql<number>`(select count(*)::int from ${reviewLikes} where ${reviewLikes.reviewId} = ${reviews.id})`,
+      likes: getVisibleReviewLikeCountSql(reviews.id),
       canDelete,
       review: getTableColumns(reviews),
       user: {
@@ -133,7 +140,7 @@ export async function getAlbumReviewsService(data: AlbumReviewsInput): Promise<A
     })
     .from(reviews)
     .innerJoin(user, eq(reviews.userId, user.id))
-    .where(cursorFilter ? and(eq(reviews.albumId, data.albumId), cursorFilter) : eq(reviews.albumId, data.albumId))
+    .where(reviewFilter)
     .orderBy(desc(reviews.createdAt), desc(reviews.id))
     .limit(reviewsPageSize + 1);
 
@@ -155,10 +162,15 @@ export async function getAlbumReviewsService(data: AlbumReviewsInput): Promise<A
 
 export async function getUserProfileService(data: UserProfileInput): Promise<UserProfile> {
   const db = await getDb();
-  const viewerUserId = await getOptionalCurrentUserId(db);
+  const currentUser = await getOptionalCurrentUser(db);
+  const viewerUserId = currentUser?.id;
   const profile = await getUserProfileRow(db, data.username, viewerUserId);
 
   if (!profile) {
+    throw new Error("User not found");
+  }
+
+  if (profile.banned && !currentUser?.isAdmin) {
     throw new Error("User not found");
   }
 
@@ -190,6 +202,7 @@ export async function searchUsersService(data: UserSearchInput): Promise<UserSea
     .where(
       and(
         isNotNull(user.username),
+        getVisibleUserFilter(user),
         or(ilike(user.username, containsPattern), ilike(user.displayUsername, containsPattern))
       )
     )
@@ -209,24 +222,28 @@ export async function searchUsersService(data: UserSearchInput): Promise<UserSea
 
 export async function getUserReviewsService(data: UserReviewsInput): Promise<UserReviewsPage> {
   const db = await getDb();
-  const viewerUserId = await getOptionalCurrentUserId(db);
+  const currentUser = await getOptionalCurrentUser(db);
+  const viewerUserId = currentUser?.id;
   const canDelete = viewerUserId === data.userId;
   const likedByViewer = viewerUserId
     ? sql<boolean>`exists(select 1 from ${reviewLikes} where ${reviewLikes.reviewId} = ${reviews.id} and ${reviewLikes.userId} = ${viewerUserId})`
     : sql<boolean>`false`;
   const cursor = data.cursor ? decodeReviewsCursor(data.cursor) : undefined;
   const cursorFilter = cursor ? getAlbumReviewsCursorFilter(cursor) : undefined;
+  const authorFilter = currentUser?.isAdmin ? undefined : getVisibleUserFilter(user);
+  const reviewFilter = and(eq(reviews.userId, data.userId), authorFilter, cursorFilter);
 
   const userReviews = await db
     .select({
       album: getTableColumns(albums),
       liked: likedByViewer,
-      likes: sql<number>`(select count(*)::int from ${reviewLikes} where ${reviewLikes.reviewId} = ${reviews.id})`,
+      likes: getVisibleReviewLikeCountSql(reviews.id),
       review: getTableColumns(reviews),
     })
     .from(reviews)
     .innerJoin(albums, eq(reviews.albumId, albums.id))
-    .where(cursorFilter ? and(eq(reviews.userId, data.userId), cursorFilter) : eq(reviews.userId, data.userId))
+    .innerJoin(user, eq(reviews.userId, user.id))
+    .where(reviewFilter)
     .orderBy(desc(reviews.createdAt), desc(reviews.id))
     .limit(reviewsPageSize + 1);
 
@@ -248,11 +265,14 @@ export async function getUserReviewsService(data: UserReviewsInput): Promise<Use
 
 export async function getReviewLikesService(data: ReviewLikesInput): Promise<ReviewLikesPage> {
   const db = await getDb();
-  const viewerUserId = await getOptionalCurrentUserId(db);
+  const currentUser = await getOptionalCurrentUser(db);
+  const viewerUserId = currentUser?.id;
+  const reviewAuthorFilter = currentUser?.isAdmin ? undefined : getVisibleUserFilter(user);
   const [targetReview] = await db
     .select({ id: reviews.id })
     .from(reviews)
-    .where(eq(reviews.id, data.reviewId))
+    .innerJoin(user, eq(reviews.userId, user.id))
+    .where(and(eq(reviews.id, data.reviewId), reviewAuthorFilter))
     .limit(1);
 
   if (!targetReview) {
@@ -279,7 +299,14 @@ export async function getReviewLikesService(data: ReviewLikesInput): Promise<Rev
     })
     .from(reviewLikes)
     .innerJoin(likedUser, eq(reviewLikes.userId, likedUser.id))
-    .where(and(eq(reviewLikes.reviewId, data.reviewId), isNotNull(likedUser.username), cursorFilter ?? undefined))
+    .where(
+      and(
+        eq(reviewLikes.reviewId, data.reviewId),
+        isNotNull(likedUser.username),
+        sql`${likedUser.banned} is not true`,
+        cursorFilter ?? undefined
+      )
+    )
     .orderBy(desc(reviewLikes.createdAt), desc(reviewLikes.userId))
     .limit(reviewLikesPageSize + 1);
 
@@ -296,7 +323,8 @@ export async function getAlbumRatingSummaryService({ albumId }: AlbumIdInput) {
       total: count(reviews.id),
     })
     .from(reviews)
-    .where(eq(reviews.albumId, albumId));
+    .innerJoin(user, eq(reviews.userId, user.id))
+    .where(and(eq(reviews.albumId, albumId), getVisibleUserFilter(user)));
 
   const distribution = await db
     .select({
@@ -304,7 +332,8 @@ export async function getAlbumRatingSummaryService({ albumId }: AlbumIdInput) {
       rating: ratingBucket,
     })
     .from(reviews)
-    .where(eq(reviews.albumId, albumId))
+    .innerJoin(user, eq(reviews.userId, user.id))
+    .where(and(eq(reviews.albumId, albumId), getVisibleUserFilter(user)))
     .groupBy(ratingBucket);
 
   return mapAlbumRatingSummary(summary, distribution);
@@ -341,9 +370,12 @@ export async function createReviewService(data: CreateReviewInput, context: Auth
 }
 
 export async function deleteReviewService(data: DeleteReviewInput, context: AuthenticatedContext) {
+  const ownershipFilter = !context.user.isAdmin && eq(reviews.userId, context.user.id);
+  const conditions = and(eq(reviews.id, data.reviewId), ownershipFilter || undefined);
+
   const [deletedReview] = await context.db
     .delete(reviews)
-    .where(and(eq(reviews.id, data.reviewId), eq(reviews.userId, context.user.id)))
+    .where(conditions)
     .returning({ albumId: reviews.albumId, id: reviews.id });
 
   if (!deletedReview) {
@@ -354,6 +386,8 @@ export async function deleteReviewService(data: DeleteReviewInput, context: Auth
 }
 
 export async function setReviewLikeService(data: ReviewLikeInput, context: AuthenticatedContext) {
+  await assertReviewIsLikeable(data.reviewId, context);
+
   if (data.liked) {
     await context.db
       .insert(reviewLikes)
@@ -368,12 +402,27 @@ export async function setReviewLikeService(data: ReviewLikeInput, context: Authe
   const [likeCount] = await context.db
     .select({ likes: count(reviewLikes.reviewId) })
     .from(reviewLikes)
-    .where(eq(reviewLikes.reviewId, data.reviewId));
+    .innerJoin(user, eq(reviewLikes.userId, user.id))
+    .where(and(eq(reviewLikes.reviewId, data.reviewId), getVisibleUserFilter(user)));
 
   return { liked: data.liked, likes: likeCount?.likes ?? 0, reviewId: data.reviewId };
 }
 
 // Helpers
+
+async function assertReviewIsLikeable(reviewId: string, context: AuthenticatedContext) {
+  const authorFilter = context.user.isAdmin ? undefined : getVisibleUserFilter(user);
+  const [targetReview] = await context.db
+    .select({ id: reviews.id })
+    .from(reviews)
+    .innerJoin(user, eq(reviews.userId, user.id))
+    .where(and(eq(reviews.id, reviewId), authorFilter))
+    .limit(1);
+
+  if (!targetReview) {
+    throw new Error("Review not found");
+  }
+}
 
 function getUserProfileRow(db: Db, username: string, viewerUserId?: string) {
   const profileUser = alias(user, "profile_user");
@@ -386,10 +435,29 @@ function getUserProfileRow(db: Db, username: string, viewerUserId?: string) {
     .select({
       avatarObjectKey: profileUser.avatarObjectKey,
       avatarUrl: profileUser.image,
+      banned: profileUser.banned,
       displayUsername: profileUser.displayUsername,
       followedByViewer,
-      followersCount: sql<number>`(select count(*)::int from ${userFollows} where ${userFollows.followingId} = ${profileUserId})`,
-      followingCount: sql<number>`(select count(*)::int from ${userFollows} where ${userFollows.followerId} = ${profileUserId})`,
+      followersCount: sql<number>`(
+        select count(*)::int
+        from ${userFollows}
+        where ${userFollows.followingId} = ${profileUserId}
+          and exists(
+            select 1 from ${user}
+            where ${user.id} = ${userFollows.followerId}
+              and ${user.banned} is not true
+          )
+      )`,
+      followingCount: sql<number>`(
+        select count(*)::int
+        from ${userFollows}
+        where ${userFollows.followerId} = ${profileUserId}
+          and exists(
+            select 1 from ${user}
+            where ${user.id} = ${userFollows.followingId}
+              and ${user.banned} is not true
+          )
+      )`,
       id: profileUser.id,
       name: profileUser.name,
       reviewCount: sql<number>`(select count(*)::int from ${reviews} where ${reviews.userId} = ${profileUserId})`,
@@ -399,6 +467,23 @@ function getUserProfileRow(db: Db, username: string, viewerUserId?: string) {
     .where(eq(profileUser.username, username))
     .limit(1)
     .then((rows) => rows[0]);
+}
+
+function getVisibleReviewLikeCountSql(reviewId: typeof reviews.id) {
+  return sql<number>`(
+    select count(*)::int
+    from ${reviewLikes}
+    where ${reviewLikes.reviewId} = ${reviewId}
+      and exists(
+        select 1 from ${user}
+        where ${user.id} = ${reviewLikes.userId}
+          and ${user.banned} is not true
+      )
+  )`;
+}
+
+function getVisibleUserFilter(userTable: { banned: typeof user.banned }) {
+  return sql`${userTable.banned} is not true`;
 }
 
 function escapeLikePattern(value: string) {
@@ -423,6 +508,7 @@ interface AlbumReviewRow {
 interface UserProfileRow {
   avatarObjectKey: string | null;
   avatarUrl: string | null;
+  banned: boolean | null;
   displayUsername: string | null;
   followedByViewer: boolean;
   followersCount: number;
@@ -511,6 +597,7 @@ function mapUserProfile(
   return {
     avatarObjectKey: canEdit ? (userProfile.avatarObjectKey ?? undefined) : undefined,
     avatarUrl: userProfile.avatarUrl ?? undefined,
+    banned: userProfile.banned ?? false,
     canEdit,
     displayName: userProfile.displayUsername ?? userProfile.name,
     displayUsername: userProfile.displayUsername ?? userProfile.username ?? userProfile.id,

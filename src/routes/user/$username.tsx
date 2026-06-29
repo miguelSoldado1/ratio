@@ -8,7 +8,6 @@ import { ProfileReviewsSection, ProfileReviewsSectionSkeleton } from "@/componen
 import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
 import { useReviewDelete } from "@/hooks/use-review-delete";
 import { useReviewLikeToggle } from "@/hooks/use-review-like-toggle";
-import { useUserFollowToggle } from "@/hooks/use-user-follow-toggle";
 import { authClient } from "@/lib/auth/auth-client";
 import { albumQueryKeys, userQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { getUserProfile, getUserReviews } from "@/server/functions/review-functions";
@@ -55,11 +54,6 @@ function UserPage() {
     queryKey: reviewsQueryKey,
   });
 
-  const { isUserFollowPending, toggleUserFollow } = useUserFollowToggle({
-    enabled: hasSession,
-    queryKey: profileQueryKey,
-  });
-
   const handleReviewDeleted = useCallback(
     async (deletedReview: { albumId: string }) => {
       const staleQueryKeys = [
@@ -74,6 +68,7 @@ function UserPage() {
     },
     [profile?.id, queryClient, username]
   );
+
   const { deleteReview: handleReviewDelete, deletingReviewId } = useReviewDelete({
     onDeleted: handleReviewDeleted,
   });
@@ -114,28 +109,14 @@ function UserPage() {
       <main className="min-h-screen bg-background text-foreground">
         <div className="mx-auto flex w-full max-w-375 flex-col px-5 py-8 lg:px-10 lg:py-12 xl:px-14 2xl:px-20">
           <ProfileHeader
-            followAction={
-              profile.canEdit
-                ? undefined
-                : {
-                    isPending: isUserFollowPending,
-                    onToggle: (following) => {
-                      if (!hasSession) {
-                        setAuthDialogOpen(true);
-                        return false;
-                      }
-
-                      return toggleUserFollow(profile.id, following);
-                    },
-                  }
-            }
-            followLists={{ hasSession, viewerUserId }}
+            onAuthRequired={() => setAuthDialogOpen(true)}
             profile={profile}
             stats={{
               followersCount: userProfileQuery.data.followersCount,
               followingCount: userProfileQuery.data.followingCount,
               reviewCount: userProfileQuery.data.reviewCount,
             }}
+            viewer={viewer}
           />
           {userReviewsQuery.isError && reviews.length === 0 ? (
             <section className="mt-7 py-8">

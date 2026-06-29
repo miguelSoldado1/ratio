@@ -2,12 +2,14 @@ import { createMiddleware } from "@tanstack/react-start";
 import { getRequestHeaders } from "@tanstack/react-start/server";
 import { createAuth } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { isAdminRole } from "./server-utils";
 import type { Db } from "@/lib/db";
 
 export interface AuthenticatedContext {
   db: Db;
   user: {
     id: string;
+    isAdmin: boolean;
   };
 }
 
@@ -20,5 +22,13 @@ export const authMiddleware = createMiddleware().server(async ({ next }) => {
     throw new Error("Unauthorized");
   }
 
-  return await next({ context: { db, user: session.user } satisfies AuthenticatedContext });
+  return await next({
+    context: {
+      db,
+      user: {
+        id: session.user.id,
+        isAdmin: isAdminRole(session.user.role),
+      },
+    } satisfies AuthenticatedContext,
+  });
 });

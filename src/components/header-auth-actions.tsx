@@ -1,10 +1,11 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ChevronDown, LogIn, LogOut, Settings } from "lucide-react";
+import { ChevronDown, LogIn, LogOut, Settings, ShieldCheck } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
@@ -12,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { UserAvatar } from "@/components/user-avatar";
+import { useAdminMode } from "@/hooks/use-admin-mode";
 import { authClient } from "@/lib/auth/auth-client";
 
 interface HeaderAuthActionsProps {
@@ -23,6 +25,7 @@ export function HeaderAuthActions({ onAuthClick }: HeaderAuthActionsProps) {
   const session = authClient.useSession();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const user = session.data?.user;
+  const { adminModeEnabled, isAdmin, setAdminModeEnabled } = useAdminMode();
 
   async function handleSignOut() {
     setIsSigningOut(true);
@@ -105,15 +108,25 @@ export function HeaderAuthActions({ onAuthClick }: HeaderAuthActionsProps) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="min-w-48">
           <DropdownMenuGroup>
-            <DropdownMenuItem
-              onClick={() => {
-                navigate({ to: "/settings" });
-              }}
-            >
+            <DropdownMenuItem onClick={() => navigate({ to: "/settings" })}>
               <Settings />
               Account settings
             </DropdownMenuItem>
           </DropdownMenuGroup>
+          {isAdmin ? (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuGroup>
+                <DropdownMenuCheckboxItem
+                  checked={adminModeEnabled}
+                  onCheckedChange={(checked) => setAdminModeEnabled(checked === true)}
+                >
+                  <ShieldCheck />
+                  Admin mode
+                </DropdownMenuCheckboxItem>
+              </DropdownMenuGroup>
+            </>
+          ) : null}
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
             <DropdownMenuItem disabled={isSigningOut} onClick={handleSignOut}>

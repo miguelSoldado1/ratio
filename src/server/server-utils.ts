@@ -7,11 +7,26 @@ import type { Db } from "@/lib/db";
 
 // Auth
 
-export async function getOptionalCurrentUserId(db: Db) {
+export async function getOptionalCurrentUser(db: Db) {
   const auth = createAuth(db);
   const session = await auth.api.getSession({ headers: getRequestHeaders() }).catch(() => null);
 
-  return session?.user.id;
+  if (!session?.user) return;
+
+  return {
+    id: session.user.id,
+    isAdmin: isAdminRole(session.user.role),
+  };
+}
+
+export async function getOptionalCurrentUserId(db: Db) {
+  const currentUser = await getOptionalCurrentUser(db);
+
+  return currentUser?.id;
+}
+
+export function isAdminRole(role?: string | null) {
+  return role?.split(",").some((userRole) => userRole.trim() === "admin") ?? false;
 }
 
 // Cursors

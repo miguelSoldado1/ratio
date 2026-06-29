@@ -5,6 +5,7 @@ import { DeleteReviewDialog } from "@/components/delete-review-dialog";
 import { ReviewCard } from "@/components/review-card";
 import { ReviewLikesDialog } from "@/components/review-likes-dialog";
 import { Spinner } from "@/components/ui/spinner";
+import { useAdminMode } from "@/hooks/use-admin-mode";
 import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
 import { useReviewDelete } from "@/hooks/use-review-delete";
 import { useReviewLikeToggle } from "@/hooks/use-review-like-toggle";
@@ -26,6 +27,7 @@ export function ReviewsSection({ albumId, className }: ReviewsSectionProps) {
   const userId = session.data?.user.id;
   const hasSession = Boolean(userId);
   const viewer = useMemo(() => ({ hasSession, userId }), [hasSession, userId]);
+  const { adminModeEnabled, isAdmin } = useAdminMode();
   const [likesReviewId, setLikesReviewId] = useState<string>();
   const reviewsQueryKey = albumQueryKeys.reviews(albumId, userId);
 
@@ -99,11 +101,12 @@ export function ReviewsSection({ albumId, className }: ReviewsSectionProps) {
                 onShowLikes={() => setLikesReviewId(review.id)}
                 onToggle={hasSession ? (liked) => handleReviewLikeToggle(review.id, liked) : undefined}
               />
-              {review.canDelete ? (
+              {review.canDelete || (isAdmin && adminModeEnabled) ? (
                 <DeleteReviewDialog
                   className="-mr-2 ml-auto"
                   isDeleting={deletingReviewId === review.id}
                   onDelete={() => handleReviewDelete(review.id)}
+                  variant={review.canDelete ? "own" : "admin"}
                 />
               ) : null}
             </ReviewCard.Footer>

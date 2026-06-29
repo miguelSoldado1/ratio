@@ -1,4 +1,5 @@
 export const albumQueryKeys = {
+  all: () => ["album"] as const,
   details: (albumId: string) => ["album", albumId, "details"] as const,
   review: (albumId: string) => ["album", albumId, "review"] as const,
   hasMyReview: (albumId: string, userId?: string) => [...albumQueryKeys.review(albumId), "me", userId] as const,
@@ -8,15 +9,18 @@ export const albumQueryKeys = {
 };
 
 export const reviewQueryKeys = {
+  all: () => ["review"] as const,
   likes: (reviewId: string, viewerUserId?: string) =>
     viewerUserId ? (["review", reviewId, "likes", viewerUserId] as const) : (["review", reviewId, "likes"] as const),
 };
 
 export const feedQueryKeys = {
+  all: () => ["feed"] as const,
   root: (viewerUserId?: string) => (viewerUserId ? (["feed", viewerUserId] as const) : (["feed"] as const)),
 };
 
 export const userQueryKeys = {
+  all: () => ["user"] as const,
   followers: (profileUserId: string, viewerUserId?: string) =>
     viewerUserId
       ? (["user", profileUserId, "followers", viewerUserId] as const)
@@ -31,7 +35,7 @@ export const userQueryKeys = {
     viewerUserId
       ? (["user", reviewedUserId, "reviews", viewerUserId] as const)
       : (["user", reviewedUserId, "reviews"] as const),
-  search: (query: string) => ["user-search", query] as const,
+  search: (query: string) => [...userQueryKeys.all(), "search", query] as const,
 };
 
 export const accountQueryKeys = {
