@@ -1,16 +1,14 @@
 import SpotifyWebApi from "spotify-web-api-node";
 import { env } from "@/env";
+import { getSpotifyCache } from "./spotify-cache";
 
 const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
 const CLIENT_CREDENTIALS_CACHE_KEY = "spotify:client-credentials-token";
-const CLOUDFLARE_WORKERS_MODULE = "cloudflare:workers";
 
 interface ClientCredentialsToken {
   accessToken: string;
   expiresAt: number;
 }
-
-type CloudflareWorkersModule = typeof import("cloudflare:workers");
 
 let clientCredentialsToken: ClientCredentialsToken | null = null;
 
@@ -83,22 +81,6 @@ async function setCachedClientCredentialsToken(token: ClientCredentialsToken) {
   } catch (error) {
     console.warn("Failed to write Spotify token to KV", error);
   }
-}
-
-async function getSpotifyCache() {
-  if (!isCloudflareWorkersRuntime()) return null;
-
-  try {
-    const cloudflareWorkers: CloudflareWorkersModule = await import(/* @vite-ignore */ CLOUDFLARE_WORKERS_MODULE);
-    return cloudflareWorkers.env.CACHE;
-  } catch (error) {
-    console.warn("Failed to load Cloudflare Workers bindings", error);
-    return null;
-  }
-}
-
-function isCloudflareWorkersRuntime() {
-  return typeof navigator !== "undefined" && navigator.userAgent === "Cloudflare-Workers";
 }
 
 function isFreshToken(token: ClientCredentialsToken | null, now: number) {

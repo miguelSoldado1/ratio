@@ -1,4 +1,6 @@
+import z from "zod";
 import { createSpotifyApi, getClientCredentialsToken } from "../spotify";
+import { getSpotifyCacheJson, setSpotifyCacheJson } from "../spotify-cache";
 
 // Spotify API types
 
@@ -35,16 +37,103 @@ const SPOTIFY_MARKET = "US";
 const ALBUM_TYPE = "album" satisfies SpotifyAlbum["album_type"];
 const ALBUMS_ONLY_ERROR_MESSAGE = "Only albums are supported";
 
+const SPOTIFY_CACHE_KEY_PREFIX = "spotify";
+
+const SPOTIFY_SEARCH_CACHE_KEY_PREFIX = `${SPOTIFY_CACHE_KEY_PREFIX}:search:album`;
+const SPOTIFY_SEARCH_CACHE_TTL_SECONDS = 10 * 60;
+
+const SPOTIFY_ALBUM_DETAILS_CACHE_KEY_PREFIX = `${SPOTIFY_CACHE_KEY_PREFIX}:album-details`;
+const SPOTIFY_ALBUM_DETAILS_CACHE_TTL_SECONDS = 24 * 60 * 60;
+
+const SPOTIFY_ALBUM_PERSISTENCE_CACHE_KEY_PREFIX = `${SPOTIFY_CACHE_KEY_PREFIX}:album-persistence`;
+const SPOTIFY_ALBUM_PERSISTENCE_CACHE_TTL_SECONDS = 24 * 60 * 60;
+
+const inFlightSpotifyCacheRequests = new Map<string, Promise<unknown>>();
+
+// Cache schemas
+
+const spotifyAlbumSearchResultSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  releaseDate: z.string(),
+  albumType: z.literal(ALBUM_TYPE),
+  spotifyUrl: z.string(),
+  artists: z.array(
+    z.object({
+      id: z.string(),
+      name: z.string(),
+    })
+  ),
+  image: z.string().nullable(),
+});
+
+const spotifyArtistSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  spotifyUrl: z.string(),
+});
+
+const spotifyAlbumTrackSchema = z.object({
+  id: z.string(),
+  discNumber: z.number(),
+  durationMs: z.number(),
+  previewUrl: z.string().nullable(),
+  spotifyUrl: z.string(),
+  title: z.string(),
+  trackNumber: z.number(),
+});
+
+const spotifyAlbumDetailsResultSchema = z.object({
+  album: z.object({
+    albumType: z.string(),
+    artists: z.array(spotifyArtistSchema),
+    coverUrl: z.string().nullable(),
+    durationMs: z.number(),
+    genre: z.string().nullable(),
+    id: z.string(),
+    label: z.string(),
+    releaseDate: z.string(),
+    spotifyUrl: z.string(),
+    title: z.string(),
+    totalTracks: z.number(),
+  }),
+  tracks: z.array(spotifyAlbumTrackSchema),
+});
+
+const spotifyAlbumPersistenceMetadataSchema = z.object({
+  artistNames: z.array(z.string()),
+  coverUrl: z.string().nullable(),
+  id: z.string(),
+  releaseYear: z.number(),
+  title: z.string(),
+  totalTracks: z.number(),
+});
+
+const spotifyAlbumSearchResultsSchema = z.array(spotifyAlbumSearchResultSchema);
+
 // Services
 
 export async function searchAlbumsService({ query }: SearchAlbumsInput) {
   try {
-    const accessToken = await getClientCredentialsToken();
-    const spotifyApi = createSpotifyApi(accessToken);
-    const { body } = await spotifyApi.searchAlbums(query, { limit: ALBUM_SEARCH_LIMIT, market: SPOTIFY_MARKET });
+    const normalizedQuery = normalizeAlbumSearchText(query);
+    const cacheKey = getSpotifySearchCacheKey(normalizedQuery);
 
-    const albums = getAlbumSearchResults(body.albums?.items ?? []);
-    return albums.map(mapSpotifyAlbumSearch);
+    return await getSpotifyCacheValueOrFetch({
+      cacheKey,
+      schema: spotifyAlbumSearchResultsSchema,
+      ttlSeconds: SPOTIFY_SEARCH_CACHE_TTL_SECONDS,
+      fetcher: async () => {
+        const accessToken = await getClientCredentialsToken();
+        const spotifyApi = createSpotifyApi(accessToken);
+        const { body } = await spotifyApi.searchAlbums(normalizedQuery, {
+          limit: ALBUM_SEARCH_LIMIT,
+          market: SPOTIFY_MARKET,
+        });
+
+        const albums = getAlbumSearchResults(body.albums?.items ?? []);
+        return albums.map(mapSpotifyAlbumSearch);
+      },
+    });
   } catch (error) {
     const status = isSpotifyError(error) ? error.statusCode : 500;
     throw new Error(spotifyErrorMessage(status, "Spotify search failed"));
@@ -52,22 +141,94 @@ export async function searchAlbumsService({ query }: SearchAlbumsInput) {
 }
 
 export async function getAlbumDetailsService({ albumId }: AlbumDetailsInput) {
-  const { album, spotifyApi } = await getSpotifyAlbum(albumId);
-  assertAlbumType(album);
+  const cacheKey = getSpotifyAlbumDetailsCacheKey(albumId);
 
-  const tracks = await getAlbumTracks(spotifyApi, albumId, album.tracks);
+  return await getSpotifyCacheValueOrFetch({
+    cacheKey,
+    schema: spotifyAlbumDetailsResultSchema,
+    ttlSeconds: SPOTIFY_ALBUM_DETAILS_CACHE_TTL_SECONDS,
+    fetcher: async () => {
+      const { album, spotifyApi } = await getSpotifyAlbum(albumId);
+      assertAlbumType(album);
 
-  return mapSpotifyAlbumDetails(album, tracks);
+      const tracks = await getAlbumTracks(spotifyApi, albumId, album.tracks);
+
+      return mapSpotifyAlbumDetails(album, tracks);
+    },
+  });
 }
 
 export async function getAlbumPersistenceMetadata(albumId: string): Promise<SpotifyAlbumPersistenceMetadata> {
-  const { album } = await getSpotifyAlbum(albumId);
-  assertAlbumType(album);
+  const cacheKey = getSpotifyAlbumPersistenceCacheKey(albumId);
+  const cachedAlbumDetails = await getParsedSpotifyCacheValue(
+    getSpotifyAlbumDetailsCacheKey(albumId),
+    spotifyAlbumDetailsResultSchema
+  );
 
-  return mapSpotifyAlbumPersistenceMetadata(album);
+  if (cachedAlbumDetails) {
+    return mapCachedAlbumDetailsToPersistenceMetadata(cachedAlbumDetails);
+  }
+
+  return await getSpotifyCacheValueOrFetch({
+    cacheKey,
+    schema: spotifyAlbumPersistenceMetadataSchema,
+    ttlSeconds: SPOTIFY_ALBUM_PERSISTENCE_CACHE_TTL_SECONDS,
+    fetcher: async () => {
+      const { album } = await getSpotifyAlbum(albumId);
+      assertAlbumType(album);
+
+      return mapSpotifyAlbumPersistenceMetadata(album);
+    },
+  });
 }
 
 // Helpers
+
+async function getSpotifyCacheValueOrFetch<T>({
+  cacheKey,
+  fetcher,
+  schema,
+  ttlSeconds,
+}: {
+  cacheKey: string;
+  fetcher: () => Promise<T>;
+  schema: z.ZodType<T>;
+  ttlSeconds: number;
+}) {
+  const cachedValue = await getParsedSpotifyCacheValue(cacheKey, schema);
+  if (cachedValue) return cachedValue;
+
+  return await dedupeInFlightSpotifyRequest(cacheKey, async () => {
+    const cachedValueAfterWait = await getParsedSpotifyCacheValue(cacheKey, schema);
+    if (cachedValueAfterWait) return cachedValueAfterWait;
+
+    const value = await fetcher();
+    await setSpotifyCacheJson(cacheKey, value, ttlSeconds);
+
+    return value;
+  });
+}
+
+async function getParsedSpotifyCacheValue<T>(cacheKey: string, schema: z.ZodType<T>) {
+  const cachedValue = await getSpotifyCacheJson(cacheKey);
+  if (cachedValue === null) return null;
+
+  const parsedCachedValue = schema.safeParse(cachedValue);
+  if (parsedCachedValue.success) return parsedCachedValue.data;
+
+  console.warn("Ignoring invalid cached Spotify response", parsedCachedValue.error);
+  return null;
+}
+
+async function dedupeInFlightSpotifyRequest<T>(cacheKey: string, fetcher: () => Promise<T>) {
+  const inFlightRequest = inFlightSpotifyCacheRequests.get(cacheKey) as Promise<T> | undefined;
+  if (inFlightRequest) return await inFlightRequest;
+
+  const request = fetcher().finally(() => inFlightSpotifyCacheRequests.delete(cacheKey));
+  inFlightSpotifyCacheRequests.set(cacheKey, request);
+
+  return await request;
+}
 
 async function getSpotifyAlbum(albumId: string) {
   try {
@@ -145,14 +306,27 @@ function mapSpotifyAlbumPersistenceMetadata(album: SpotifyAlbumDetails): Spotify
     artistNames: album.artists.map((artist) => artist.name),
     coverUrl: getLargestImageUrl(album.images),
     id: album.id,
-    releaseYear: getSpotifyReleaseYear(album),
+    releaseYear: getSpotifyReleaseYear(album.release_date),
     title: album.name,
     totalTracks: album.total_tracks,
   };
 }
 
-function getSpotifyReleaseYear(album: SpotifyAlbumDetails) {
-  const releaseYear = Number(album.release_date.slice(0, 4));
+function mapCachedAlbumDetailsToPersistenceMetadata({
+  album,
+}: z.infer<typeof spotifyAlbumDetailsResultSchema>): SpotifyAlbumPersistenceMetadata {
+  return {
+    artistNames: album.artists.map((artist) => artist.name),
+    coverUrl: album.coverUrl,
+    id: album.id,
+    releaseYear: getSpotifyReleaseYear(album.releaseDate),
+    title: album.title,
+    totalTracks: album.totalTracks,
+  };
+}
+
+function getSpotifyReleaseYear(releaseDate: string) {
+  const releaseYear = Number(releaseDate.slice(0, 4));
 
   if (!Number.isInteger(releaseYear)) {
     throw new Error("Spotify album release year is invalid");
@@ -235,6 +409,24 @@ function removeAdvisoryEditionMarkers(value: string) {
 
 function normalizeAlbumSearchText(value: string) {
   return value.trim().toLowerCase().replace(/\s+/g, " ");
+}
+
+// Cache keys
+
+function getSpotifySearchCacheKey(normalizedQuery: string) {
+  return getSpotifyMarketCacheKey(SPOTIFY_SEARCH_CACHE_KEY_PREFIX, normalizedQuery);
+}
+
+function getSpotifyAlbumDetailsCacheKey(albumId: string) {
+  return getSpotifyMarketCacheKey(SPOTIFY_ALBUM_DETAILS_CACHE_KEY_PREFIX, albumId);
+}
+
+function getSpotifyAlbumPersistenceCacheKey(albumId: string) {
+  return getSpotifyMarketCacheKey(SPOTIFY_ALBUM_PERSISTENCE_CACHE_KEY_PREFIX, albumId);
+}
+
+function getSpotifyMarketCacheKey(prefix: string, value: string) {
+  return `${prefix}:${SPOTIFY_MARKET.toLowerCase()}:${encodeURIComponent(value)}`;
 }
 
 // Images
