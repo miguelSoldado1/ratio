@@ -35,7 +35,10 @@ export const userQueryKeys = {
     viewerUserId
       ? (["user", reviewedUserId, "reviews", viewerUserId] as const)
       : (["user", reviewedUserId, "reviews"] as const),
-  search: (query: string) => [...userQueryKeys.all(), "search", query] as const,
+  search: (query: string, viewerUserId?: string) =>
+    viewerUserId
+      ? ([...userQueryKeys.all(), "search", query, viewerUserId] as const)
+      : ([...userQueryKeys.all(), "search", query] as const),
 };
 
 export const accountQueryKeys = {

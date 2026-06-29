@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Command, CommandDialog, CommandEmpty, CommandInput, CommandList } from "@/components/ui/command";
 import { useDebounce } from "@/hooks/use-debounce";
+import { authClient } from "@/lib/auth/auth-client";
 import { albumQueryKeys, userQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { searchUsers } from "@/server/functions/review-functions";
 import { searchAlbums } from "@/server/functions/spotify-functions";
@@ -19,8 +20,10 @@ interface GlobalSearchProps {
 
 export function GlobalSearch({ onOpenChange, open }: GlobalSearchProps) {
   const navigate = useNavigate();
+  const session = authClient.useSession();
   const [inputValue, setInputValue] = useState("");
   const debouncedQuery = useDebounce(inputValue.trim(), 300);
+  const viewerUserId = session.data?.user.id;
 
   const searchAlbumsFn = useServerFn(searchAlbums);
   const { data: albumResults = [], isFetching: isFetchingAlbums } = useQuery({
@@ -33,7 +36,7 @@ export function GlobalSearch({ onOpenChange, open }: GlobalSearchProps) {
   const searchUsersFn = useServerFn(searchUsers);
   const { data: userResults = [], isFetching: isFetchingUsers } = useQuery({
     queryFn: () => searchUsersFn({ data: { query: debouncedQuery } }),
-    queryKey: userQueryKeys.search(debouncedQuery),
+    queryKey: userQueryKeys.search(debouncedQuery, viewerUserId),
     enabled: debouncedQuery.length >= 2,
     placeholderData: (prev) => prev,
   });

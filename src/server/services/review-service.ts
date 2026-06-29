@@ -187,10 +187,12 @@ export async function getUserProfileService(data: UserProfileInput): Promise<Use
 
 export async function searchUsersService(data: UserSearchInput): Promise<UserSearchResult[]> {
   const db = await getDb();
+  const currentUser = await getOptionalCurrentUser(db);
   const normalizedQuery = data.query.toLowerCase();
   const escapedQuery = escapeLikePattern(data.query);
   const containsPattern = `%${escapedQuery}%`;
   const prefixPattern = `${escapedQuery}%`;
+  const visibilityFilter = currentUser?.isAdmin ? undefined : getVisibleUserFilter(user);
 
   const userRows = await db
     .select({
@@ -202,7 +204,7 @@ export async function searchUsersService(data: UserSearchInput): Promise<UserSea
     .where(
       and(
         isNotNull(user.username),
-        getVisibleUserFilter(user),
+        visibilityFilter,
         or(ilike(user.username, containsPattern), ilike(user.displayUsername, containsPattern))
       )
     )
