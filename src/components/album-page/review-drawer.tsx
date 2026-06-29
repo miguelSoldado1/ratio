@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Pencil } from "lucide-react";
-import { useRef, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AuthDialog } from "@/components/auth/auth-dialog";
 import { Button } from "@/components/ui/button";
@@ -39,8 +39,10 @@ interface ReviewDrawerProps {
 export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerProps) {
   const queryClient = useQueryClient();
   const ratingInputRef = useRef<HTMLDivElement>(null);
+  const reviewTriggerDescriptionId = useId();
   const [open, setOpen] = useState(false);
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [reviewForm, setReviewForm] = useState({ body: "", rating: 0 });
   const session = authClient.useSession();
   const userId = session.data?.user.id;
@@ -58,21 +60,22 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
 
   const hasCreatedReview = hasSession && hasMyAlbumReviewQuery.data === true;
   const isCheckingReview = session.isPending || (hasSession && hasMyAlbumReviewQuery.isPending);
-  const canSaveReview = hasSession && reviewForm.rating > 0 && !createReviewMutation.isPending && !hasCreatedReview;
+  const isReviewSubmitBusy = createReviewMutation.isPending || isSubmittingReview;
+  const canSaveReview = hasSession && reviewForm.rating > 0 && !isReviewSubmitBusy && !hasCreatedReview;
   const isReviewTriggerDisabled = isCheckingReview || hasCreatedReview;
-  const reviewTriggerLabel = getReviewTriggerLabel({
-    hasCreatedReview,
-    isCheckingReview,
-  });
+  const reviewTriggerDescription = hasCreatedReview ? "Already reviewed" : undefined;
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!canSaveReview) return;
 
+    setIsSubmittingReview(true);
+
     const data = { albumId, body: reviewForm.body, rating: Math.round(reviewForm.rating * 2) };
     const { error } = await tryCatch(createReviewMutation.mutateAsync({ data }));
     if (error) {
+      setIsSubmittingReview(false);
       return toast.error("Error", { description: error instanceof Error ? error.message : "Something went wrong" });
     }
 
@@ -80,6 +83,7 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
 
     setOpen(false);
     setReviewForm({ body: "", rating: 0 });
+    setIsSubmittingReview(false);
   }
 
   function handleReviewTriggerClick(event: MouseEvent<HTMLButtonElement>) {
@@ -98,16 +102,25 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
     <>
       <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} />
       <Drawer direction="bottom" handleOnly onOpenChange={setOpen} open={open}>
-        <Button
-          className="min-w-0 px-3 sm:px-5"
-          disabled={isReviewTriggerDisabled}
-          onClick={handleReviewTriggerClick}
-          size="lg"
-          type="button"
-        >
-          <Pencil data-icon="inline-start" />
-          {reviewTriggerLabel}
-        </Button>
+        <div className="min-w-0">
+          <Button
+            aria-busy={isCheckingReview || undefined}
+            aria-describedby={reviewTriggerDescription ? reviewTriggerDescriptionId : undefined}
+            className="w-full min-w-0 px-3 sm:px-5"
+            disabled={isReviewTriggerDisabled}
+            onClick={handleReviewTriggerClick}
+            size="lg"
+            type="button"
+          >
+            <Pencil data-icon="inline-start" />
+            Add a review
+          </Button>
+          {reviewTriggerDescription ? (
+            <span className="sr-only" id={reviewTriggerDescriptionId}>
+              {reviewTriggerDescription}
+            </span>
+          ) : null}
+        </div>
         <DrawerContent
           onOpenAutoFocus={(event) => {
             event.preventDefault();
@@ -154,11 +167,11 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
               </FieldGroup>
             </div>
             <DrawerFooter className="px-4 py-3 sm:py-4">
-              <Button disabled={!canSaveReview} type="submit">
-                {createReviewMutation.isPending ? "Saving..." : "Save review"}
+              <Button aria-busy={isReviewSubmitBusy || undefined} disabled={!canSaveReview} type="submit">
+                Save review
               </Button>
               <DrawerClose asChild>
-                <Button disabled={createReviewMutation.isPending} type="button" variant="outline">
+                <Button disabled={isReviewSubmitBusy} type="button" variant="outline">
                   Cancel
                 </Button>
               </DrawerClose>
@@ -168,16 +181,4 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
       </Drawer>
     </>
   );
-}
-
-interface ReviewTriggerLabelParams {
-  hasCreatedReview: boolean;
-  isCheckingReview: boolean;
-}
-
-function getReviewTriggerLabel({ hasCreatedReview, isCheckingReview }: ReviewTriggerLabelParams) {
-  if (isCheckingReview) return "Checking...";
-  if (hasCreatedReview) return "Review added";
-
-  return "Add a review";
 }

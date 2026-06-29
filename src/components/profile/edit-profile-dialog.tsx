@@ -207,8 +207,8 @@ export function EditProfileDialog({
             <Button disabled={isFormDisabled} onClick={() => setOpen(false)} type="button" variant="outline">
               Cancel
             </Button>
-            <Button disabled={isFormDisabled} type="submit">
-              {isSaving ? "Saving..." : "Save changes"}
+            <Button aria-busy={isSaving || undefined} disabled={isFormDisabled} type="submit">
+              Save changes
             </Button>
           </DialogFooter>
         </form>

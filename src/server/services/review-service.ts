@@ -1,4 +1,4 @@
-import { and, count, desc, eq, getTableColumns, ilike, isNotNull, lt, or, sql } from "drizzle-orm";
+import { and, count, desc, eq, getTableColumns, ilike, isNotNull, lt, ne, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import z from "zod";
 import { getDb } from "@/lib/db";
@@ -117,13 +117,22 @@ export interface ReviewLikesInput extends DeleteReviewInput {
 export async function getAlbumReviewsService(data: AlbumReviewsInput): Promise<AlbumReviewsPage> {
   const db = await getDb();
   const viewerUserId = await getOptionalCurrentUserId(db);
+  const cursor = data.cursor ? decodeReviewsCursor(data.cursor) : undefined;
   const likedByViewer = viewerUserId
     ? sql<boolean>`exists(select 1 from ${reviewLikes} where ${reviewLikes.reviewId} = ${reviews.id} and ${reviewLikes.userId} = ${viewerUserId})`
     : sql<boolean>`false`;
   const canDelete = viewerUserId ? sql<boolean>`${reviews.userId} = ${viewerUserId}` : sql<boolean>`false`;
-  const cursor = data.cursor ? decodeReviewsCursor(data.cursor) : undefined;
   const cursorFilter = cursor ? getAlbumReviewsCursorFilter(cursor) : undefined;
-  const reviewFilter = and(eq(reviews.albumId, data.albumId), getVisibleUserFilter(user), cursorFilter);
+  const pinnedViewerSort =
+    viewerUserId && !cursor
+      ? sql<number>`case when ${reviews.userId} = ${viewerUserId} then 0 else 1 end`
+      : sql<number>`1`;
+  const reviewFilter = and(
+    eq(reviews.albumId, data.albumId),
+    getVisibleUserFilter(user),
+    cursorFilter,
+    viewerUserId && cursor ? ne(reviews.userId, viewerUserId) : undefined
+  );
 
   const albumReviews = await db
     .select({
@@ -141,7 +150,7 @@ export async function getAlbumReviewsService(data: AlbumReviewsInput): Promise<A
     .from(reviews)
     .innerJoin(user, eq(reviews.userId, user.id))
     .where(reviewFilter)
-    .orderBy(desc(reviews.createdAt), desc(reviews.id))
+    .orderBy(pinnedViewerSort, desc(reviews.createdAt), desc(reviews.id))
     .limit(reviewsPageSize + 1);
 
   const hasNextPage = albumReviews.length > reviewsPageSize;
