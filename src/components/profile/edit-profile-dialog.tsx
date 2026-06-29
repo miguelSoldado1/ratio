@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth/auth-client";
 import { displayUsernameMaxLength, getDisplayUsernameLength } from "@/lib/auth/profile-identity";
@@ -30,6 +30,7 @@ const fieldIds = {
   username: "profile-username",
   usernameDescription: "profile-username-description",
   usernameError: "profile-username-error",
+  usernameWarning: "profile-username-warning",
 } as const;
 
 interface ProfileFormErrors {
@@ -62,6 +63,7 @@ export function EditProfileDialog({
   const [errors, setErrors] = useState<ProfileFormErrors>({});
 
   const isFormDisabled = isSaving || isPhotoBusy;
+  const isUsernameChanged = form.username.trim().toLowerCase() !== username.toLowerCase();
 
   useEffect(() => {
     if (!open) return;
@@ -91,7 +93,9 @@ export function EditProfileDialog({
       return setErrors(nextErrors);
     }
 
-    const hasChanges = nextDisplayUsername !== displayName || nextUsername !== username;
+    const normalizedNextUsername = nextUsername.toLowerCase();
+    const currentUsername = username.toLowerCase();
+    const hasChanges = nextDisplayUsername !== displayName || normalizedNextUsername !== currentUsername;
     if (!hasChanges) {
       return setOpen(false);
     }
@@ -106,15 +110,15 @@ export function EditProfileDialog({
 
     updateProfileCache({
       displayName: nextDisplayUsername,
-      nextUsername: nextUsername.toLowerCase(),
+      nextUsername: normalizedNextUsername,
       previousUsername: username,
       queryClient,
     });
 
     setOpen(false);
 
-    if (nextUsername.toLowerCase() !== username) {
-      navigate({ params: { username: nextUsername.toLowerCase() }, to: "/user/$username" });
+    if (normalizedNextUsername !== currentUsername) {
+      navigate({ params: { username: normalizedNextUsername }, to: "/user/$username" });
     }
   }
 
@@ -175,8 +179,10 @@ export function EditProfileDialog({
               <Input
                 aria-describedby={
                   errors.username
-                    ? `${fieldIds.usernameDescription} ${fieldIds.usernameError}`
-                    : fieldIds.usernameDescription
+                    ? `${fieldIds.usernameDescription} ${fieldIds.usernameError}${
+                        isUsernameChanged ? ` ${fieldIds.usernameWarning}` : ""
+                      }`
+                    : `${fieldIds.usernameDescription}${isUsernameChanged ? ` ${fieldIds.usernameWarning}` : ""}`
                 }
                 aria-invalid={Boolean(errors.username)}
                 autoComplete="username"
@@ -188,6 +194,11 @@ export function EditProfileDialog({
                 }}
                 value={form.username}
               />
+              {isUsernameChanged ? (
+                <FieldDescription id={fieldIds.usernameWarning}>
+                  Heads up: old profile links will break.
+                </FieldDescription>
+              ) : null}
               <FieldError id={fieldIds.usernameError}>{errors.username}</FieldError>
             </Field>
             <FieldError id={fieldIds.formError}>{errors.form}</FieldError>
