@@ -76,9 +76,9 @@ function createReviewShareText({ album, permalink, rating, reviewBody, userDispl
   const excerpt = formatReviewExcerpt(reviewBody, getAvailableExcerptLength({ intro, permalink, ratingLine }));
   const textWithoutUrl = [intro, ratingLine, excerpt ? `"${excerpt}"` : null]
     .filter((line): line is string => Boolean(line))
-    .join("\n\n");
+    .join("\n");
 
-  return `${textWithoutUrl}\n\n${permalink}`;
+  return `${textWithoutUrl}\n${permalink}`;
 }
 
 function formatReviewStars(rating: number) {
@@ -118,15 +118,15 @@ interface GetAvailableExcerptLengthParams {
 }
 
 function getAvailableExcerptLength({ intro, permalink, ratingLine }: GetAvailableExcerptLengthParams) {
-  const textWithoutExcerpt = `${intro}\n\n${ratingLine}\n\n${permalink}`;
-  const excerptWrapperLength = '"'.length * 2 + "\n\n".length + "...".length;
+  const textWithoutExcerpt = `${intro}\n${ratingLine}\n${permalink}`;
+  const excerptWrapperLength = '"'.length * 2 + "\n".length + "...".length;
 
   return Math.min(excerptMaxLength, maxShareTextLength - textWithoutExcerpt.length - excerptWrapperLength);
 }
 
 async function shareReview(shareText: string) {
   if (typeof navigator !== "undefined" && navigator.share) {
-    const { error } = await tryCatch(navigator.share({ text: shareText, title: "Share review" }));
+    const { error } = await tryCatch(navigator.share({ text: shareText }));
 
     if (!error || isNativeShareCancellation(error)) return false;
   }
