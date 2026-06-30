@@ -43,9 +43,9 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   const albumRuntime = getAlbumRuntimeLabel(album);
 
   return (
-    <main className="min-h-screen bg-background text-foreground" data-album-id={albumId}>
+    <main className="min-h-screen bg-background text-foreground" data-album-id={album.id}>
       <div className="mx-auto grid w-full max-w-375 gap-8 px-5 py-6 lg:grid-cols-[minmax(240px,340px)_1fr] lg:px-10 xl:gap-12 xl:px-14 2xl:px-20">
-        <MobileAlbumHeader album={album} albumId={albumId} coverUrl={album.coverUrl} />
+        <MobileAlbumHeader album={album} coverUrl={album.coverUrl} />
         <aside className="hidden lg:sticky lg:top-20 lg:block lg:self-start">
           <AlbumCover albumTitle={album.title} coverUrl={album.coverUrl} />
           <TrackList className="mt-6" tracks={tracks} />
@@ -60,23 +60,22 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
             </p>
             <p className="mt-1 text-muted-foreground/70 text-sm">{albumRuntime}</p>
 
-            <AlbumActions
-              albumArtist={artist}
-              albumId={albumId}
-              albumTitle={album.title}
-              className="mt-6"
-              spotifyUrl={album.spotifyUrl}
-            />
+            <AlbumActions album={album} className="mt-6" />
           </div>
-          <RatingsPanel albumId={albumId} className="mt-2 lg:mt-8" />
-          <ReviewsSection albumId={albumId} className="mt-10 lg:mt-12" />
+          <RatingsPanel albumId={album.id} className="mt-2 lg:mt-8" />
+          <ReviewsSection album={album} className="mt-10 lg:mt-12" />
         </section>
       </div>
     </main>
   );
 }
 
-function AlbumCover({ albumTitle, coverUrl }: { albumTitle: string; coverUrl: string | null }) {
+interface AlbumCoverProps {
+  albumTitle: string;
+  coverUrl: string | null;
+}
+
+function AlbumCover({ albumTitle, coverUrl }: AlbumCoverProps) {
   if (!coverUrl) {
     return (
       <div aria-label={`${albumTitle} album cover unavailable`} className="aspect-square w-full bg-muted" role="img" />

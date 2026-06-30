@@ -7,11 +7,10 @@ type SpotifyAlbum = SpotifyAlbumDetails["album"];
 
 interface MobileAlbumHeaderProps {
   album: SpotifyAlbum;
-  albumId: string;
   coverUrl: string | null;
 }
 
-export function MobileAlbumHeader({ album, albumId, coverUrl }: MobileAlbumHeaderProps) {
+export function MobileAlbumHeader({ album, coverUrl }: MobileAlbumHeaderProps) {
   const artist = getAlbumArtistNames(album);
   const releaseYear = getAlbumReleaseYear(album);
   const albumRuntime = getAlbumRuntimeLabel(album);
@@ -43,13 +42,7 @@ export function MobileAlbumHeader({ album, albumId, coverUrl }: MobileAlbumHeade
           <p className="mt-1 text-muted-foreground/70 text-xs">{albumRuntime}</p>
         </div>
       </div>
-      <AlbumActions
-        albumArtist={artist}
-        albumId={albumId}
-        albumTitle={album.title}
-        className="mt-5"
-        spotifyUrl={album.spotifyUrl}
-      />
+      <AlbumActions album={album} className="mt-5" />
     </section>
   );
 }

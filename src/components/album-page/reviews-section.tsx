@@ -13,15 +13,20 @@ import { authClient } from "@/lib/auth/auth-client";
 import { albumQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { cn } from "@/lib/utils";
 import { getAlbumReviews } from "@/server/functions/review-functions";
+import { getAlbumArtistNames } from "./album-format.ts";
 import { ReviewsSectionSkeleton } from "./reviews-section-skeleton";
+import type { getAlbumDetails } from "@/server/functions/spotify-functions";
 import type { AlbumReviewsPage } from "@/server/services/review-service";
 
+type SpotifyAlbumDetails = Awaited<ReturnType<typeof getAlbumDetails>>;
+type SpotifyAlbum = SpotifyAlbumDetails["album"];
+
 interface ReviewsSectionProps {
-  albumId: string;
+  album: SpotifyAlbum;
   className?: string;
 }
 
-export function ReviewsSection({ albumId, className }: ReviewsSectionProps) {
+export function ReviewsSection({ album, className }: ReviewsSectionProps) {
   const queryClient = useQueryClient();
   const session = authClient.useSession();
   const userId = session.data?.user.id;
@@ -29,14 +34,15 @@ export function ReviewsSection({ albumId, className }: ReviewsSectionProps) {
   const viewer = useMemo(() => ({ hasSession, userId }), [hasSession, userId]);
   const { adminModeEnabled, isAdmin } = useAdminMode();
   const [likesReviewId, setLikesReviewId] = useState<string>();
-  const reviewsQueryKey = albumQueryKeys.reviews(albumId, userId);
+  const albumArtist = getAlbumArtistNames(album);
+  const reviewsQueryKey = albumQueryKeys.reviews(album.id, userId);
 
   const getAlbumReviewsFn = useServerFn(getAlbumReviews);
   const albumReviewsQuery = useInfiniteQuery({
     getNextPageParam: (lastPage) => lastPage.nextCursor,
     initialPageParam: null,
     queryFn: ({ pageParam }: { pageParam: string | null }) =>
-      getAlbumReviewsFn({ data: { albumId, cursor: pageParam ?? undefined } }),
+      getAlbumReviewsFn({ data: { albumId: album.id, cursor: pageParam ?? undefined } }),
     queryKey: reviewsQueryKey,
   });
 
@@ -46,8 +52,8 @@ export function ReviewsSection({ albumId, className }: ReviewsSectionProps) {
   });
 
   const handleReviewDeleted = useCallback(
-    () => queryClient.invalidateQueries({ queryKey: albumQueryKeys.review(albumId) }),
-    [albumId, queryClient]
+    () => queryClient.invalidateQueries({ queryKey: albumQueryKeys.review(album.id) }),
+    [album.id, queryClient]
   );
   const { deleteReview: handleReviewDelete, deletingReviewId } = useReviewDelete({
     onDeleted: handleReviewDeleted,
@@ -101,7 +107,13 @@ export function ReviewsSection({ albumId, className }: ReviewsSectionProps) {
                 onShowLikes={() => setLikesReviewId(review.id)}
                 onToggle={hasSession ? (liked) => handleReviewLikeToggle(review.id, liked) : undefined}
               />
-              <ReviewCard.Permalink albumId={albumId} reviewId={review.id} />
+              <ReviewCard.Share
+                album={{ artist: albumArtist, id: album.id, title: album.title }}
+                rating={review.rating}
+                reviewBody={review.review}
+                reviewId={review.id}
+                userDisplayName={review.user.displayUsername}
+              />
               {review.canDelete || (isAdmin && adminModeEnabled) ? (
                 <DeleteReviewDialog
                   className="-mr-2 ml-auto"

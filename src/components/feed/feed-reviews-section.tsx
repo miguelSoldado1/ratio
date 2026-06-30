@@ -61,7 +61,13 @@ export function FeedReviewsSection({
                     onShowLikes={() => setLikesReviewId(review.id)}
                     onToggle={viewer.hasSession ? (liked) => onReviewLikeToggle(review.id, liked) : undefined}
                   />
-                  <ReviewCard.Permalink albumId={review.album.id} reviewId={review.id} />
+                  <ReviewCard.Share
+                    album={review.album}
+                    rating={review.rating}
+                    reviewBody={review.review}
+                    reviewId={review.id}
+                    userDisplayName={review.user.displayUsername}
+                  />
                   {review.canDelete || (isAdmin && adminModeEnabled) ? (
                     <DeleteReviewDialog
                       className="-mr-2 ml-auto"
