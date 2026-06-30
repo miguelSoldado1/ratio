@@ -15,6 +15,7 @@ import { Route as UserUsernameRouteImport } from './routes/user/$username'
 import { Route as ApiUploadRouteImport } from './routes/api/upload'
 import { Route as AlbumAlbumIdRouteImport } from './routes/album/$albumId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
+import { Route as AlbumAlbumIdReviewReviewIdRouteImport } from './routes/album/$albumId/review/$reviewId'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
@@ -46,31 +47,40 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AlbumAlbumIdReviewReviewIdRoute =
+  AlbumAlbumIdReviewReviewIdRouteImport.update({
+    id: '/review/$reviewId',
+    path: '/review/$reviewId',
+    getParentRoute: () => AlbumAlbumIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/settings': typeof SettingsRoute
-  '/album/$albumId': typeof AlbumAlbumIdRoute
+  '/album/$albumId': typeof AlbumAlbumIdRouteWithChildren
   '/api/upload': typeof ApiUploadRoute
   '/user/$username': typeof UserUsernameRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/album/$albumId/review/$reviewId': typeof AlbumAlbumIdReviewReviewIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/settings': typeof SettingsRoute
-  '/album/$albumId': typeof AlbumAlbumIdRoute
+  '/album/$albumId': typeof AlbumAlbumIdRouteWithChildren
   '/api/upload': typeof ApiUploadRoute
   '/user/$username': typeof UserUsernameRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/album/$albumId/review/$reviewId': typeof AlbumAlbumIdReviewReviewIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/settings': typeof SettingsRoute
-  '/album/$albumId': typeof AlbumAlbumIdRoute
+  '/album/$albumId': typeof AlbumAlbumIdRouteWithChildren
   '/api/upload': typeof ApiUploadRoute
   '/user/$username': typeof UserUsernameRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/album/$albumId/review/$reviewId': typeof AlbumAlbumIdReviewReviewIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -81,6 +91,7 @@ export interface FileRouteTypes {
     | '/api/upload'
     | '/user/$username'
     | '/api/auth/$'
+    | '/album/$albumId/review/$reviewId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -89,6 +100,7 @@ export interface FileRouteTypes {
     | '/api/upload'
     | '/user/$username'
     | '/api/auth/$'
+    | '/album/$albumId/review/$reviewId'
   id:
     | '__root__'
     | '/'
@@ -97,12 +109,13 @@ export interface FileRouteTypes {
     | '/api/upload'
     | '/user/$username'
     | '/api/auth/$'
+    | '/album/$albumId/review/$reviewId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SettingsRoute: typeof SettingsRoute
-  AlbumAlbumIdRoute: typeof AlbumAlbumIdRoute
+  AlbumAlbumIdRoute: typeof AlbumAlbumIdRouteWithChildren
   ApiUploadRoute: typeof ApiUploadRoute
   UserUsernameRoute: typeof UserUsernameRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
@@ -152,13 +165,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/album/$albumId/review/$reviewId': {
+      id: '/album/$albumId/review/$reviewId'
+      path: '/review/$reviewId'
+      fullPath: '/album/$albumId/review/$reviewId'
+      preLoaderRoute: typeof AlbumAlbumIdReviewReviewIdRouteImport
+      parentRoute: typeof AlbumAlbumIdRoute
+    }
   }
 }
+
+interface AlbumAlbumIdRouteChildren {
+  AlbumAlbumIdReviewReviewIdRoute: typeof AlbumAlbumIdReviewReviewIdRoute
+}
+
+const AlbumAlbumIdRouteChildren: AlbumAlbumIdRouteChildren = {
+  AlbumAlbumIdReviewReviewIdRoute: AlbumAlbumIdReviewReviewIdRoute,
+}
+
+const AlbumAlbumIdRouteWithChildren = AlbumAlbumIdRoute._addFileChildren(
+  AlbumAlbumIdRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SettingsRoute: SettingsRoute,
-  AlbumAlbumIdRoute: AlbumAlbumIdRoute,
+  AlbumAlbumIdRoute: AlbumAlbumIdRouteWithChildren,
   ApiUploadRoute: ApiUploadRoute,
   UserUsernameRoute: UserUsernameRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,

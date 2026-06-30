@@ -1,11 +1,13 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronDown, Heart } from "lucide-react";
+import { ChevronDown, Heart, Share2 } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { toast } from "sonner";
 import { RatingStarIcon } from "@/components/rating-star-icon";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/user-avatar";
 import { useDebounce } from "@/hooks/use-debounce";
 import { abbreviateCount, cn } from "@/lib/utils";
+import { tryCatch } from "@/try-catch";
 import type { ReactNode } from "react";
 
 // --- Types ---
@@ -170,11 +172,12 @@ function Rating({ value, className }: RatingProps) {
 interface ReviewProps {
   children: ReactNode;
   className?: string;
+  collapsed?: boolean;
 }
 
 const collapsedReviewMaxHeightPx = 160;
 
-function Review({ children, className }: ReviewProps) {
+function Review({ children, className, collapsed = true }: ReviewProps) {
   const reviewId = useId();
   const reviewRef = useRef<HTMLParagraphElement>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
@@ -193,7 +196,7 @@ function Review({ children, className }: ReviewProps) {
       resizeObserverRef.current = null;
       reviewRef.current = review;
 
-      if (!review) return;
+      if (!(review && collapsed)) return;
 
       updateCanToggle(review);
 
@@ -206,7 +209,7 @@ function Review({ children, className }: ReviewProps) {
       resizeObserver.observe(review);
       resizeObserverRef.current = resizeObserver;
     },
-    [updateCanToggle]
+    [collapsed, updateCanToggle]
   );
 
   return (
@@ -215,15 +218,15 @@ function Review({ children, className }: ReviewProps) {
         <p
           className={cn(
             "wrap-break-word whitespace-pre-wrap text-[15px] text-foreground/90 leading-[1.45]",
-            !expanded && "max-h-40 overflow-hidden",
+            collapsed && !expanded && "max-h-40 overflow-hidden",
             className
           )}
           id={reviewId}
-          ref={setReviewElement}
+          ref={collapsed ? setReviewElement : undefined}
         >
           {children}
         </p>
-        {canToggle ? (
+        {collapsed && canToggle ? (
           <div
             className={cn(
               "pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-linear-to-b from-background/0 via-background/80 to-background opacity-0 [transition:opacity_160ms_cubic-bezier(0.23,1,0.32,1)]",
@@ -232,7 +235,7 @@ function Review({ children, className }: ReviewProps) {
           />
         ) : null}
       </div>
-      {canToggle ? (
+      {collapsed && canToggle ? (
         <button
           aria-controls={reviewId}
           aria-expanded={expanded}
@@ -252,6 +255,68 @@ function Review({ children, className }: ReviewProps) {
       ) : null}
     </div>
   );
+}
+
+interface PermalinkProps {
+  albumId: string;
+  className?: string;
+  reviewId: string;
+}
+
+function Permalink({ albumId, className, reviewId }: PermalinkProps) {
+  async function handleCopyClick() {
+    const permalinkPath = `/album/${encodeURIComponent(albumId)}/review/${encodeURIComponent(reviewId)}`;
+    const permalink =
+      typeof window === "undefined" ? permalinkPath : new URL(permalinkPath, window.location.origin).href;
+
+    const { error } = await tryCatch(copyTextToClipboard(permalink));
+
+    if (error) {
+      return toast.error("Error", { description: "Could not copy review link" });
+    }
+
+    toast.success("Copied", { description: "Review link copied to clipboard" });
+  }
+
+  return (
+    <Button
+      aria-label="Copy review link"
+      className={cn(
+        "h-8 w-6 p-0 text-muted-foreground [transition:color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] hover:bg-transparent hover:text-primary active:scale-[0.97] dark:hover:bg-transparent",
+        className
+      )}
+      onClick={handleCopyClick}
+      size="icon-sm"
+      title="Copy review link"
+      type="button"
+      variant="ghost"
+    >
+      <Share2 className="size-3.5" data-icon="inline-start" />
+    </Button>
+  );
+}
+
+async function copyTextToClipboard(text: string) {
+  if (navigator.clipboard) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.style.position = "fixed";
+  textarea.style.opacity = "0";
+  document.body.appendChild(textarea);
+  textarea.select();
+
+  try {
+    const copied = document.execCommand("copy");
+    if (!copied) {
+      throw new Error("Copy command failed");
+    }
+  } finally {
+    textarea.remove();
+  }
 }
 
 interface LikesProps {
@@ -554,5 +619,6 @@ ReviewCard.Rating = Rating;
 ReviewCard.Review = Review;
 ReviewCard.Footer = Footer;
 ReviewCard.Likes = Likes;
+ReviewCard.Permalink = Permalink;
 
 export { ReviewCard };

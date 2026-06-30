@@ -8,7 +8,9 @@ const queryClientOptions: QueryClientConfig = {
     },
   },
   queryCache: new QueryCache({
-    onError: (error) => {
+    onError: (error, query) => {
+      if (query.meta?.suppressErrorToast) return;
+
       const message = error instanceof Error ? error.message : "Something went wrong";
       toast.error("Error", { description: message });
     },

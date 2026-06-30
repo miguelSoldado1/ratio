@@ -31,7 +31,7 @@ function FeedPage() {
 
   const handleReviewLikeToggle = useReviewLikeToggle<FeedPageData>({
     enabled: hasSession,
-    queryKey: feedQueryKey,
+    queryKeys: [feedQueryKey],
   });
 
   const handleReviewDeleted = useCallback(

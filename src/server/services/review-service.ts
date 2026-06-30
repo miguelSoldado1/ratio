@@ -90,6 +90,10 @@ export interface AlbumReviewsInput extends AlbumIdInput {
   cursor?: string;
 }
 
+export interface ReviewDetailInput extends AlbumIdInput {
+  reviewId: string;
+}
+
 export interface UserReviewsInput {
   cursor?: string;
   userId: string;
@@ -167,6 +171,43 @@ export async function getAlbumReviewsService(data: AlbumReviewsInput): Promise<A
         : null,
     reviews: pageRows.map(mapAlbumReview),
   };
+}
+
+export async function getReviewByIdService(data: ReviewDetailInput): Promise<ReviewDetail> {
+  const db = await getDb();
+  const currentUser = await getOptionalCurrentUser(db);
+  const viewerUserId = currentUser?.id;
+  const likedByViewer = viewerUserId
+    ? sql<boolean>`exists(select 1 from ${reviewLikes} where ${reviewLikes.reviewId} = ${reviews.id} and ${reviewLikes.userId} = ${viewerUserId})`
+    : sql<boolean>`false`;
+  const canDelete = viewerUserId ? sql<boolean>`${reviews.userId} = ${viewerUserId}` : sql<boolean>`false`;
+  const authorFilter = currentUser?.isAdmin ? undefined : getVisibleUserFilter(user);
+
+  const [review] = await db
+    .select({
+      album: getTableColumns(albums),
+      liked: likedByViewer,
+      likes: getVisibleReviewLikeCountSql(reviews.id),
+      canDelete,
+      review: getTableColumns(reviews),
+      user: {
+        avatarUrl: user.image,
+        displayUsername: user.displayUsername,
+        id: user.id,
+        username: user.username,
+      },
+    })
+    .from(reviews)
+    .innerJoin(albums, eq(reviews.albumId, albums.id))
+    .innerJoin(user, eq(reviews.userId, user.id))
+    .where(and(eq(reviews.albumId, data.albumId), eq(reviews.id, data.reviewId), authorFilter))
+    .limit(1);
+
+  if (!review) {
+    throw new Error("Review not found");
+  }
+
+  return mapReviewDetail(review);
 }
 
 export async function getUserProfileService(data: UserProfileInput): Promise<UserProfile> {
@@ -516,6 +557,10 @@ interface AlbumReviewRow {
   };
 }
 
+interface ReviewDetailRow extends AlbumReviewRow {
+  album: typeof albums.$inferSelect;
+}
+
 interface UserProfileRow {
   avatarObjectKey: string | null;
   avatarUrl: string | null;
@@ -597,6 +642,23 @@ function mapAlbumReview({ canDelete, liked, likes, review, user }: AlbumReviewRo
       avatarUrl: user.avatarUrl ?? undefined,
       displayUsername: user.displayUsername ?? user.username ?? user.id,
       username: user.username ?? undefined,
+    },
+  };
+}
+
+type ReviewDetail = ReturnType<typeof mapReviewDetail>;
+
+function mapReviewDetail(row: ReviewDetailRow) {
+  const albumReview = mapAlbumReview(row);
+
+  return {
+    ...albumReview,
+    album: {
+      artist: row.album.artistNames.join(", "),
+      coverUrl: row.album.coverUrl ?? undefined,
+      id: row.album.id,
+      title: row.album.title,
+      year: String(row.album.releaseYear),
     },
   };
 }

@@ -42,7 +42,7 @@ export function ReviewsSection({ albumId, className }: ReviewsSectionProps) {
 
   const handleReviewLikeToggle = useReviewLikeToggle<AlbumReviewsPage>({
     enabled: hasSession,
-    queryKey: reviewsQueryKey,
+    queryKeys: [reviewsQueryKey],
   });
 
   const handleReviewDeleted = useCallback(
@@ -101,6 +101,7 @@ export function ReviewsSection({ albumId, className }: ReviewsSectionProps) {
                 onShowLikes={() => setLikesReviewId(review.id)}
                 onToggle={hasSession ? (liked) => handleReviewLikeToggle(review.id, liked) : undefined}
               />
+              <ReviewCard.Permalink albumId={albumId} reviewId={review.id} />
               {review.canDelete || (isAdmin && adminModeEnabled) ? (
                 <DeleteReviewDialog
                   className="-mr-2 ml-auto"

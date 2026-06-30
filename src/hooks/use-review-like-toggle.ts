@@ -8,19 +8,21 @@ import { tryCatch } from "@/try-catch";
 import type { InfiniteData, QueryKey } from "@tanstack/react-query";
 
 interface ReviewLikePage {
-  reviews: {
-    id: string;
-    liked: boolean;
-    likes: number;
-  }[];
+  reviews: ReviewLikeItem[];
+}
+
+interface ReviewLikeItem {
+  id: string;
+  liked: boolean;
+  likes: number;
 }
 
 interface UseReviewLikeToggleParams {
   enabled: boolean;
-  queryKey: QueryKey;
+  queryKeys: QueryKey[];
 }
 
-export function useReviewLikeToggle<TPage extends ReviewLikePage>({ enabled, queryKey }: UseReviewLikeToggleParams) {
+export function useReviewLikeToggle<TPage extends ReviewLikePage>({ enabled, queryKeys }: UseReviewLikeToggleParams) {
   const queryClient = useQueryClient();
   const setReviewLikeFn = useServerFn(setReviewLike);
   const setReviewLikeMutation = useMutation({ mutationFn: setReviewLikeFn });
@@ -41,24 +43,54 @@ export function useReviewLikeToggle<TPage extends ReviewLikePage>({ enabled, que
         return false;
       }
 
-      queryClient.setQueryData<InfiniteData<TPage>>(queryKey, (data) => {
-        if (!data) return data;
-
-        return {
-          ...data,
-          pages: data.pages.map((page) => ({
-            ...page,
-            reviews: page.reviews.map((review) =>
-              review.id === updatedReview.reviewId
-                ? { ...review, liked: updatedReview.liked, likes: updatedReview.likes }
-                : review
-            ),
-          })),
-        };
-      });
+      for (const targetQueryKey of queryKeys) {
+        queryClient.setQueryData(targetQueryKey, (data) => updateReviewLikeData<TPage>(data, updatedReview));
+      }
 
       await queryClient.invalidateQueries({ queryKey: reviewQueryKeys.likes(updatedReview.reviewId) });
     },
-    [enabled, queryClient, queryKey, setReviewLikeMutation]
+    [enabled, queryClient, queryKeys, setReviewLikeMutation]
+  );
+}
+
+function updateReviewLikeData<TPage extends ReviewLikePage>(
+  data: unknown,
+  updatedReview: { liked: boolean; likes: number; reviewId: string }
+) {
+  if (!data || typeof data !== "object") return data;
+
+  if (isInfiniteReviewLikeData<TPage>(data)) {
+    return {
+      ...data,
+      pages: data.pages.map((page) => ({
+        ...page,
+        reviews: page.reviews.map((review) =>
+          review.id === updatedReview.reviewId
+            ? { ...review, liked: updatedReview.liked, likes: updatedReview.likes }
+            : review
+        ),
+      })),
+    };
+  }
+
+  if (isReviewLikeItem(data) && data.id === updatedReview.reviewId) {
+    return { ...data, liked: updatedReview.liked, likes: updatedReview.likes };
+  }
+
+  return data;
+}
+
+function isInfiniteReviewLikeData<TPage extends ReviewLikePage>(data: object): data is InfiniteData<TPage> {
+  return "pages" in data && Array.isArray(data.pages);
+}
+
+function isReviewLikeItem(data: object): data is ReviewLikeItem {
+  return (
+    "id" in data &&
+    typeof data.id === "string" &&
+    "liked" in data &&
+    typeof data.liked === "boolean" &&
+    "likes" in data &&
+    typeof data.likes === "number"
   );
 }

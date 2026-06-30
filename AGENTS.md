@@ -15,6 +15,7 @@
 - Keep shared TanStack Query defaults in `src/lib/tanstack-query/root-provider.tsx` instead of repeating options at individual call sites.
 - For client-side mutations, prefer explicit submit/click handlers that call `mutation.mutateAsync(...)` wrapped in the shared `tryCatch` helper.
 - Handle success work such as cache updates, invalidation, local state resets, and toasts directly after the `tryCatch` result in that handler. Avoid `onSuccess`/`onError` mutation callbacks unless a mutation is intentionally shared and the lifecycle behavior belongs to every caller.
+- Prefer returning the final expression directly in guard branches when it is clear, e.g. `return toast.error(...)`, instead of calling the expression and then using a separate bare `return;`.
 
 ## Reference Docs
 

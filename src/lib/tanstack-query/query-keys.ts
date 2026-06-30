@@ -2,6 +2,10 @@ export const albumQueryKeys = {
   all: () => ["album"] as const,
   details: (albumId: string) => ["album", albumId, "details"] as const,
   review: (albumId: string) => ["album", albumId, "review"] as const,
+  reviewDetail: (albumId: string, reviewId: string, userId?: string) =>
+    userId
+      ? ([...albumQueryKeys.review(albumId), "detail", reviewId, userId] as const)
+      : ([...albumQueryKeys.review(albumId), "detail", reviewId] as const),
   hasMyReview: (albumId: string, userId?: string) => [...albumQueryKeys.review(albumId), "me", userId] as const,
   ratingSummary: (albumId: string) => [...albumQueryKeys.review(albumId), "rating-summary"] as const,
   reviews: (albumId: string, userId?: string) => [...albumQueryKeys.review(albumId), "list", userId] as const,

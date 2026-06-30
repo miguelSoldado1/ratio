@@ -51,7 +51,7 @@ function UserPage() {
 
   const handleReviewLikeToggle = useReviewLikeToggle<UserReviewsPage>({
     enabled: hasSession,
-    queryKey: reviewsQueryKey,
+    queryKeys: [reviewsQueryKey],
   });
 
   const handleReviewDeleted = useCallback(
