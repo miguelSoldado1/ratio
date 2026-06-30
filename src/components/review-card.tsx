@@ -58,7 +58,7 @@ function relativeTime(date: Date): string {
 // --- Sub-components ---
 
 function Root({ children, className }: { children: ReactNode; className?: string }) {
-  return <article className={cn("border-border border-b py-5 last:border-0", className)}>{children}</article>;
+  return <article className={cn("border-border border-b py-5 last-of-type:border-0", className)}>{children}</article>;
 }
 
 interface HeaderProps {

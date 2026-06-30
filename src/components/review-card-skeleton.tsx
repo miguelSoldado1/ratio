@@ -17,7 +17,9 @@ interface SkeletonRootProps {
 }
 
 function SkeletonRoot({ children, className }: SkeletonRootProps) {
-  return <article className={cn("border-border/80 border-b py-5 last:border-0", className)}>{children}</article>;
+  return (
+    <article className={cn("border-border/80 border-b py-5 last-of-type:border-0", className)}>{children}</article>
+  );
 }
 
 function SkeletonHeader({ className }: { className?: string }) {
