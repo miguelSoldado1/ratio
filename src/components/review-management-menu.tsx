@@ -7,6 +7,7 @@ import {
   DropdownMenuContent,
   DropdownMenuGroup,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { ReactNode } from "react";
@@ -52,6 +53,7 @@ export function ReviewManagementMenu({
         <DropdownMenuContent align="end">
           <DropdownMenuGroup>
             {children}
+            {children && canDelete ? <DropdownMenuSeparator /> : null}
             {canDelete ? (
               <DropdownMenuItem disabled={isDeleting} onClick={() => setDeleteDialogOpen(true)} variant="destructive">
                 <Trash2 />
