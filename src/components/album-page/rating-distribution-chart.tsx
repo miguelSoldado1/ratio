@@ -11,10 +11,14 @@ export function RatingDistributionChart({ ratingDistribution }: RatingDistributi
   const maxCount = Math.max(1, ...ratingDistribution.map((item) => item.count));
 
   return (
-    <div aria-label={hasRatings ? "Ratings distribution from 1 to 5" : "No ratings distribution yet"} role="img">
+    <div
+      aria-label={hasRatings ? "Ratings distribution by rating range from 0.5 to 5" : "No ratings distribution yet"}
+      role="img"
+    >
       <div className="grid h-32 grid-cols-5 items-end gap-3 border-border border-b pb-2 sm:h-40 sm:gap-5">
         {ratingDistribution.map((item) => {
           const barScale = hasRatings ? Math.max(item.count / maxCount, 0.04) : 0.025;
+          const ratingRange = getRatingBucketRange(item.rating);
 
           return (
             <div className="flex h-full min-w-0 items-end" key={item.rating}>
@@ -24,7 +28,7 @@ export function RatingDistributionChart({ ratingDistribution }: RatingDistributi
                   hasRatings ? "bg-primary [@media(hover:hover)_and_(pointer:fine)]:hover:bg-primary/80" : "bg-muted"
                 )}
                 style={{ "--rating-bar-scale": barScale } as CSSProperties}
-                title={hasRatings ? `${abbreviateCount(item.count)} ratings at ${item.rating}` : undefined}
+                title={hasRatings ? `${abbreviateCount(item.count)} ratings from ${ratingRange}` : undefined}
               />
             </div>
           );
@@ -34,7 +38,7 @@ export function RatingDistributionChart({ ratingDistribution }: RatingDistributi
         {ratingDistribution.map((item) => (
           <div className="min-w-0 text-center" key={item.rating}>
             <p className={cn("font-medium text-xs tabular-nums", !hasRatings && "text-muted-foreground")}>
-              {item.rating}
+              {getRatingBucketRange(item.rating)}
             </p>
             <p className="mt-1 text-[10px] text-muted-foreground/70 tabular-nums">
               {hasRatings ? abbreviateCount(item.count) : "0"}
@@ -44,4 +48,15 @@ export function RatingDistributionChart({ ratingDistribution }: RatingDistributi
       </div>
     </div>
   );
+}
+
+function getRatingBucketRange(rating: string) {
+  const upperBound = Number(rating);
+  const lowerBound = upperBound - 0.5;
+
+  return `${formatRatingBucketBoundary(lowerBound)}-${formatRatingBucketBoundary(upperBound)}`;
+}
+
+function formatRatingBucketBoundary(value: number) {
+  return Number.isInteger(value) ? value.toString() : value.toFixed(1);
 }
