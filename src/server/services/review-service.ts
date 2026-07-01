@@ -2,7 +2,7 @@ import { and, count, desc, eq, getTableColumns, ilike, isNotNull, lt, ne, or, sq
 import { alias } from "drizzle-orm/pg-core";
 import z from "zod";
 import { getDb } from "@/lib/db";
-import { albums, reviewLikes, reviews, user, userFollows } from "@/lib/db/schema";
+import { albums, profilePinnedReviews, reviewLikes, reviews, user, userFollows } from "@/lib/db/schema";
 import { type FollowableUserRow, getFollowedByViewerSql, mapFollowableUser } from "../followable-user";
 import {
   decodeCursor,
@@ -18,6 +18,7 @@ import type { AuthenticatedContext } from "../auth-middleware";
 // Constants
 
 const ratingBuckets: readonly ["1", "2", "3", "4", "5"] = ["1", "2", "3", "4", "5"];
+const maxProfilePinnedReviews = 3;
 const reviewLikesPageSize = 24;
 const reviewsPageSize = 12;
 const userSearchResultLimit = 5;
@@ -114,6 +115,10 @@ export interface ReviewLikeInput extends DeleteReviewInput {
 
 export interface ReviewLikesInput extends DeleteReviewInput {
   cursor?: string;
+}
+
+export interface ProfilePinnedReviewInput {
+  reviewId: string;
 }
 
 // Services
@@ -283,24 +288,41 @@ export async function getUserReviewsService(data: UserReviewsInput): Promise<Use
   const cursor = data.cursor ? decodeReviewsCursor(data.cursor) : undefined;
   const cursorFilter = cursor ? getAlbumReviewsCursorFilter(cursor) : undefined;
   const authorFilter = currentUser?.isAdmin ? undefined : getVisibleUserFilter(user);
-  const reviewFilter = and(eq(reviews.userId, data.userId), authorFilter, cursorFilter);
+
+  const pinnedByProfile = sql<boolean>`${profilePinnedReviews.reviewId} is not null`;
+  const pinnedSort = cursor
+    ? sql<number>`1`
+    : sql<number>`case when ${profilePinnedReviews.reviewId} is not null then 0 else 1 end`;
+  const reviewFilter = and(
+    eq(reviews.userId, data.userId),
+    authorFilter,
+    cursorFilter,
+    cursor ? sql`${profilePinnedReviews.reviewId} is null` : undefined
+  );
 
   const userReviews = await db
     .select({
       album: getTableColumns(albums),
       liked: likedByViewer,
       likes: getVisibleReviewLikeCountSql(reviews.id),
+      pinned: pinnedByProfile,
       review: getTableColumns(reviews),
     })
     .from(reviews)
     .innerJoin(albums, eq(reviews.albumId, albums.id))
     .innerJoin(user, eq(reviews.userId, user.id))
+    .leftJoin(
+      profilePinnedReviews,
+      and(eq(profilePinnedReviews.userId, data.userId), eq(profilePinnedReviews.reviewId, reviews.id))
+    )
     .where(reviewFilter)
-    .orderBy(desc(reviews.createdAt), desc(reviews.id))
-    .limit(reviewsPageSize + 1);
+    .orderBy(pinnedSort, desc(reviews.createdAt), desc(reviews.id))
+    .limit(reviewsPageSize + (cursor ? 1 : maxProfilePinnedReviews + 1));
 
-  const hasNextPage = userReviews.length > reviewsPageSize;
-  const pageRows = hasNextPage ? userReviews.slice(0, reviewsPageSize) : userReviews;
+  const pinnedRows = cursor ? [] : userReviews.filter((row) => row.pinned);
+  const normalRows = userReviews.filter((row) => !row.pinned);
+  const hasNextPage = normalRows.length > reviewsPageSize;
+  const pageRows = hasNextPage ? normalRows.slice(0, reviewsPageSize) : normalRows;
   const lastReview = pageRows.at(-1)?.review;
 
   return {
@@ -311,7 +333,10 @@ export async function getUserReviewsService(data: UserReviewsInput): Promise<Use
             id: lastReview.id,
           })
         : null,
-    reviews: pageRows.map((row) => mapUserReview(row, canDelete)),
+    reviews: [
+      ...pinnedRows.map((row) => mapUserReview(row, canDelete)),
+      ...pageRows.map((row) => mapUserReview(row, canDelete)),
+    ],
   };
 }
 
@@ -435,6 +460,57 @@ export async function deleteReviewService(data: DeleteReviewInput, context: Auth
   }
 
   return deletedReview;
+}
+
+export async function pinProfileReviewService(data: ProfilePinnedReviewInput, context: AuthenticatedContext) {
+  return await context.db.transaction(async (transaction) => {
+    await transaction.execute(sql`select 1 from ${user} where ${user.id} = ${context.user.id} for update`);
+
+    const [targetReview] = await transaction
+      .select({ userId: reviews.userId })
+      .from(reviews)
+      .where(eq(reviews.id, data.reviewId))
+      .limit(1);
+
+    if (!targetReview) {
+      throw new Error("Review not found");
+    }
+
+    if (targetReview.userId !== context.user.id) {
+      throw new Error("You can only pin your own reviews");
+    }
+
+    const [existingPin] = await transaction
+      .select({ reviewId: profilePinnedReviews.reviewId })
+      .from(profilePinnedReviews)
+      .where(and(eq(profilePinnedReviews.userId, context.user.id), eq(profilePinnedReviews.reviewId, data.reviewId)))
+      .limit(1);
+
+    if (existingPin) {
+      return { pinned: true, reviewId: data.reviewId };
+    }
+
+    const [pinCount] = await transaction
+      .select({ count: count(profilePinnedReviews.reviewId) })
+      .from(profilePinnedReviews)
+      .where(eq(profilePinnedReviews.userId, context.user.id));
+
+    if ((pinCount?.count ?? 0) >= maxProfilePinnedReviews) {
+      throw new Error("You can pin up to 3 reviews.");
+    }
+
+    await transaction.insert(profilePinnedReviews).values({ reviewId: data.reviewId, userId: context.user.id });
+
+    return { pinned: true, reviewId: data.reviewId };
+  });
+}
+
+export async function unpinProfileReviewService(data: ProfilePinnedReviewInput, context: AuthenticatedContext) {
+  await context.db
+    .delete(profilePinnedReviews)
+    .where(and(eq(profilePinnedReviews.userId, context.user.id), eq(profilePinnedReviews.reviewId, data.reviewId)));
+
+  return { pinned: false, reviewId: data.reviewId };
 }
 
 export async function setReviewLikeService(data: ReviewLikeInput, context: AuthenticatedContext) {
@@ -589,6 +665,7 @@ interface UserReviewRow {
   album: typeof albums.$inferSelect;
   liked: boolean;
   likes: number;
+  pinned: boolean;
   review: typeof reviews.$inferSelect;
 }
 
@@ -694,7 +771,7 @@ function mapUserSearchResult(userRow: UserSearchRow) {
   ];
 }
 
-function mapUserReview({ album, liked, likes, review }: UserReviewRow, canDelete: boolean) {
+function mapUserReview({ album, liked, likes, pinned, review }: UserReviewRow, canDelete: boolean) {
   return {
     album: {
       artist: album.artistNames.join(", "),
@@ -708,6 +785,7 @@ function mapUserReview({ album, liked, likes, review }: UserReviewRow, canDelete
     id: review.id,
     liked,
     likes,
+    pinned,
     rating: review.rating / 2,
     review: review.body ?? undefined,
   };

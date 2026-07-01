@@ -1,10 +1,13 @@
+import { Pin } from "lucide-react";
 import { useState } from "react";
-import { DeleteReviewDialog } from "@/components/delete-review-dialog";
+import { toast } from "sonner";
+import { ProfileReviewManagementMenu } from "@/components/profile/profile-review-management-menu";
 import { ReviewCard } from "@/components/review-card";
 import { ReviewCardSkeleton } from "@/components/review-card-skeleton";
 import { ReviewLikesDialog } from "@/components/review-likes-dialog";
 import { useAdminMode } from "@/hooks/use-admin-mode";
 import { cn } from "@/lib/utils";
+import { tryCatch } from "@/try-catch";
 import type { RefObject } from "react";
 import type { UserProfile, UserReviewsPage } from "@/server/services/review-service";
 
@@ -18,6 +21,8 @@ interface ProfileReviewsSectionProps {
   loadMoreRef: RefObject<HTMLDivElement | null>;
   onReviewDelete: (reviewId: string) => Promise<boolean>;
   onReviewLikeToggle: (reviewId: string, liked: boolean) => boolean | Promise<boolean | undefined> | undefined;
+  onReviewPin: (reviewId: string) => Promise<void>;
+  onReviewUnpin: (reviewId: string) => Promise<void>;
   profileUser: ProfileUser;
   reviews: ProfileReview[];
   viewer: {
@@ -33,12 +38,31 @@ export function ProfileReviewsSection({
   loadMoreRef,
   onReviewDelete,
   onReviewLikeToggle,
+  onReviewPin,
+  onReviewUnpin,
   profileUser,
   reviews,
   viewer,
 }: ProfileReviewsSectionProps) {
   const [likesReviewId, setLikesReviewId] = useState<string>();
+  const [pinningReviewId, setPinningReviewId] = useState<string | null>(null);
   const { adminModeEnabled, isAdmin } = useAdminMode();
+
+  const pinnedReviewCount = reviews.filter((review) => review.pinned).length;
+
+  async function handlePinToggle(review: ProfileReview) {
+    setPinningReviewId(review.id);
+
+    const { error } = await tryCatch(review.pinned ? onReviewUnpin(review.id) : onReviewPin(review.id));
+
+    setPinningReviewId(null);
+
+    if (error) {
+      toast.error("Error", {
+        description: error instanceof Error ? error.message : "Could not update pinned review",
+      });
+    }
+  }
 
   return (
     <>
@@ -51,6 +75,7 @@ export function ProfileReviewsSection({
               <ReviewCard.Root className="border-border/80" key={review.id}>
                 <ReviewCard.Header
                   createdAt={review.createdAt}
+                  meta={review.pinned && <ProfileReviewPinnedBadge />}
                   user={{
                     avatarUrl: profileUser.avatarUrl,
                     displayUsername: profileUser.displayUsername,
@@ -76,14 +101,16 @@ export function ProfileReviewsSection({
                     reviewId={review.id}
                     userDisplayName={profileUser.displayUsername}
                   />
-                  {review.canDelete || (isAdmin && adminModeEnabled) ? (
-                    <DeleteReviewDialog
-                      className="-mr-2 ml-auto"
-                      isDeleting={deletingReviewId === review.id}
-                      onDelete={() => onReviewDelete(review.id)}
-                      variant={review.canDelete ? "own" : "admin"}
-                    />
-                  ) : null}
+                  <ProfileReviewManagementMenu
+                    canAdminDelete={isAdmin && adminModeEnabled && !review.canDelete}
+                    canManageOwnReview={review.canDelete}
+                    isDeleting={deletingReviewId === review.id}
+                    isPinning={pinningReviewId === review.id}
+                    onDelete={() => onReviewDelete(review.id)}
+                    onPinToggle={() => handlePinToggle(review)}
+                    pinDisabled={!review.pinned && pinnedReviewCount >= 3}
+                    pinned={review.pinned}
+                  />
                 </ReviewCard.Footer>
               </ReviewCard.Root>
             ))}
@@ -135,5 +162,14 @@ function EmptyReviews({ displayName }: { displayName: string }) {
       <p className="font-medium text-sm">No reviews yet</p>
       <p className="mt-1 max-w-md text-muted-foreground text-sm">{displayName} has not reviewed any albums yet.</p>
     </div>
+  );
+}
+
+function ProfileReviewPinnedBadge() {
+  return (
+    <span className="inline-flex items-center gap-1 text-muted-foreground/80 text-xs">
+      <Pin className="size-3" />
+      Pinned
+    </span>
   );
 }

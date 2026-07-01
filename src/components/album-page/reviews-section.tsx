@@ -1,9 +1,9 @@
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useMemo, useState } from "react";
-import { DeleteReviewDialog } from "@/components/delete-review-dialog";
 import { ReviewCard } from "@/components/review-card";
 import { ReviewLikesDialog } from "@/components/review-likes-dialog";
+import { ReviewManagementMenu } from "@/components/review-management-menu";
 import { Spinner } from "@/components/ui/spinner";
 import { useAdminMode } from "@/hooks/use-admin-mode";
 import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
@@ -114,14 +114,12 @@ export function ReviewsSection({ album, className }: ReviewsSectionProps) {
                 reviewId={review.id}
                 userDisplayName={review.user.displayUsername}
               />
-              {review.canDelete || (isAdmin && adminModeEnabled) ? (
-                <DeleteReviewDialog
-                  className="-mr-2 ml-auto"
-                  isDeleting={deletingReviewId === review.id}
-                  onDelete={() => handleReviewDelete(review.id)}
-                  variant={review.canDelete ? "own" : "admin"}
-                />
-              ) : null}
+              <ReviewManagementMenu
+                canDeleteAsAdmin={isAdmin && adminModeEnabled && !review.canDelete}
+                canDeleteOwnReview={review.canDelete}
+                isDeleting={deletingReviewId === review.id}
+                onDelete={() => handleReviewDelete(review.id)}
+              />
             </ReviewCard.Footer>
           </ReviewCard.Root>
         ))}

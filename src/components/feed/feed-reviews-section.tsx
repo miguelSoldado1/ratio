@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { DeleteReviewDialog } from "@/components/delete-review-dialog";
 import { ReviewCard } from "@/components/review-card";
 import { ReviewCardSkeleton } from "@/components/review-card-skeleton";
 import { ReviewLikesDialog } from "@/components/review-likes-dialog";
+import { ReviewManagementMenu } from "@/components/review-management-menu";
 import { Spinner } from "@/components/ui/spinner";
 import { useAdminMode } from "@/hooks/use-admin-mode";
 import { cn } from "@/lib/utils";
@@ -68,14 +68,12 @@ export function FeedReviewsSection({
                     reviewId={review.id}
                     userDisplayName={review.user.displayUsername}
                   />
-                  {review.canDelete || (isAdmin && adminModeEnabled) ? (
-                    <DeleteReviewDialog
-                      className="-mr-2 ml-auto"
-                      isDeleting={deletingReviewId === review.id}
-                      onDelete={() => onReviewDelete(review.id)}
-                      variant={review.canDelete ? "own" : "admin"}
-                    />
-                  ) : null}
+                  <ReviewManagementMenu
+                    canDeleteAsAdmin={isAdmin && adminModeEnabled && !review.canDelete}
+                    canDeleteOwnReview={review.canDelete}
+                    isDeleting={deletingReviewId === review.id}
+                    onDelete={() => onReviewDelete(review.id)}
+                  />
                 </ReviewCard.Footer>
               </ReviewCard.Root>
             ))}

@@ -65,10 +65,11 @@ function Root({ children, className }: { children: ReactNode; className?: string
 interface HeaderProps {
   className?: string;
   createdAt: Date;
+  meta?: ReactNode;
   user: ReviewUser;
 }
 
-function Header({ user, createdAt, className }: HeaderProps) {
+function Header({ user, createdAt, className, meta }: HeaderProps) {
   const displayNameClass = "font-medium text-foreground/75 text-sm";
   const identityClass = "flex min-w-0 items-center gap-2";
   const identityLinkClass =
@@ -94,6 +95,7 @@ function Header({ user, createdAt, className }: HeaderProps) {
         </div>
       )}
       <span className="text-muted-foreground text-xs">{relativeTime(createdAt)}</span>
+      {meta}
     </div>
   );
 }

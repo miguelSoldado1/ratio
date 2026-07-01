@@ -76,6 +76,20 @@ export const reviewLikes = pgTable(
   ]
 );
 
+export const profilePinnedReviews = pgTable(
+  "profile_pinned_review",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    reviewId: uuid("review_id")
+      .notNull()
+      .references(() => reviews.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.reviewId], name: "profile_pinned_review_user_review_pk" })]
+);
+
 export const userFollows = pgTable(
   "user_follow",
   {
@@ -105,6 +119,7 @@ export const reviewRelations = relations(reviews, ({ many, one }) => ({
     references: [albums.id],
   }),
   likes: many(reviewLikes),
+  profilePins: many(profilePinnedReviews),
   user: one(user, {
     fields: [reviews.userId],
     references: [user.id],
@@ -118,6 +133,17 @@ export const reviewLikeRelations = relations(reviewLikes, ({ one }) => ({
   }),
   user: one(user, {
     fields: [reviewLikes.userId],
+    references: [user.id],
+  }),
+}));
+
+export const profilePinnedReviewRelations = relations(profilePinnedReviews, ({ one }) => ({
+  review: one(reviews, {
+    fields: [profilePinnedReviews.reviewId],
+    references: [reviews.id],
+  }),
+  user: one(user, {
+    fields: [profilePinnedReviews.userId],
     references: [user.id],
   }),
 }));

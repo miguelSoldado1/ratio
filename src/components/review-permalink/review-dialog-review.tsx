@@ -1,5 +1,5 @@
-import { DeleteReviewDialog } from "@/components/delete-review-dialog";
 import { ReviewCard } from "@/components/review-card";
+import { ReviewManagementMenu } from "@/components/review-management-menu";
 import type { ReviewAlbum, ReviewUser } from "@/components/review-card";
 
 export interface DialogReview {
@@ -51,14 +51,12 @@ export function ReviewDialogReview({
           onShowLikes={onShowLikes}
           onToggle={hasSession ? (liked) => onLikeToggle(review.id, liked) : undefined}
         />
-        {review.canDelete || (isAdmin && adminModeEnabled) ? (
-          <DeleteReviewDialog
-            className="-mr-2 ml-auto"
-            isDeleting={deletingReviewId === review.id}
-            onDelete={() => onDelete(review.id)}
-            variant={review.canDelete ? "own" : "admin"}
-          />
-        ) : null}
+        <ReviewManagementMenu
+          canDeleteAsAdmin={isAdmin && adminModeEnabled && !review.canDelete}
+          canDeleteOwnReview={review.canDelete}
+          isDeleting={deletingReviewId === review.id}
+          onDelete={() => onDelete(review.id)}
+        />
       </ReviewCard.Footer>
     </ReviewCard.Root>
   );

@@ -44,6 +44,10 @@ const deleteReviewSchema = z.object({
   reviewId: z.uuid(),
 });
 
+const profilePinnedReviewSchema = z.object({
+  reviewId: z.uuid(),
+});
+
 const createReviewSchema = z.object({
   albumId: z.string().trim().min(1).max(64),
   body: z.string().trim().max(2000).optional(),
@@ -61,6 +65,16 @@ export const deleteReview = createServerFn({ method: "POST" })
   .middleware([authMiddleware])
   .validator(deleteReviewSchema)
   .handler(({ context, data }) => reviewService.deleteReviewService(data, context));
+
+export const pinProfileReview = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(profilePinnedReviewSchema)
+  .handler(({ context, data }) => reviewService.pinProfileReviewService(data, context));
+
+export const unpinProfileReview = createServerFn({ method: "POST" })
+  .middleware([authMiddleware])
+  .validator(profilePinnedReviewSchema)
+  .handler(({ context, data }) => reviewService.unpinProfileReviewService(data, context));
 
 export const getAlbumReviews = createServerFn()
   .validator(albumReviewsSchema)

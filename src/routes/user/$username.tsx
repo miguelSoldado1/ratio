@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useMemo, useState } from "react";
@@ -10,7 +10,12 @@ import { useReviewDelete } from "@/hooks/use-review-delete";
 import { useReviewLikeToggle } from "@/hooks/use-review-like-toggle";
 import { authClient } from "@/lib/auth/auth-client";
 import { albumQueryKeys, userQueryKeys } from "@/lib/tanstack-query/query-keys";
-import { getUserProfile, getUserReviews } from "@/server/functions/review-functions";
+import {
+  getUserProfile,
+  getUserReviews,
+  pinProfileReview,
+  unpinProfileReview,
+} from "@/server/functions/review-functions";
 import type { UserReviewsPage } from "@/server/services/review-service";
 
 export const Route = createFileRoute("/user/$username")({
@@ -38,6 +43,12 @@ function UserPage() {
   const reviewsQueryKey = profile
     ? userQueryKeys.reviews(profile.id, viewerUserId)
     : userQueryKeys.reviews("", viewerUserId);
+
+  const pinProfileReviewFn = useServerFn(pinProfileReview);
+  const pinProfileReviewMutation = useMutation({ mutationFn: pinProfileReviewFn });
+
+  const unpinProfileReviewFn = useServerFn(unpinProfileReview);
+  const unpinProfileReviewMutation = useMutation({ mutationFn: unpinProfileReviewFn });
 
   const getUserReviewsFn = useServerFn(getUserReviews);
   const userReviewsQuery = useInfiniteQuery({
@@ -72,6 +83,22 @@ function UserPage() {
   const { deleteReview: handleReviewDelete, deletingReviewId } = useReviewDelete({
     onDeleted: handleReviewDeleted,
   });
+
+  const handlePinReview = useCallback(
+    async (reviewId: string) => {
+      await pinProfileReviewMutation.mutateAsync({ data: { reviewId } });
+      await queryClient.invalidateQueries({ queryKey: reviewsQueryKey });
+    },
+    [pinProfileReviewMutation, queryClient, reviewsQueryKey]
+  );
+
+  const handleUnpinReview = useCallback(
+    async (reviewId: string) => {
+      await unpinProfileReviewMutation.mutateAsync({ data: { reviewId } });
+      await queryClient.invalidateQueries({ queryKey: reviewsQueryKey });
+    },
+    [queryClient, reviewsQueryKey, unpinProfileReviewMutation]
+  );
 
   const reviews = userReviewsQuery.data?.pages.flatMap((page) => page.reviews) ?? [];
   const { fetchNextPage, hasNextPage, isFetchNextPageError, isFetchingNextPage } = userReviewsQuery;
@@ -131,6 +158,8 @@ function UserPage() {
               loadMoreRef={loadMoreRef}
               onReviewDelete={handleReviewDelete}
               onReviewLikeToggle={handleReviewLikeToggle}
+              onReviewPin={handlePinReview}
+              onReviewUnpin={handleUnpinReview}
               profileUser={profile}
               reviews={reviews}
               viewer={viewer}

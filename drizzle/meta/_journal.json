@@ -43,6 +43,13 @@
       "when": 1782741291609,
       "tag": "0005_crazy_invaders",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1782905596479,
+      "tag": "0006_cuddly_mephisto",
+      "breakpoints": true
     }
   ]
 }
