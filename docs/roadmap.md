@@ -16,7 +16,7 @@ Use this as a directional order, not a locked feature spec.
 5. Followers
 6. Notifications v1
 7. Real home feed (v1 built: deterministic review feed, no schema changes)
-8. Single review route
+8. Album-scoped review permalink route
 9. Basic review sharing
 10. Liked-by dialog
 11. Launch hardening
@@ -29,7 +29,7 @@ Use this as a directional order, not a locked feature spec.
 - Build reusable user-list UI where possible for followers, following, and liked-by views.
 - Notifications should come before advanced feed work because they make the social loop feel alive.
 - Home feed v1 is intentionally conservative: no feed-specific schema changes, bounded candidate queries, deterministic ranking, seen-ID cursor pagination, and no Spotify personalization. The cursor design is acceptable for v1 because the candidate windows are small; replace it with cached candidate IDs or a materialized feed/ranking store if feed scale grows.
-- `/review/:reviewId` should be the canonical target for shared reviews.
+- `/album/:spotifyId/review/:reviewId` is the canonical target for shared reviews so the focused review keeps album context.
 
 ## Post-Launch Work
 
@@ -54,7 +54,7 @@ Do not block the first production release on these unless the product direction 
 
 ## Open Decisions
 
-- **Additional OAuth providers**: Spotify is required for login/linking; decide which other providers belong in the product.
+- **Additional OAuth providers**: Spotify, Google, and Discord are the v1 providers; decide later whether more providers belong in the product.
 - **Review editing**: deleting a review exists or is planned, but editing/updating remains out of scope for now.
 - **Spotify reconnect UX**: soft prompt in feed/settings, or hard gate on personalised features?
 - **Username policy**: final limits, cooldowns, and redirect behavior can be decided when the identity pass starts.

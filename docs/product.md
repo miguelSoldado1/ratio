@@ -4,7 +4,7 @@
 
 ## Core Concept
 
-Ratio lets anyone browse and discover albums without an account. Authenticated users can rate, review, like, and follow others. Spotify is one of several login providers, not a requirement, but linking it unlocks a personalised feed based on listening history.
+Ratio lets anyone browse and discover albums without an account. Authenticated users can rate, review, like, and follow others. Spotify is one of several login providers, not a requirement. Spotify-linked personalization is a post-launch direction, not a v1 release requirement.
 
 ## Authentication
 
@@ -15,8 +15,10 @@ No email/password. OAuth only; removing the email flow eliminates forgotten pass
 | Provider | Purpose |
 |---|---|
 | Spotify | Login or account link |
+| Google | Login |
+| Discord | Login |
 
-Additional OAuth providers are still an open product decision.
+Additional OAuth providers beyond these are not part of v1.
 
 ### Auth Tiers
 
@@ -26,46 +28,61 @@ Anonymous
   - Spotify API via server Client Credentials token
 
 Authenticated (any provider)
-  - Can rate, review, like, follow, manage lists
+  - Can rate, review, like, follow, and manage profile/account settings
   - Spotify API still via server token unless Spotify is linked
 
 Authenticated + Spotify linked
-  - Personalised feed from listening history and top artists
+  - Same v1 product behavior as other authenticated users
   - Spotify API calls use their personal access token
   - Server token preserved for anonymous traffic
+  - Future personalised feed sources can use listening history and top artists
 ```
 
 ## Routes
 
-All album pages (`/album/:spotifyId`) are publicly accessible and shareable. These are the canonical indexable pages.
+All album pages (`/album/:spotifyId`) are publicly accessible and shareable. Review permalinks are album-scoped (`/album/:spotifyId/review/:reviewId`) so a shared review keeps the album context.
 
 ```text
 /                          Public feed - trending + recent activity
 /album/:spotifyId          Album page - metadata, community rating, reviews
-/user/:username            Profile - ratings, reviews, lists, followers
-/search                    Search albums via Spotify API and users via Ratio data
-/feed                      Personalised feed (auth required)
-/lists/:id                 Public list view
+/album/:spotifyId/review/:reviewId
+                           Review permalink dialog over the album page
+/user/:username            Profile - ratings, reviews, followers
 /settings                  Account settings, linked providers, Spotify connect
 ```
 
+Search is a global command/dialog experience in v1, not a standalone route. Separate `/search`, `/feed`, and `/lists/:id` routes are deferred until the product needs those dedicated surfaces.
+
 ## Features
+
+### V1
 
 - Browse albums without account
 - Rate albums 0.5-5 in half-star increments (auth required; stored as 1-10)
 - Optional written review alongside rating, max 2000 characters
 - Like reviews
+- Liked-by dialog for reviews
 - Follow users
 - User profiles with rating history
 - Album pages with community score and reviews
-- Search albums via Spotify API and users by username/display username
+- Search albums via Spotify API and users by username/display username from the global search dialog
 - Link/unlink Spotify in settings
-- Personalised feed for users with Spotify linked
-- Lists: curated ranked or unranked album collections
-- Activity feed: "X rated Y", "X followed Z" social activity
-- Diary: chronological log of what a user has rated and when
-- Popular this week: rolling aggregation for the anonymous feed
+- Home feed blending recent reviews, recently liked reviews, and followed-user reviews when signed in
+- Album-scoped review permalinks and basic review sharing
+- Basic admin moderation: remove bad reviews/ratings and ban abusive accounts
 - Notifications: someone liked your review, new follower
+
+### Deferred
+
+- Spotify-personalized feed sources from listening history, top artists, recently played, or saved albums
+- Lists: curated ranked or unranked album collections
+- Dedicated `/search` route
+- Dedicated `/feed` route
+- Activity feed entries beyond review-card feed ranking, e.g. "X followed Y"
+- Diary: chronological log of what a user has rated and when
+- Popular this week as a rolling album-level aggregation
+- Suggested users or onboarding recommendations
+- User reports and moderation queue
 
 ## Feed Algorithm
 
@@ -155,8 +172,8 @@ Set `min_votes` to something like 5. Tune `global_mean` from actual data over ti
 | Spotify refresh token revoked | Catch error from `getAccessToken`, fall back to client credentials, surface soft reconnect prompt in settings |
 | Duplicate review attempt | Enforced at DB level via unique constraint on `(userId, albumId)`; block duplicate creates; delete may come later, no edit/update flow planned |
 | Low vote count rating display | Bayesian average until threshold is met, show raw score + count after |
-| Empty social feed (new user) | Fall back to trending feed until they follow someone; suggest popular users to follow on signup |
-| `recently-played` too thin | Fall back to `top-artists` for feed seeding; no error state shown to user |
+| Empty social feed (new user) | Fall back to the global feed blend until they follow someone |
+| Spotify personalization unavailable | Keep serving the v1 home feed; Spotify-personalized sources are deferred |
 | Compilation / single vs album | Filter search and product surfaces to albums only; reject non-`album` Spotify IDs before creating local album rows |
 | User signs in on new device | Spotify tokens stored on user record, not session; available immediately after login on any device |
 | Self-follow attempt | Guard in the follow/unfollow endpoint |
