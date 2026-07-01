@@ -150,9 +150,14 @@ interface RatingProps {
 
 function Rating({ value, className }: RatingProps) {
   const stars = Array.from({ length: 5 }, (_, i) => Math.min(Math.max(value - i, 0), 1) * 100);
+  const displayValue = Number.isInteger(value) ? value.toString() : value.toFixed(1);
 
   return (
-    <div className={cn("flex shrink-0 items-center gap-0.5", className)}>
+    <div
+      aria-label={`${displayValue} out of 5 stars`}
+      className={cn("flex shrink-0 items-center gap-0.5", className)}
+      role="img"
+    >
       {stars.map((fillPercentage, i) => (
         <RatingStarIcon
           className="size-3.5"
@@ -161,8 +166,12 @@ function Rating({ value, className }: RatingProps) {
           key={i}
         />
       ))}
-      <span className="ml-1 font-bold text-primary text-xs tabular-nums" data-slot="rating-star-value">
-        {Number.isInteger(value) ? value : value.toFixed(1)}
+      <span
+        aria-hidden="true"
+        className="ml-1 font-bold text-primary text-xs tabular-nums"
+        data-slot="rating-star-value"
+      >
+        {displayValue}
       </span>
     </div>
   );

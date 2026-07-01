@@ -1,5 +1,4 @@
-import { Bookmark } from "lucide-react";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getAlbumArtistNames } from "./album-format.ts";
 import { ReviewDrawer } from "./review-drawer";
@@ -18,7 +17,11 @@ export function AlbumActions({ album, className }: AlbumActionsProps) {
 
   return (
     <div
-      className={cn("grid grid-cols-[1fr_auto_auto] gap-2 lg:flex lg:flex-wrap lg:items-center lg:gap-3", className)}
+      className={cn(
+        "grid gap-2 lg:flex lg:flex-wrap lg:items-center lg:gap-3",
+        album.spotifyUrl ? "grid-cols-[1fr_auto]" : "grid-cols-1",
+        className
+      )}
     >
       <ReviewDrawer albumArtist={albumArtist} albumId={album.id} albumTitle={album.title} />
       {album.spotifyUrl ? (
@@ -42,15 +45,6 @@ export function AlbumActions({ album, className }: AlbumActionsProps) {
           />
         </a>
       ) : null}
-      <Button
-        aria-label="Bookmark album"
-        className="text-muted-foreground hover:border-muted-foreground/60 hover:text-foreground"
-        size="icon-lg"
-        type="button"
-        variant="outline"
-      >
-        <Bookmark />
-      </Button>
     </div>
   );
 }
