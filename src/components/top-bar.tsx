@@ -5,6 +5,7 @@ import { GlobalSearch } from "@/components/global-search/global-search";
 import { GlobalSearchTrigger } from "@/components/global-search/global-search-trigger";
 import { HeaderAuthActions } from "@/components/header-auth-actions";
 import { NotificationsDropdown } from "@/components/notifications-dropdown";
+import { Skeleton } from "@/components/ui/skeleton";
 import { authClient } from "@/lib/auth/auth-client";
 import { useAuthRedirectErrorToast } from "@/lib/auth/use-auth-redirect-error-toast";
 
@@ -40,8 +41,16 @@ export function TopBar() {
           </div>
           <div className="flex min-w-0 items-center justify-end gap-1.5">
             <GlobalSearchTrigger className="lg:hidden" compact onOpen={() => setSearchOpen(true)} />
-            {userId ? <NotificationsDropdown userId={userId} /> : null}
-            <HeaderAuthActions onAuthClick={() => setAuthDialogOpen(true)} />
+            <div className="flex w-28 shrink-0 items-center justify-end sm:w-32 lg:w-72">
+              {session.isPending ? (
+                <Skeleton aria-hidden="true" className="h-9 w-full rounded-full" />
+              ) : (
+                <div className="flex min-w-0 items-center justify-end gap-1.5">
+                  {userId ? <NotificationsDropdown userId={userId} /> : null}
+                  <HeaderAuthActions onAuthClick={() => setAuthDialogOpen(true)} />
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

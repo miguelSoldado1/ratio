@@ -56,6 +56,7 @@ function CommandDialog({
 function CommandInput({
   className,
   inputGroupClassName,
+  ref,
   wrapperClassName,
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.Input> & {
@@ -68,6 +69,7 @@ function CommandInput({
         <CommandPrimitive.Input
           className={cn("w-full text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50", className)}
           data-slot="command-input"
+          ref={ref}
           {...props}
         />
         <InputGroupAddon>

@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Command, CommandDialog, CommandEmpty, CommandInput, CommandList } from "@/components/ui/command";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -22,6 +22,7 @@ export function GlobalSearch({ onOpenChange, open }: GlobalSearchProps) {
   const navigate = useNavigate();
   const session = authClient.useSession();
   const [inputValue, setInputValue] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
   const debouncedQuery = useDebounce(inputValue.trim(), 300);
   const viewerUserId = session.data?.user.id;
 
@@ -45,8 +46,10 @@ export function GlobalSearch({ onOpenChange, open }: GlobalSearchProps) {
 
   useEffect(() => {
     if (!open) {
-      setInputValue("");
+      return setInputValue("");
     }
+
+    inputRef.current?.focus();
   }, [open]);
 
   useEffect(() => {
@@ -102,9 +105,11 @@ export function GlobalSearch({ onOpenChange, open }: GlobalSearchProps) {
             autoCapitalize="none"
             autoComplete="off"
             autoCorrect="off"
+            autoFocus
             inputGroupClassName="h-10 sm:h-11"
             onValueChange={setInputValue}
             placeholder="Search..."
+            ref={inputRef}
             spellCheck={false}
             value={inputValue}
             wrapperClassName="min-w-0 flex-1 p-0 sm:p-2 sm:pb-1"

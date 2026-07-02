@@ -48,7 +48,7 @@ export function HeaderAuthActions({ onAuthClick }: HeaderAuthActionsProps) {
 
   if (!user) {
     return (
-      <div className="flex items-center rounded-full bg-muted/40 p-0.5">
+      <div className="flex min-w-0 items-center rounded-full bg-muted/40 p-0.5">
         <Button
           className="h-8 gap-1.5 rounded-full px-2.5 text-muted-foreground hover:bg-background/80 hover:text-foreground active:scale-[0.97] sm:px-3"
           onClick={onAuthClick}
@@ -67,7 +67,7 @@ export function HeaderAuthActions({ onAuthClick }: HeaderAuthActionsProps) {
   const avatar = <UserAvatar className="size-7 text-[11px]" name={displayName} src={user.image} />;
 
   return (
-    <div className="flex items-center rounded-full bg-muted/40 p-0.5">
+    <div className="flex min-w-0 items-center rounded-full bg-muted/40 p-0.5">
       {profileUsername ? (
         <Link
           aria-label={`View ${displayName}'s profile`}
