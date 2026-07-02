@@ -1,0 +1,14 @@
+# Ratio
+
+Ratio is a social album review and rating app for discovering albums, reading community reviews, and sharing profile and review pages.
+
+## Important Pages
+
+- Home feed: https://ratio.sticky-puddingz.workers.dev/
+- Sitemap: https://ratio.sticky-puddingz.workers.dev/sitemap.xml
+
+## Public Route Patterns
+
+- Album pages: /album/:spotifyId
+- Review permalinks: /album/:spotifyId/review/:reviewId
+- User profiles: /user/:username

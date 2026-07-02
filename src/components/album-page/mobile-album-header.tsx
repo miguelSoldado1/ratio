@@ -35,7 +35,7 @@ export function MobileAlbumHeader({ album, coverUrl }: MobileAlbumHeaderProps) {
           />
         )}
         <div className="min-w-0 self-end">
-          <h1 className="font-semibold text-2xl leading-tight tracking-normal sm:text-3xl">{album.title}</h1>
+          <p className="font-semibold text-2xl leading-tight tracking-normal sm:text-3xl">{album.title}</p>
           <p className="mt-2 text-muted-foreground text-sm">
             {artist} · {releaseYear}
           </p>

@@ -12,11 +12,25 @@ import { useAdminMode } from "@/hooks/use-admin-mode";
 import { useReviewDelete } from "@/hooks/use-review-delete";
 import { useReviewLikeToggle } from "@/hooks/use-review-like-toggle";
 import { authClient } from "@/lib/auth/auth-client";
+import { createCanonicalLink, createSeoMeta, siteName } from "@/lib/seo";
 import { albumQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { getReviewById } from "@/server/functions/review-functions";
 
 export const Route = createFileRoute("/album/$albumId/review/$reviewId")({
   component: AlbumReviewRoute,
+  head: ({ params }) => {
+    const path = `/album/${params.albumId}/review/${params.reviewId}`;
+
+    return {
+      links: [createCanonicalLink(path)],
+      meta: createSeoMeta({
+        description: "Read this album review on Ratio.",
+        path,
+        title: `Album Review | ${siteName}`,
+        type: "article",
+      }),
+    };
+  },
 });
 
 function AlbumReviewRoute() {

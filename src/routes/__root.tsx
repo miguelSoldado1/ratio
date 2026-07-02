@@ -4,6 +4,7 @@ import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-r
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { TopBar } from "@/components/top-bar";
 import { Toaster } from "@/components/ui/sonner";
+import { defaultSeoDescription, defaultSeoTitle } from "@/lib/seo";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
@@ -12,17 +13,20 @@ export const Route = createRootRoute({
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { name: "theme-color", content: "#151515" },
+      { name: "apple-mobile-web-app-title", content: "Ratio" },
       {
         name: "description",
-        content: "Ratio is a social platform where you can rate your favourite albums or discover new ones.",
+        content: defaultSeoDescription,
       },
-      { title: "Ratio" },
+      { title: defaultSeoTitle },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "icon", href: "/favicon-dark.ico", media: "(prefers-color-scheme: dark)" },
-      { rel: "icon", href: "/favicon-light.ico", media: "(prefers-color-scheme: light)" },
-      { rel: "manifest", href: "/manifest.json" },
+      { rel: "icon", type: "image/png", href: "/favicon-96x96.png", sizes: "96x96" },
+      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+      { rel: "shortcut icon", href: "/favicon.ico" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
+      { rel: "manifest", href: "/site.webmanifest" },
     ],
   }),
   notFoundComponent: () => (

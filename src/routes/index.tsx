@@ -7,11 +7,27 @@ import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
 import { useReviewDelete } from "@/hooks/use-review-delete";
 import { useReviewLikeToggle } from "@/hooks/use-review-like-toggle";
 import { authClient } from "@/lib/auth/auth-client";
+import { createCanonicalLink, createJsonLdScript, createSeoMeta, getCanonicalUrl, siteName } from "@/lib/seo";
 import { albumQueryKeys, feedQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { getFeed } from "@/server/functions/feed-functions";
 import type { FeedPage as FeedPageData } from "@/server/services/feed-service";
 
-export const Route = createFileRoute("/")({ component: FeedPage });
+export const Route = createFileRoute("/")({
+  component: FeedPage,
+  head: () => ({
+    links: [createCanonicalLink("/")],
+    meta: createSeoMeta({ path: "/" }),
+    scripts: [
+      createJsonLdScript({
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        description: "Discover, rate, and review albums with a social music community.",
+        name: siteName,
+        url: getCanonicalUrl("/"),
+      }),
+    ],
+  }),
+});
 
 function FeedPage() {
   const queryClient = useQueryClient();

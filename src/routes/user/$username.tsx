@@ -9,6 +9,7 @@ import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
 import { useReviewDelete } from "@/hooks/use-review-delete";
 import { useReviewLikeToggle } from "@/hooks/use-review-like-toggle";
 import { authClient } from "@/lib/auth/auth-client";
+import { createCanonicalLink, createSeoMeta, siteName } from "@/lib/seo";
 import { albumQueryKeys, userQueryKeys } from "@/lib/tanstack-query/query-keys";
 import {
   getUserProfile,
@@ -20,6 +21,19 @@ import type { UserReviewsPage } from "@/server/services/review-service";
 
 export const Route = createFileRoute("/user/$username")({
   component: UserPage,
+  head: ({ params }) => {
+    const path = `/user/${params.username}`;
+
+    return {
+      links: [createCanonicalLink(path)],
+      meta: createSeoMeta({
+        description: `Read @${params.username}'s album reviews and ratings on Ratio.`,
+        path,
+        title: `@${params.username} - Album Reviews | ${siteName}`,
+        type: "profile",
+      }),
+    };
+  },
 });
 
 function UserPage() {

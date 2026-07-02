@@ -15,7 +15,7 @@ function LogoHomeLink() {
       className="inline-flex size-10 items-center justify-start rounded-3xl transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
       to="/"
     >
-      <img alt="" className="size-8 shrink-0" height={32} src="/favicon-dark.ico" width={32} />
+      <img alt="" className="size-10 shrink-0" height={32} src="/favicon.svg" width={32} />
     </Link>
   );
 }

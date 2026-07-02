@@ -14,7 +14,12 @@ import { accountQueryKeys } from "@/lib/tanstack-query/query-keys";
 import type { LinkedAccount } from "@/components/settings/sign-in-methods-table";
 import type { AuthProviderId } from "@/lib/auth/providers";
 
-export const Route = createFileRoute("/settings")({ component: SettingsPage });
+export const Route = createFileRoute("/settings")({
+  component: SettingsPage,
+  head: () => ({
+    meta: [{ title: "Account Settings | Ratio" }, { name: "robots", content: "noindex, nofollow" }],
+  }),
+});
 
 function SettingsPage() {
   const navigate = useNavigate();
