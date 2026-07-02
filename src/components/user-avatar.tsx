@@ -1,49 +1,64 @@
 import { cn } from "@/lib/utils";
 
 interface UserAvatarProps {
-  alt?: string;
   className?: string;
-  fallbackInitial?: string;
-  height: number;
-  imageClassName?: string;
   name: string;
   src?: null | string;
-  width?: number;
 }
 
-export function UserAvatar({
-  alt,
-  className,
-  fallbackInitial = "U",
-  height,
-  imageClassName,
-  name,
-  src,
-  width = height,
-}: UserAvatarProps) {
-  const initial = name.trim().charAt(0) || fallbackInitial;
-
-  if (src) {
-    return (
-      <img
-        alt={alt ?? name}
-        className={cn("shrink-0 rounded-full object-cover", className, imageClassName)}
-        height={height}
-        referrerPolicy="no-referrer"
-        src={src}
-        width={width}
-      />
-    );
-  }
+export function UserAvatar({ className, name, src }: UserAvatarProps) {
+  const initial = name.trim().charAt(0) || "R";
 
   return (
-    <div
+    <span
+      aria-label={name}
       className={cn(
-        "flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted font-semibold text-muted-foreground uppercase",
+        "relative flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted font-semibold text-muted-foreground uppercase",
         className
       )}
+      role="img"
     >
-      {initial}
-    </div>
+      <span aria-hidden="true">{initial}</span>
+      {src ? (
+        <img
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 size-full object-cover"
+          height={96}
+          ref={handleAvatarImageRef}
+          referrerPolicy="no-referrer"
+          src={src}
+          width={96}
+        />
+      ) : null}
+    </span>
   );
+}
+
+function handleAvatarImageRef(node: HTMLImageElement | null) {
+  if (!node) return;
+
+  node.addEventListener("error", hideAvatarImage);
+  node.addEventListener("load", showAvatarImage);
+
+  return () => {
+    node.removeEventListener("error", hideAvatarImage);
+    node.removeEventListener("load", showAvatarImage);
+  };
+}
+
+function hideAvatarImage(event: Event) {
+  const image = event.currentTarget;
+
+  if (image instanceof HTMLImageElement) {
+    image.hidden = true;
+  }
+}
+
+function showAvatarImage(event: Event) {
+  const image = event.currentTarget;
+
+  if (image instanceof HTMLImageElement) {
+    image.hidden = false;
+  }
 }

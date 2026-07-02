@@ -148,7 +148,7 @@ export function ProfilePhotoEditor({
   return (
     <div className="flex items-center justify-between gap-4 border-border/80 border-b pb-5">
       <div className="flex min-w-0 items-center gap-4">
-        <UserAvatar className="size-16 text-xl" height={64} name={displayName} src={photo.avatarUrl} />
+        <UserAvatar className="size-16 text-xl" name={displayName} src={photo.avatarUrl} />
         <div className="min-w-0">
           <p className="font-medium text-sm">Profile photo</p>
           <p className="mt-1 text-muted-foreground text-sm">{photoStatusLabel}</p>

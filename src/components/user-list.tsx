@@ -34,7 +34,7 @@ export function UserList<TUser extends UserListUser>({ onUserSelect, renderActio
             params={{ username: user.username }}
             to="/user/$username"
           >
-            <UserAvatar className="size-11 text-sm" height={44} name={user.displayName} src={user.avatarUrl} />
+            <UserAvatar className="size-11 text-sm" name={user.displayName} src={user.avatarUrl} />
             <span className="min-w-0 flex-1">
               <span className="block truncate font-medium text-foreground text-sm">{user.displayName}</span>
               <span className="block truncate text-muted-foreground text-xs">

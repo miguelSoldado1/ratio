@@ -31,7 +31,6 @@ export function ProfileHeader({ className, onAuthRequired, profile, stats, viewe
       <div className="flex w-full min-w-0 flex-col items-center text-center sm:grid sm:grid-cols-[5.5rem_minmax(0,1fr)] sm:items-center sm:gap-x-5 sm:text-left md:grid-cols-[7rem_minmax(0,1fr)] lg:gap-x-6">
         <UserAvatar
           className="size-18 text-xl sm:size-22 sm:text-2xl md:size-28 md:text-4xl"
-          height={96}
           name={profile.displayName}
           src={profile.avatarUrl}
         />

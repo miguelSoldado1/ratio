@@ -64,14 +64,14 @@ function Header({ user, createdAt, className, meta }: HeaderProps) {
           params={{ username: user.username }}
           to="/user/$username"
         >
-          <UserAvatar className="size-6 text-[11px]" height={24} name={user.displayUsername} src={user.avatarUrl} />
+          <UserAvatar className="size-6 text-[11px]" name={user.displayUsername} src={user.avatarUrl} />
           <span className={cn(displayNameClass, "truncate transition-colors group-hover:text-primary")}>
             {user.displayUsername}
           </span>
         </Link>
       ) : (
         <div className={identityClass}>
-          <UserAvatar className="size-6 text-[11px]" height={24} name={user.displayUsername} src={user.avatarUrl} />
+          <UserAvatar className="size-6 text-[11px]" name={user.displayUsername} src={user.avatarUrl} />
           <span className={displayNameClass}>{user.displayUsername}</span>
         </div>
       )}
