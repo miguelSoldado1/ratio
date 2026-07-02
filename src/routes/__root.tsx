@@ -2,6 +2,7 @@ import { TanStackDevtools } from "@tanstack/react-devtools";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import { NotFoundPage } from "@/components/not-found-page";
 import { TopBar } from "@/components/top-bar";
 import { Toaster } from "@/components/ui/sonner";
 import { defaultSeoDescription, defaultSeoTitle } from "@/lib/seo";
@@ -29,12 +30,7 @@ export const Route = createRootRoute({
       { rel: "manifest", href: "/site.webmanifest" },
     ],
   }),
-  notFoundComponent: () => (
-    <main className="container mx-auto p-4 pt-16">
-      <h1>404</h1>
-      <p>The requested page could not be found.</p>
-    </main>
-  ),
+  notFoundComponent: NotFoundPage,
   component: () => (
     <>
       <TopBar />
