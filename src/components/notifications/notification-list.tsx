@@ -9,9 +9,23 @@ interface NotificationListProps {
   isLoading: boolean;
   items: NotificationItem[];
   onNotificationClick: (item: NotificationItem) => void;
+  variant?: "menu" | "list";
 }
 
-export function NotificationList({ isError, isLoading, items, onNotificationClick }: NotificationListProps) {
+interface NotificationGroup {
+  items: NotificationItem[];
+  label: "Last 30 days" | "Older";
+}
+
+const recentNotificationWindowMs = 30 * 24 * 60 * 60 * 1000;
+
+export function NotificationList({
+  isError,
+  isLoading,
+  items,
+  onNotificationClick,
+  variant = "menu",
+}: NotificationListProps) {
   if (isLoading) {
     return <NotificationStateMessage label="Loading notifications..." />;
   }
@@ -24,28 +38,27 @@ export function NotificationList({ isError, isLoading, items, onNotificationClic
     return <NotificationStateMessage label="No activity yet" />;
   }
 
+  const groups = groupNotifications(items);
+  const showGroupLabels = groups.length > 1;
+
   return (
-    <div className="flex flex-col gap-1">
-      {items.map((item) => (
-        <DropdownMenuItem
-          className={cn(
-            "group/notification relative items-start gap-3 rounded-2xl px-3 py-3.5 transition-[background-color,transform] focus:bg-muted/70 active:scale-[0.99] sm:py-3",
-            item.seen ? "text-muted-foreground" : "bg-muted/45 text-foreground shadow-sm ring-1 ring-border/40"
-          )}
-          key={item.key}
-          onClick={() => onNotificationClick(item)}
-        >
-          {item.seen ? null : (
-            <span className="absolute top-3.5 bottom-3.5 left-1 w-0.5 rounded-full bg-foreground/35" />
-          )}
-          <NotificationVisual item={item} />
-          <div className="min-w-0 flex-1 pt-0.5">
-            <p className="line-clamp-2 whitespace-normal font-medium text-foreground/90 text-sm leading-snug">
-              <NotificationText item={item} />
+    <div className="flex flex-col">
+      {groups.map((group, index) => (
+        <div className="flex flex-col" key={group.label}>
+          {showGroupLabels ? (
+            <p
+              className={cn(
+                "px-3 pb-1.5 font-semibold text-[11px] text-foreground/75 uppercase tracking-[0.08em]",
+                index === 0 ? "pt-2" : "pt-3"
+              )}
+            >
+              {group.label}
             </p>
-            <p className="mt-1 truncate text-muted-foreground text-xs">{formatNotificationMeta(item)}</p>
-          </div>
-        </DropdownMenuItem>
+          ) : null}
+          {group.items.map((item) => (
+            <NotificationRow item={item} key={item.key} onClick={() => onNotificationClick(item)} variant={variant} />
+          ))}
+        </div>
       ))}
     </div>
   );
@@ -57,6 +70,49 @@ interface NotificationStateMessageProps {
 
 function NotificationStateMessage({ label }: NotificationStateMessageProps) {
   return <p className="px-3 py-8 text-center text-muted-foreground text-sm">{label}</p>;
+}
+
+interface NotificationRowProps {
+  item: NotificationItem;
+  onClick: () => void;
+  variant: "menu" | "list";
+}
+
+function NotificationRow({ item, onClick, variant }: NotificationRowProps) {
+  const content = <NotificationRowContent item={item} />;
+  const className = cn(
+    "group/notification relative flex w-full items-start gap-3 rounded-xl px-3 py-3.5 text-left transition-[background-color,transform] after:absolute after:right-3 after:bottom-0 after:left-16 after:h-px after:bg-border/55 last:after:hidden focus:bg-muted/70 focus:outline-none active:scale-[0.99] sm:py-3",
+    item.seen ? "text-muted-foreground" : "bg-muted/45 text-foreground ring-1 ring-border/40 after:hidden"
+  );
+
+  if (variant === "list") {
+    return (
+      <button className={className} onClick={onClick} type="button">
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <DropdownMenuItem className={className} onClick={onClick}>
+      {content}
+    </DropdownMenuItem>
+  );
+}
+
+function NotificationRowContent({ item }: { item: NotificationItem }) {
+  return (
+    <>
+      {item.seen ? null : <span className="absolute top-3.5 bottom-3.5 left-1 w-0.5 rounded-full bg-foreground/35" />}
+      <NotificationVisual item={item} />
+      <div className="min-w-0 flex-1 pt-0.5">
+        <p className="line-clamp-2 whitespace-normal font-medium text-foreground/90 text-sm leading-snug">
+          <NotificationText item={item} />
+        </p>
+        <p className="mt-1 truncate text-muted-foreground text-xs">{formatNotificationMeta(item)}</p>
+      </div>
+    </>
+  );
 }
 
 function NotificationText({ item }: { item: NotificationItem }) {
@@ -120,4 +176,21 @@ function formatNotificationMeta(item: NotificationItem) {
   }
 
   return `@${item.actor.username} · ${time}`;
+}
+
+function groupNotifications(items: NotificationItem[]): NotificationGroup[] {
+  const now = Date.now();
+  const recentItems: NotificationItem[] = [];
+  const olderItems: NotificationItem[] = [];
+
+  for (const item of items) {
+    const createdAt = new Date(item.latestCreatedAt);
+    const targetItems = now - createdAt.getTime() <= recentNotificationWindowMs ? recentItems : olderItems;
+    targetItems.push(item);
+  }
+
+  return [
+    { items: recentItems, label: "Last 30 days" as const },
+    { items: olderItems, label: "Older" as const },
+  ].filter((group): group is NotificationGroup => group.items.length > 0);
 }
