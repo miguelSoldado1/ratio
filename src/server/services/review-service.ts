@@ -12,6 +12,7 @@ import {
   getOptionalCurrentUserId,
 } from "../server-utils";
 import { ensureAlbumExistsForWrite, getMissingAlbumMetadataForWrite } from "./album-service";
+import { createReviewLikedNotification } from "./notification-service";
 import type { Db } from "@/lib/db";
 import type { AuthenticatedContext } from "../auth-middleware";
 
@@ -517,10 +518,18 @@ export async function setReviewLikeService(data: ReviewLikeInput, context: Authe
   await assertReviewIsLikeable(data.reviewId, context);
 
   if (data.liked) {
-    await context.db
-      .insert(reviewLikes)
-      .values({ reviewId: data.reviewId, userId: context.user.id })
-      .onConflictDoNothing();
+    await context.db.transaction(async (transaction) => {
+      const [insertedLike] = await transaction
+        .insert(reviewLikes)
+        .values({ reviewId: data.reviewId, userId: context.user.id })
+        .onConflictDoNothing()
+        .returning({ reviewId: reviewLikes.reviewId });
+
+      if (insertedLike) {
+        const notificationData = { actorUserId: context.user.id, reviewId: data.reviewId };
+        await createReviewLikedNotification(notificationData, transaction);
+      }
+    });
   } else {
     await context.db
       .delete(reviewLikes)

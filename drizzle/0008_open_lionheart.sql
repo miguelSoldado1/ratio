@@ -1,0 +1,2 @@
+DROP INDEX "notifications_unseen_recipient_idx";--> statement-breakpoint
+CREATE INDEX "notifications_unseen_recipient_created_id_idx" ON "notification" USING btree ("recipient_user_id","created_at","id") WHERE "notification"."seen_at" is null;

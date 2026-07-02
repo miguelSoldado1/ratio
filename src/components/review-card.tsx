@@ -6,6 +6,7 @@ import { ReviewShareButton } from "@/components/review-share-button";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/user-avatar";
 import { useDebounce } from "@/hooks/use-debounce";
+import { formatRelativeTime } from "@/lib/date-format";
 import { abbreviateCount, cn } from "@/lib/utils";
 import type { ReactNode } from "react";
 
@@ -34,26 +35,6 @@ export interface ReviewData {
   rating: number; // 1–5 (half-star increments)
   review?: string;
   user: ReviewUser;
-}
-
-// --- Helpers ---
-
-function relativeTime(date: Date): string {
-  const diff = Date.now() - date.getTime();
-  const m = Math.floor(diff / 60_000);
-  const h = Math.floor(m / 60);
-  const d = Math.floor(h / 24);
-  const w = Math.floor(d / 7);
-  const mo = Math.floor(d / 30);
-  const yr = Math.floor(d / 365);
-
-  if (yr > 0) return `${yr}yr`;
-  if (mo > 0) return `${mo}mo`;
-  if (w > 0) return `${w}w`;
-  if (d > 0) return `${d}d`;
-  if (h > 0) return `${h}h`;
-  if (m > 0) return `${m}m`;
-  return "just now";
 }
 
 // --- Sub-components ---
@@ -94,7 +75,7 @@ function Header({ user, createdAt, className, meta }: HeaderProps) {
           <span className={displayNameClass}>{user.displayUsername}</span>
         </div>
       )}
-      <span className="text-muted-foreground text-xs">{relativeTime(createdAt)}</span>
+      <span className="text-muted-foreground text-xs">{formatRelativeTime(createdAt)}</span>
       {meta}
     </div>
   );

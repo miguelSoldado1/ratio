@@ -48,3 +48,9 @@ export const userQueryKeys = {
 export const accountQueryKeys = {
   providers: () => ["account", "providers"] as const,
 };
+
+export const notificationQueryKeys = {
+  all: (userId: string) => ["notification", userId] as const,
+  list: (userId: string) => ["notification", userId, "list"] as const,
+  unseenCount: (userId: string) => ["notification", userId, "unseen-count"] as const,
+};

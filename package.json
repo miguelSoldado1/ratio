@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "seed:profile-reviews": "node scripts/seed-profile-reviews.mjs",
     "seed:feed": "node scripts/seed-feed.mjs",
+    "seed:notifications": "node scripts/seed-notifications.mjs",
     "seed:review-likes": "node scripts/seed-review-likes.mjs",
     "seed:users-and-follows": "node scripts/seed-users-and-follows.mjs",
     "test": "vitest run",

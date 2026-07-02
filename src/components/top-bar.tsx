@@ -4,6 +4,8 @@ import { AuthDialog } from "@/components/auth/auth-dialog";
 import { GlobalSearch } from "@/components/global-search/global-search";
 import { GlobalSearchTrigger } from "@/components/global-search/global-search-trigger";
 import { HeaderAuthActions } from "@/components/header-auth-actions";
+import { NotificationsDropdown } from "@/components/notifications-dropdown";
+import { authClient } from "@/lib/auth/auth-client";
 import { useAuthRedirectErrorToast } from "@/lib/auth/use-auth-redirect-error-toast";
 
 function LogoHomeLink() {
@@ -21,6 +23,8 @@ function LogoHomeLink() {
 export function TopBar() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
+  const session = authClient.useSession();
+  const userId = session.data?.user.id;
 
   useAuthRedirectErrorToast(setAuthDialogOpen);
 
@@ -36,6 +40,7 @@ export function TopBar() {
           </div>
           <div className="flex min-w-0 items-center justify-end gap-1.5">
             <GlobalSearchTrigger className="lg:hidden" compact onOpen={() => setSearchOpen(true)} />
+            {userId ? <NotificationsDropdown userId={userId} /> : null}
             <HeaderAuthActions onAuthClick={() => setAuthDialogOpen(true)} />
           </div>
         </div>

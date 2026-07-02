@@ -5,6 +5,7 @@ import { getDb } from "@/lib/db";
 import { user, userFollows } from "@/lib/db/schema";
 import { type FollowableUserRow, getFollowedByViewerSql, mapFollowableUser } from "../followable-user";
 import { decodeCursor, encodeCursor, getCreatedAtIdCursorFilter, getOptionalCurrentUser } from "../server-utils";
+import { createUserFollowedNotification } from "./notification-service";
 import type { Db } from "@/lib/db";
 import type { AuthenticatedContext } from "../auth-middleware";
 
@@ -144,10 +145,18 @@ export async function setUserFollowService(data: SetUserFollowInput, context: Au
   }
 
   if (data.following) {
-    await context.db
-      .insert(userFollows)
-      .values({ followerId: context.user.id, followingId: data.userId })
-      .onConflictDoNothing();
+    await context.db.transaction(async (transaction) => {
+      const [insertedFollow] = await transaction
+        .insert(userFollows)
+        .values({ followerId: context.user.id, followingId: data.userId })
+        .onConflictDoNothing()
+        .returning({ followingId: userFollows.followingId });
+
+      if (insertedFollow) {
+        const notificationData = { actorUserId: context.user.id, recipientUserId: data.userId };
+        await createUserFollowedNotification(notificationData, transaction);
+      }
+    });
   } else {
     await context.db
       .delete(userFollows)

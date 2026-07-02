@@ -3,6 +3,7 @@ import {
   check,
   index,
   integer,
+  pgEnum,
   pgTable,
   primaryKey,
   smallint,
@@ -109,6 +110,42 @@ export const userFollows = pgTable(
   ]
 );
 
+export const notificationType = pgEnum("notification_type", ["review_liked", "user_followed"]);
+
+export const notifications = pgTable(
+  "notification",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    recipientUserId: text("recipient_user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    actorUserId: text("actor_user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    type: notificationType("type").notNull(),
+    reviewId: uuid("review_id").references(() => reviews.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    seenAt: timestamp("seen_at"),
+  },
+  (table) => [
+    index("notifications_recipient_created_id_idx").on(table.recipientUserId, table.createdAt, table.id),
+    index("notifications_unseen_recipient_created_id_idx")
+      .on(table.recipientUserId, table.createdAt, table.id)
+      .where(sql`${table.seenAt} is null`),
+    uniqueIndex("notifications_review_liked_unique_idx")
+      .on(table.recipientUserId, table.actorUserId, table.type, table.reviewId)
+      .where(sql`${table.type} = 'review_liked'`),
+    uniqueIndex("notifications_user_followed_unique_idx")
+      .on(table.recipientUserId, table.actorUserId, table.type)
+      .where(sql`${table.type} = 'user_followed'`),
+    check(
+      "notifications_review_id_matches_type_check",
+      sql`(${table.type} = 'review_liked' and ${table.reviewId} is not null) or (${table.type} = 'user_followed' and ${table.reviewId} is null)`
+    ),
+    check("notifications_no_self_notify_check", sql`${table.recipientUserId} <> ${table.actorUserId}`),
+  ]
+);
+
 export const albumRelations = relations(albums, ({ many }) => ({
   reviews: many(reviews),
 }));
@@ -158,5 +195,22 @@ export const userFollowRelations = relations(userFollows, ({ one }) => ({
     fields: [userFollows.followingId],
     references: [user.id],
     relationName: "user_follow_following",
+  }),
+}));
+
+export const notificationRelations = relations(notifications, ({ one }) => ({
+  actor: one(user, {
+    fields: [notifications.actorUserId],
+    references: [user.id],
+    relationName: "notification_actor",
+  }),
+  recipient: one(user, {
+    fields: [notifications.recipientUserId],
+    references: [user.id],
+    relationName: "notification_recipient",
+  }),
+  review: one(reviews, {
+    fields: [notifications.reviewId],
+    references: [reviews.id],
   }),
 }));
