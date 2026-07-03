@@ -95,7 +95,9 @@ function Album({ album, linked, className }: AlbumProps) {
           <img
             alt={`${album.title} by ${album.artist}`}
             className="size-full object-cover"
+            decoding="async"
             height={56}
+            loading="lazy"
             referrerPolicy="no-referrer"
             src={album.coverUrl}
             width={56}
