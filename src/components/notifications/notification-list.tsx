@@ -1,4 +1,5 @@
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatRelativeTime } from "@/lib/date-format";
 import { cn } from "@/lib/utils";
 import { NotificationVisual } from "./notification-visual";
@@ -27,7 +28,7 @@ export function NotificationList({
   variant = "menu",
 }: NotificationListProps) {
   if (isLoading) {
-    return <NotificationStateMessage label="Loading notifications..." />;
+    return <NotificationReviewSkeletons variant={variant} />;
   }
 
   if (isError) {
@@ -70,6 +71,51 @@ interface NotificationStateMessageProps {
 
 function NotificationStateMessage({ label }: NotificationStateMessageProps) {
   return <p className="px-3 py-8 text-center text-muted-foreground text-sm">{label}</p>;
+}
+
+function NotificationReviewSkeletons({ variant }: { variant: "menu" | "list" }) {
+  const count = variant === "list" ? 9 : 7;
+
+  return (
+    <div aria-busy="true" aria-label="Loading notifications" className="flex flex-col" role="status">
+      <span className="sr-only">Loading notifications</span>
+      {Array.from({ length: count }, (_, index) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton placeholders
+        <NotificationReviewSkeleton index={index} key={index} />
+      ))}
+    </div>
+  );
+}
+
+function NotificationReviewSkeleton({ index }: { index: number }) {
+  const primaryWidth = getNotificationSkeletonPrimaryWidth(index);
+  const metaWidth = index % 3 === 0 ? "w-28" : "w-36";
+
+  return (
+    <article
+      className={
+        "relative flex w-full items-start gap-3 rounded-xl px-3 py-3.5 after:absolute after:right-3 after:bottom-0 after:left-16 after:h-px after:bg-border/55 last:after:hidden sm:py-3"
+      }
+    >
+      <span className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-muted/50">
+        <Skeleton className="size-9 rounded-full bg-muted/80" />
+      </span>
+      <div className="min-w-0 flex-1 pt-0.5">
+        <Skeleton className={cn("h-4.5 max-w-full bg-muted/85", primaryWidth)} />
+        <div className="mt-2 flex items-center gap-1.5">
+          <Skeleton className={cn("h-3.5 bg-muted/70", metaWidth)} />
+          <Skeleton className="size-1 rounded-full bg-muted/70" />
+          <Skeleton className="h-3.5 w-6 bg-muted/70" />
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function getNotificationSkeletonPrimaryWidth(index: number) {
+  if (index % 4 === 2) return "w-[92%]";
+  if (index % 3 === 1) return "w-56";
+  return "w-72";
 }
 
 interface NotificationRowProps {
