@@ -4,10 +4,13 @@ import { admin, lastLoginMethod, username } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { eq } from "drizzle-orm";
 import { env } from "@/env";
+import { isUsernameAllowed } from "@/lib/users/username-policy.server";
+import { normalizeUsername } from "@/lib/users/username-policy.shared";
 import { deleteAvatarObject } from "@/server/avatar-storage";
 import { getDb } from "../db";
 import * as schema from "../db/schema";
-import { isDisplayUsernameValid, limitDisplayUsername, trimDisplayUsername } from "./profile-identity";
+import { limitDisplayUsername, trimDisplayUsername } from "./profile-identity";
+import { getAllowedDisplayUsername, isDisplayUsernameAllowed } from "./profile-identity.server";
 import type { Db } from "../db";
 
 export function createAuth(db: Db) {
@@ -78,7 +81,9 @@ export function createAuth(db: Db) {
 
           return {
             username: finalUsername,
-            displayUsername: limitDisplayUsername(profile.name || profile.given_name || baseUsername),
+            displayUsername: getAllowedDisplayUsername(
+              limitDisplayUsername(profile.name || profile.given_name || baseUsername)
+            ),
           };
         },
       },
@@ -91,7 +96,9 @@ export function createAuth(db: Db) {
 
           return {
             username: finalUsername,
-            displayUsername: limitDisplayUsername(profile.global_name || profile.username || baseUsername),
+            displayUsername: getAllowedDisplayUsername(
+              limitDisplayUsername(profile.global_name || profile.username || baseUsername)
+            ),
           };
         },
       },
@@ -104,7 +111,7 @@ export function createAuth(db: Db) {
 
           return {
             username: finalUsername,
-            displayUsername: limitDisplayUsername(profile.display_name || baseUsername),
+            displayUsername: getAllowedDisplayUsername(limitDisplayUsername(profile.display_name || baseUsername)),
           };
         },
       },
@@ -112,7 +119,10 @@ export function createAuth(db: Db) {
     plugins: [
       username({
         displayUsernameNormalization: trimDisplayUsername,
-        displayUsernameValidator: isDisplayUsernameValid,
+        displayUsernameValidator: isDisplayUsernameAllowed,
+        usernameNormalization: normalizeUsername,
+        usernameValidator: isUsernameAllowed,
+        validationOrder: { username: "post-normalization" },
       }),
       lastLoginMethod(),
       admin(),
@@ -129,25 +139,30 @@ export async function handleAuthRequest(request: Request) {
 }
 
 async function generateUniqueUsername(db: Db, baseUsername: string): Promise<string> {
-  const normalizedUsername = normalizeUsername(baseUsername);
+  const normalizedUsername = normalizeProviderUsername(baseUsername);
+  const usernameBase = isUsernameAllowed(normalizedUsername) ? normalizedUsername : "user";
 
-  if (await isUsernameAvailable(db, normalizedUsername)) {
-    return normalizedUsername;
+  if (await isUsernameAvailable(db, usernameBase)) {
+    return usernameBase;
   }
 
   for (let attempts = 0; attempts < 5; attempts += 1) {
     const hash = Math.random().toString(36).slice(2, 6);
-    const usernameWithHash = `${normalizedUsername.slice(0, 25)}_${hash}`;
+    const usernameWithHash = `${usernameBase.slice(0, 25)}_${hash}`;
 
     if (await isUsernameAvailable(db, usernameWithHash)) {
       return usernameWithHash;
     }
   }
 
-  return `${normalizedUsername.slice(0, 20)}_${Date.now().toString(36)}`;
+  return `user_${Date.now().toString(36)}`;
 }
 
 async function isUsernameAvailable(db: Db, candidate: string) {
+  if (!isUsernameAllowed(candidate)) {
+    return false;
+  }
+
   const existingUser = await db
     .select({ id: schema.user.id })
     .from(schema.user)
@@ -158,8 +173,9 @@ async function isUsernameAvailable(db: Db, candidate: string) {
   return existingUser.length === 0;
 }
 
-function normalizeUsername(candidate: string) {
+function normalizeProviderUsername(candidate: string) {
   const normalizedUsername = candidate
+    .trim()
     .toLowerCase()
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")

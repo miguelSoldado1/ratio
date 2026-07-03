@@ -1,4 +1,5 @@
 export const displayUsernameMaxLength = 50;
+export const displayUsernameUnavailableMessage = "That display name isn't available.";
 
 export function getDisplayUsernameLength(displayUsername: string) {
   return Array.from(displayUsername.trim()).length;

@@ -241,12 +241,8 @@
           "name": "notification_recipient_user_id_user_id_fk",
           "tableFrom": "notification",
           "tableTo": "user",
-          "columnsFrom": [
-            "recipient_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["recipient_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -254,12 +250,8 @@
           "name": "notification_actor_user_id_user_id_fk",
           "tableFrom": "notification",
           "tableTo": "user",
-          "columnsFrom": [
-            "actor_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["actor_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -267,12 +259,8 @@
           "name": "notification_review_id_review_id_fk",
           "tableFrom": "notification",
           "tableTo": "review",
-          "columnsFrom": [
-            "review_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["review_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -322,12 +310,8 @@
           "name": "profile_pinned_review_user_id_user_id_fk",
           "tableFrom": "profile_pinned_review",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -335,12 +319,8 @@
           "name": "profile_pinned_review_review_id_review_id_fk",
           "tableFrom": "profile_pinned_review",
           "tableTo": "review",
-          "columnsFrom": [
-            "review_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["review_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -348,10 +328,7 @@
       "compositePrimaryKeys": {
         "profile_pinned_review_user_review_pk": {
           "name": "profile_pinned_review_user_review_pk",
-          "columns": [
-            "user_id",
-            "review_id"
-          ]
+          "columns": ["user_id", "review_id"]
         }
       },
       "uniqueConstraints": {},
@@ -447,12 +424,8 @@
           "name": "review_like_review_id_review_id_fk",
           "tableFrom": "review_like",
           "tableTo": "review",
-          "columnsFrom": [
-            "review_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["review_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -460,12 +433,8 @@
           "name": "review_like_user_id_user_id_fk",
           "tableFrom": "review_like",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -473,10 +442,7 @@
       "compositePrimaryKeys": {
         "review_likes_review_user_pk": {
           "name": "review_likes_review_user_pk",
-          "columns": [
-            "review_id",
-            "user_id"
-          ]
+          "columns": ["review_id", "user_id"]
         }
       },
       "uniqueConstraints": {},
@@ -625,12 +591,8 @@
           "name": "review_user_id_user_id_fk",
           "tableFrom": "review",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -638,12 +600,8 @@
           "name": "review_album_id_album_id_fk",
           "tableFrom": "review",
           "tableTo": "album",
-          "columnsFrom": [
-            "album_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["album_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -744,12 +702,8 @@
           "name": "user_follow_follower_id_user_id_fk",
           "tableFrom": "user_follow",
           "tableTo": "user",
-          "columnsFrom": [
-            "follower_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["follower_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -757,12 +711,8 @@
           "name": "user_follow_following_id_user_id_fk",
           "tableFrom": "user_follow",
           "tableTo": "user",
-          "columnsFrom": [
-            "following_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["following_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -770,10 +720,7 @@
       "compositePrimaryKeys": {
         "user_follows_follower_following_pk": {
           "name": "user_follows_follower_following_pk",
-          "columns": [
-            "follower_id",
-            "following_id"
-          ]
+          "columns": ["follower_id", "following_id"]
         }
       },
       "uniqueConstraints": {},
@@ -892,12 +839,8 @@
           "name": "account_user_id_user_id_fk",
           "tableFrom": "account",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -990,12 +933,8 @@
           "name": "session_user_id_user_id_fk",
           "tableFrom": "session",
           "tableTo": "user",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1005,9 +944,7 @@
         "session_token_unique": {
           "name": "session_token_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "token"
-          ]
+          "columns": ["token"]
         }
       },
       "policies": {},
@@ -1114,16 +1051,12 @@
         "user_email_unique": {
           "name": "user_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         },
         "user_username_unique": {
           "name": "user_username_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "username"
-          ]
+          "columns": ["username"]
         }
       },
       "policies": {},
@@ -1202,10 +1135,7 @@
     "public.notification_type": {
       "name": "notification_type",
       "schema": "public",
-      "values": [
-        "review_liked",
-        "user_followed"
-      ]
+      "values": ["review_liked", "user_followed"]
     }
   },
   "schemas": {},

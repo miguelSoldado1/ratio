@@ -74,6 +74,9 @@ importers:
       lucide-react:
         specifier: ^1.17.0
         version: 1.17.0(react@19.2.7)
+      obscenity:
+        specifier: ^0.4.6
+        version: 0.4.6
       postgres:
         specifier: ^3.4.9
         version: 3.4.9
@@ -3801,6 +3804,10 @@ packages:
   object-treeify@1.1.33:
     resolution: {integrity: sha512-EFVjAYfzWqWsBMRHPMAXLCDIJnpMhdWAqR7xG6M6a2cs6PMFpl/+Z20w9zDW4vkxOFfddegBKq9Rehd0bxWE7A==}
     engines: {node: '>= 10'}
+
+  obscenity@0.4.6:
+    resolution: {integrity: sha512-pHk7kNN7j3L3zGhhGnwxjvXIGsPpLrcZl2r58fqWh/V/rH6b/dafscj2sMmAY+A/9/wPsocLmimgGk2DKeKsFQ==}
+    engines: {node: '>=18.0.0'}
 
   obug@2.1.2:
     resolution: {integrity: sha512-AWGB9WFcRXOQs48Z/udjI5ZcZMHXwX8XPByNpOydgcGsDLIzjGizhoMWJyKAWze7AVW/2W1i+/gPX4YtKe5cyg==}
@@ -7792,6 +7799,8 @@ snapshots:
   object-inspect@1.13.4: {}
 
   object-treeify@1.1.33: {}
+
+  obscenity@0.4.6: {}
 
   obug@2.1.2: {}
 

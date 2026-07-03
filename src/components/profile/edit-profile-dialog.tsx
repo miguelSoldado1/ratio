@@ -15,13 +15,21 @@ import {
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { authClient } from "@/lib/auth/auth-client";
-import { displayUsernameMaxLength, getDisplayUsernameLength } from "@/lib/auth/profile-identity";
+import {
+  displayUsernameMaxLength,
+  displayUsernameUnavailableMessage,
+  getDisplayUsernameLength,
+} from "@/lib/auth/profile-identity";
 import { userQueryKeys } from "@/lib/tanstack-query/query-keys";
+import {
+  isUsernameFormatValid,
+  normalizeUsername,
+  usernameUnavailableMessage,
+} from "@/lib/users/username-policy.shared";
 import { cn } from "@/lib/utils";
 import type { FormEvent } from "react";
 import type { UserProfile } from "@/server/services/review-service";
 
-const usernamePattern = /^[a-zA-Z0-9_.]{3,30}$/;
 const fieldIds = {
   displayUsername: "profile-display-username",
   displayUsernameDescription: "profile-display-username-description",
@@ -75,12 +83,12 @@ export function EditProfileDialog({
     event.preventDefault();
 
     const nextDisplayUsername = form.displayUsername.trim();
-    const nextUsername = form.username.trim();
+    const nextUsername = normalizeUsername(form.username);
 
     const nextErrors: ProfileFormErrors = {};
 
-    if (!usernamePattern.test(nextUsername)) {
-      nextErrors.username = "Use 3-30 letters, numbers, underscores, or dots.";
+    if (!isUsernameFormatValid(nextUsername)) {
+      nextErrors.username = usernameUnavailableMessage;
     }
 
     if (!nextDisplayUsername) {
@@ -93,7 +101,7 @@ export function EditProfileDialog({
       return setErrors(nextErrors);
     }
 
-    const normalizedNextUsername = nextUsername.toLowerCase();
+    const normalizedNextUsername = nextUsername;
     const currentUsername = username.toLowerCase();
     const hasChanges = nextDisplayUsername !== displayName || normalizedNextUsername !== currentUsername;
     if (!hasChanges) {
@@ -222,11 +230,11 @@ function getProfileUpdateErrors(error: unknown): ProfileFormErrors {
   const code = getProfileUpdateErrorCode(error);
 
   if (code === "INVALID_DISPLAY_USERNAME") {
-    return { displayUsername: `Use ${displayUsernameMaxLength} characters or fewer.` };
+    return { displayUsername: displayUsernameUnavailableMessage };
   }
 
   if (code?.startsWith("USERNAME_") || message.toLowerCase().includes("username")) {
-    return { username: message };
+    return { username: usernameUnavailableMessage };
   }
 
   if (message.toLowerCase().includes("display username")) {

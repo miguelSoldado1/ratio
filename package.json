@@ -47,6 +47,7 @@
     "dotenv": "^17.4.2",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.17.0",
+    "obscenity": "^0.4.6",
     "postgres": "^3.4.9",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
