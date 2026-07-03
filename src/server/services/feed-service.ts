@@ -161,10 +161,9 @@ export async function getFeedService(data: FeedInput): Promise<FeedPage> {
 
 // Candidate queries
 
-async function getAnonymousFeedCandidates(
-  db: Db,
-  { cursor, recentLikeCutoff, reviewCreatedCutoff }: GetAnonymousFeedCandidatesParams
-) {
+async function getAnonymousFeedCandidates(db: Db, data: GetAnonymousFeedCandidatesParams) {
+  const { cursor, recentLikeCutoff, reviewCreatedCutoff } = data;
+
   const [recentRows, recentLikeRows] = await Promise.all([
     getRecentReviewCandidates(db, {
       cursor,
@@ -182,10 +181,9 @@ async function getAnonymousFeedCandidates(
   return hydrateCandidateLikeStats(db, mergeCandidateRows([...recentRows, ...recentLikeRows]), recentLikeCutoff);
 }
 
-async function getAuthenticatedFeedCandidates(
-  db: Db,
-  { cursor, recentLikeCutoff, reviewCreatedCutoff, viewerUserId }: GetAuthenticatedFeedCandidatesParams
-) {
+async function getAuthenticatedFeedCandidates(db: Db, data: GetAuthenticatedFeedCandidatesParams) {
+  const { cursor, recentLikeCutoff, reviewCreatedCutoff, viewerUserId } = data;
+
   const [followedRows, recentRows, recentLikeRows] = await Promise.all([
     getFollowedReviewCandidates(db, {
       cursor,
@@ -215,10 +213,9 @@ async function getAuthenticatedFeedCandidates(
   );
 }
 
-function getRecentReviewCandidates(
-  db: Db,
-  { cursor, limit, reviewCreatedCutoff, source, viewerUserId }: GetRecentReviewCandidatesParams
-) {
+function getRecentReviewCandidates(db: Db, data: GetRecentReviewCandidatesParams) {
+  const { cursor, limit, reviewCreatedCutoff, source, viewerUserId } = data;
+
   const seenReviewsFilter = getSeenReviewsFilter(cursor);
 
   return db
@@ -242,10 +239,9 @@ function getRecentReviewCandidates(
     .then((rows) => rows.map((row) => ({ ...row, source })));
 }
 
-function getFollowedReviewCandidates(
-  db: Db,
-  { cursor, limit, reviewCreatedCutoff, viewerUserId }: GetFollowedReviewCandidatesParams
-) {
+function getFollowedReviewCandidates(db: Db, data: GetFollowedReviewCandidatesParams) {
+  const { cursor, limit, reviewCreatedCutoff, viewerUserId } = data;
+
   const seenReviewsFilter = getSeenReviewsFilter(cursor);
 
   return db
@@ -270,10 +266,9 @@ function getFollowedReviewCandidates(
     .then((rows) => rows.map((row) => ({ ...row, source: "followed" as const })));
 }
 
-function getRecentLikeCandidates(
-  db: Db,
-  { cursor, limit, recentLikeCutoff, viewerUserId }: GetRecentLikeCandidatesParams
-) {
+function getRecentLikeCandidates(db: Db, data: GetRecentLikeCandidatesParams) {
+  const { cursor, limit, recentLikeCutoff, viewerUserId } = data;
+
   const seenReviewsFilter = getSeenReviewsFilter(cursor);
   const likedUser = alias(user, "liked_user");
 
@@ -386,11 +381,7 @@ function applyDiversityFilters(candidates: FeedCandidate[]) {
   return selected;
 }
 
-async function hydrateCandidateLikeStats(
-  db: Db,
-  candidates: MergedFeedCandidate[],
-  recentLikeCutoff: Date
-): Promise<FeedCandidate[]> {
+async function hydrateCandidateLikeStats(db: Db, candidates: MergedFeedCandidate[], recentLikeCutoff: Date) {
   if (candidates.length === 0) return [];
 
   const reviewIds = candidates.map((candidate) => candidate.review.id);

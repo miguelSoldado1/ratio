@@ -143,10 +143,9 @@ export interface NotificationsPage {
 
 // Services
 
-export async function createReviewLikedNotification(
-  { actorUserId, reviewId }: CreateReviewLikedNotificationInput,
-  db: NotificationWriteDb
-) {
+export async function createReviewLikedNotification(data: CreateReviewLikedNotificationInput, db: NotificationWriteDb) {
+  const { actorUserId, reviewId } = data;
+
   const [review] = await db
     .select({ recipientUserId: reviews.userId })
     .from(reviews)
@@ -180,9 +179,11 @@ export async function createReviewLikedNotification(
 }
 
 export async function createUserFollowedNotification(
-  { actorUserId, recipientUserId }: CreateUserFollowedNotificationInput,
+  data: CreateUserFollowedNotificationInput,
   db: NotificationWriteDb
 ) {
+  const { actorUserId, recipientUserId } = data;
+
   if (actorUserId === recipientUserId) return null;
 
   const now = new Date();
