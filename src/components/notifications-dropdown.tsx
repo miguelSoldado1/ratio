@@ -113,8 +113,8 @@ export function NotificationsDropdown({ userId }: NotificationsDropdownProps) {
   async function handleNotificationClick(item: NotificationItem) {
     if (item.type === "review_liked") {
       await navigate({
-        params: { albumId: item.albumId, reviewId: item.reviewId },
-        to: "/album/$albumId/review/$reviewId",
+        params: { albumId: item.albumId, reviewCode: item.reviewCode },
+        to: "/album/$albumId/r/$reviewCode",
       });
       return;
     }

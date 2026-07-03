@@ -29,7 +29,7 @@ Use this as a directional order, not a locked feature spec.
 - Build reusable user-list UI where possible for followers, following, and liked-by views.
 - Notifications should come before advanced feed work because they make the social loop feel alive.
 - Home feed v1 is intentionally conservative: no feed-specific schema changes, bounded candidate queries, deterministic ranking, seen-ID cursor pagination, and no Spotify personalization. The cursor design is acceptable for v1 because the candidate windows are small; replace it with cached candidate IDs or a materialized feed/ranking store if feed scale grows.
-- `/album/:spotifyId/review/:reviewId` is the canonical target for shared reviews so the focused review keeps album context.
+- `/album/:spotifyId/r/:reviewCode` is the canonical target for shared reviews so the focused review keeps album context without exposing the internal review UUID.
 
 ## Post-Launch Work
 

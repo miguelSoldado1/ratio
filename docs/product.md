@@ -40,12 +40,12 @@ Authenticated + Spotify linked
 
 ## Routes
 
-All album pages (`/album/:spotifyId`) are publicly accessible and shareable. Review permalinks are album-scoped (`/album/:spotifyId/review/:reviewId`) so a shared review keeps the album context.
+All album pages (`/album/:spotifyId`) are publicly accessible and shareable. Review permalinks are album-scoped (`/album/:spotifyId/r/:reviewCode`) so a shared review keeps the album context while using a short public review code instead of the internal review UUID.
 
 ```text
 /                          Public feed - trending + recent activity
 /album/:spotifyId          Album page - metadata, community rating, reviews
-/album/:spotifyId/review/:reviewId
+/album/:spotifyId/r/:reviewCode
                            Review permalink dialog over the album page
 /user/:username            Profile - ratings, reviews, followers
 /settings                  Account settings, linked providers, Spotify connect

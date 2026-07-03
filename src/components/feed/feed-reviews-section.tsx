@@ -65,7 +65,7 @@ export function FeedReviewsSection({
                     album={review.album}
                     rating={review.rating}
                     reviewBody={review.review}
-                    reviewId={review.id}
+                    reviewCode={review.shareCode}
                     userDisplayName={review.user.displayUsername}
                   />
                   <ReviewManagementMenu

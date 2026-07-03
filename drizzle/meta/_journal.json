@@ -64,6 +64,20 @@
       "when": 1782994147459,
       "tag": "0008_open_lionheart",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1783083856375,
+      "tag": "0009_red_speedball",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1783083868686,
+      "tag": "0010_complex_cardiac",
+      "breakpoints": true
     }
   ]
 }

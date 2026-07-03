@@ -27,7 +27,7 @@ export const Route = createFileRoute("/user/$username")({
     return {
       links: [createCanonicalLink(path)],
       meta: createSeoMeta({
-        description: `Read @${params.username}'s album reviews and ratings on Ratio.`,
+        description: `Read @${params.username}'s album reviews on Ratio.`,
         path,
         title: `@${params.username} - Album Reviews | ${siteName}`,
         type: "profile",

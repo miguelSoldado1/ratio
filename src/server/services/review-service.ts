@@ -20,7 +20,10 @@ import type { AuthenticatedContext } from "../auth-middleware";
 
 const ratingBuckets: readonly ["1", "2", "3", "4", "5"] = ["1", "2", "3", "4", "5"];
 const maxProfilePinnedReviews = 3;
+const maxReviewShareCodeAttempts = 5;
 const reviewLikesPageSize = 24;
+const reviewShareCodeAlphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+const reviewShareCodeLength = 10;
 const reviewsPageSize = 12;
 const userSearchResultLimit = 5;
 
@@ -92,8 +95,8 @@ export interface AlbumReviewsInput extends AlbumIdInput {
   cursor?: string;
 }
 
-export interface ReviewDetailInput extends AlbumIdInput {
-  reviewId: string;
+export interface ReviewCodeInput extends AlbumIdInput {
+  reviewCode: string;
 }
 
 export interface UserReviewsInput {
@@ -179,7 +182,7 @@ export async function getAlbumReviewsService(data: AlbumReviewsInput): Promise<A
   };
 }
 
-export async function getReviewByIdService(data: ReviewDetailInput): Promise<ReviewDetail> {
+export async function getReviewByShareCodeService(data: ReviewCodeInput): Promise<ReviewDetail> {
   const db = await getDb();
   const currentUser = await getOptionalCurrentUser(db);
   const viewerUserId = currentUser?.id;
@@ -206,7 +209,7 @@ export async function getReviewByIdService(data: ReviewDetailInput): Promise<Rev
     .from(reviews)
     .innerJoin(albums, eq(reviews.albumId, albums.id))
     .innerJoin(user, eq(reviews.userId, user.id))
-    .where(and(eq(reviews.albumId, data.albumId), eq(reviews.id, data.reviewId), authorFilter))
+    .where(and(eq(reviews.albumId, data.albumId), eq(reviews.shareCode, data.reviewCode), authorFilter))
     .limit(1);
 
   if (!review) {
@@ -430,21 +433,34 @@ export async function hasMyAlbumReviewService(data: AlbumIdInput, context: Authe
 export async function createReviewService(data: CreateReviewInput, context: AuthenticatedContext) {
   const albumMetadata = await getMissingAlbumMetadataForWrite(data.albumId, context.db);
 
-  return await context.db.transaction(async (transaction) => {
-    await ensureAlbumExistsForWrite(albumMetadata, transaction);
+  for (let attempt = 0; attempt < maxReviewShareCodeAttempts; attempt++) {
+    try {
+      return await context.db.transaction(async (transaction) => {
+        await ensureAlbumExistsForWrite(albumMetadata, transaction);
 
-    const [review] = await transaction
-      .insert(reviews)
-      .values({
-        albumId: data.albumId,
-        body: data.body || null,
-        rating: data.rating,
-        userId: context.user.id,
-      })
-      .returning();
+        const [review] = await transaction
+          .insert(reviews)
+          .values({
+            albumId: data.albumId,
+            body: data.body || null,
+            rating: data.rating,
+            shareCode: generateReviewShareCode(),
+            userId: context.user.id,
+          })
+          .returning();
 
-    return review;
-  });
+        return review;
+      });
+    } catch (error) {
+      if (isShareCodeUniqueViolation(error)) {
+        continue;
+      }
+
+      throw error;
+    }
+  }
+
+  throw new Error("Could not create review share code");
 }
 
 export async function deleteReviewService(data: DeleteReviewInput, context: AuthenticatedContext) {
@@ -627,6 +643,38 @@ function escapeLikePattern(value: string) {
   return value.replace(/[\\%_]/g, "\\$&");
 }
 
+function generateReviewShareCode() {
+  const code: string[] = [];
+
+  while (code.length < reviewShareCodeLength) {
+    const bytes = new Uint8Array(reviewShareCodeLength);
+    globalThis.crypto.getRandomValues(bytes);
+
+    for (const byte of bytes) {
+      if (byte >= 232) continue;
+
+      code.push(reviewShareCodeAlphabet[byte % reviewShareCodeAlphabet.length]);
+
+      if (code.length === reviewShareCodeLength) break;
+    }
+  }
+
+  return code.join("");
+}
+
+function isShareCodeUniqueViolation(error: unknown) {
+  if (!(error && typeof error === "object")) return false;
+
+  const dbError = error as { code?: unknown; constraint?: unknown; constraint_name?: unknown; message?: unknown };
+  const constraintName = dbError.constraint_name ?? dbError.constraint;
+
+  return (
+    dbError.code === "23505" &&
+    (constraintName === "reviews_share_code_unique_idx" ||
+      (typeof dbError.message === "string" && dbError.message.includes("reviews_share_code_unique_idx")))
+  );
+}
+
 // Rows
 
 interface AlbumReviewRow {
@@ -723,6 +771,7 @@ function mapAlbumReview({ canDelete, liked, likes, review, user }: AlbumReviewRo
     likes,
     rating: review.rating / 2,
     review: review.body ?? undefined,
+    shareCode: review.shareCode,
     createdAt: review.createdAt,
     user: {
       avatarUrl: user.avatarUrl ?? undefined,
@@ -797,6 +846,7 @@ function mapUserReview({ album, liked, likes, pinned, review }: UserReviewRow, c
     pinned,
     rating: review.rating / 2,
     review: review.body ?? undefined,
+    shareCode: review.shareCode,
   };
 }
 

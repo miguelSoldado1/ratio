@@ -10,7 +10,7 @@ export const Route = createFileRoute("/album/$albumId")({
     return {
       links: [createCanonicalLink(path)],
       meta: createSeoMeta({
-        description: "Read community reviews and ratings for this album on Ratio.",
+        description: "Read community reviews for this album on Ratio.",
         path,
         title: `Album Reviews | ${siteName}`,
       }),

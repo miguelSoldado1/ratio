@@ -1,7 +1,7 @@
 const fallbackSiteUrl = "https://ratio.sticky-puddingz.workers.dev";
 
 export const siteName = "Ratio";
-export const defaultSeoTitle = "Ratio - Album Reviews and Ratings";
+export const defaultSeoTitle = "Ratio - Album Reviews";
 export const defaultSeoDescription =
   "Discover, rate, and review albums with a social music community built for focused music discovery.";
 export const defaultSeoImage = "/web-app-manifest-512x512.png";

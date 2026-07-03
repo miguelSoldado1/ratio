@@ -111,7 +111,7 @@ export function ReviewsSection({ album, className }: ReviewsSectionProps) {
                 album={{ artist: albumArtist, id: album.id, title: album.title }}
                 rating={review.rating}
                 reviewBody={review.review}
-                reviewId={review.id}
+                reviewCode={review.shareCode}
                 userDisplayName={review.user.displayUsername}
               />
               <ReviewManagementMenu

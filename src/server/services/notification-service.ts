@@ -74,6 +74,7 @@ interface ReviewLikedNotificationGroup {
   actors: NotificationActor[];
   albumId: string;
   albumTitle: string;
+  reviewCode: string;
   reviewId: string;
   seen: boolean;
   type: "review_liked";
@@ -116,6 +117,7 @@ export interface ReviewLikedNotificationItem {
   href: string;
   key: string;
   latestCreatedAt: Date;
+  reviewCode: string;
   reviewId: string;
   seen: boolean;
   text: string;
@@ -411,6 +413,7 @@ async function getReviewLikedGroupSummaries(context: AuthenticatedContext, revie
       actorCount: sql<number>`count(*)::int`,
       albumId: albums.id,
       albumTitle: albums.title,
+      reviewCode: reviews.shareCode,
       reviewId: notifications.reviewId,
       seen: sql<boolean>`bool_and(${notifications.seenAt} is not null)`,
     })
@@ -425,7 +428,7 @@ async function getReviewLikedGroupSummaries(context: AuthenticatedContext, revie
         inArray(notifications.reviewId, reviewIds)
       )
     )
-    .groupBy(notifications.reviewId, albums.id, albums.title);
+    .groupBy(notifications.reviewId, albums.id, albums.title, reviews.shareCode);
 
   const summaries = new Map<string, ReviewLikedNotificationGroup>();
   for (const row of rows) {
@@ -436,6 +439,7 @@ async function getReviewLikedGroupSummaries(context: AuthenticatedContext, revie
       actors: [],
       albumId: row.albumId,
       albumTitle: row.albumTitle,
+      reviewCode: row.reviewCode,
       reviewId: row.reviewId,
       seen: row.seen,
       type: "review_liked",
@@ -597,9 +601,10 @@ function mapReviewLikedGroup(
     actors,
     albumId: group.albumId,
     albumTitle: group.albumTitle,
-    href: `/album/${group.albumId}/review/${group.reviewId}`,
+    href: `/album/${group.albumId}/r/${group.reviewCode}`,
     key: `review_liked:${group.reviewId}`,
     latestCreatedAt,
+    reviewCode: group.reviewCode,
     reviewId: group.reviewId,
     seen: group.seen,
     text: formatReviewLikedText(actors, group.actorCount),

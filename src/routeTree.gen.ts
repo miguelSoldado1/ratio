@@ -15,7 +15,7 @@ import { Route as UserUsernameRouteImport } from './routes/user/$username'
 import { Route as ApiUploadRouteImport } from './routes/api/upload'
 import { Route as AlbumAlbumIdRouteImport } from './routes/album/$albumId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
-import { Route as AlbumAlbumIdReviewReviewIdRouteImport } from './routes/album/$albumId/review/$reviewId'
+import { Route as AlbumAlbumIdRReviewCodeRouteImport } from './routes/album/$albumId/r/$reviewCode'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
@@ -47,12 +47,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AlbumAlbumIdReviewReviewIdRoute =
-  AlbumAlbumIdReviewReviewIdRouteImport.update({
-    id: '/review/$reviewId',
-    path: '/review/$reviewId',
-    getParentRoute: () => AlbumAlbumIdRoute,
-  } as any)
+const AlbumAlbumIdRReviewCodeRoute = AlbumAlbumIdRReviewCodeRouteImport.update({
+  id: '/r/$reviewCode',
+  path: '/r/$reviewCode',
+  getParentRoute: () => AlbumAlbumIdRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -61,7 +60,7 @@ export interface FileRoutesByFullPath {
   '/api/upload': typeof ApiUploadRoute
   '/user/$username': typeof UserUsernameRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/album/$albumId/review/$reviewId': typeof AlbumAlbumIdReviewReviewIdRoute
+  '/album/$albumId/r/$reviewCode': typeof AlbumAlbumIdRReviewCodeRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,7 +69,7 @@ export interface FileRoutesByTo {
   '/api/upload': typeof ApiUploadRoute
   '/user/$username': typeof UserUsernameRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/album/$albumId/review/$reviewId': typeof AlbumAlbumIdReviewReviewIdRoute
+  '/album/$albumId/r/$reviewCode': typeof AlbumAlbumIdRReviewCodeRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -80,7 +79,7 @@ export interface FileRoutesById {
   '/api/upload': typeof ApiUploadRoute
   '/user/$username': typeof UserUsernameRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/album/$albumId/review/$reviewId': typeof AlbumAlbumIdReviewReviewIdRoute
+  '/album/$albumId/r/$reviewCode': typeof AlbumAlbumIdRReviewCodeRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,7 +90,7 @@ export interface FileRouteTypes {
     | '/api/upload'
     | '/user/$username'
     | '/api/auth/$'
-    | '/album/$albumId/review/$reviewId'
+    | '/album/$albumId/r/$reviewCode'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,7 +99,7 @@ export interface FileRouteTypes {
     | '/api/upload'
     | '/user/$username'
     | '/api/auth/$'
-    | '/album/$albumId/review/$reviewId'
+    | '/album/$albumId/r/$reviewCode'
   id:
     | '__root__'
     | '/'
@@ -109,7 +108,7 @@ export interface FileRouteTypes {
     | '/api/upload'
     | '/user/$username'
     | '/api/auth/$'
-    | '/album/$albumId/review/$reviewId'
+    | '/album/$albumId/r/$reviewCode'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -165,22 +164,22 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/album/$albumId/review/$reviewId': {
-      id: '/album/$albumId/review/$reviewId'
-      path: '/review/$reviewId'
-      fullPath: '/album/$albumId/review/$reviewId'
-      preLoaderRoute: typeof AlbumAlbumIdReviewReviewIdRouteImport
+    '/album/$albumId/r/$reviewCode': {
+      id: '/album/$albumId/r/$reviewCode'
+      path: '/r/$reviewCode'
+      fullPath: '/album/$albumId/r/$reviewCode'
+      preLoaderRoute: typeof AlbumAlbumIdRReviewCodeRouteImport
       parentRoute: typeof AlbumAlbumIdRoute
     }
   }
 }
 
 interface AlbumAlbumIdRouteChildren {
-  AlbumAlbumIdReviewReviewIdRoute: typeof AlbumAlbumIdReviewReviewIdRoute
+  AlbumAlbumIdRReviewCodeRoute: typeof AlbumAlbumIdRReviewCodeRoute
 }
 
 const AlbumAlbumIdRouteChildren: AlbumAlbumIdRouteChildren = {
-  AlbumAlbumIdReviewReviewIdRoute: AlbumAlbumIdReviewReviewIdRoute,
+  AlbumAlbumIdRReviewCodeRoute: AlbumAlbumIdRReviewCodeRoute,
 }
 
 const AlbumAlbumIdRouteWithChildren = AlbumAlbumIdRoute._addFileChildren(

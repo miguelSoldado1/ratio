@@ -478,6 +478,7 @@ function mapFeedReview(candidate: FeedCandidate) {
     likes: candidate.likes,
     rating: candidate.review.rating / 2,
     review: candidate.review.body ?? undefined,
+    shareCode: candidate.review.shareCode,
     user: {
       avatarUrl: candidate.user.avatarUrl ?? undefined,
       displayUsername: candidate.user.displayUsername ?? candidate.user.username ?? candidate.user.id,

@@ -98,7 +98,7 @@ export function ProfileReviewsSection({
                     album={review.album}
                     rating={review.rating}
                     reviewBody={review.review}
-                    reviewId={review.id}
+                    reviewCode={review.shareCode}
                     userDisplayName={profileUser.displayUsername}
                   />
                   <ProfileReviewManagementMenu

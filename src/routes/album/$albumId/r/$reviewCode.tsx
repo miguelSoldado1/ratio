@@ -14,12 +14,12 @@ import { useReviewLikeToggle } from "@/hooks/use-review-like-toggle";
 import { authClient } from "@/lib/auth/auth-client";
 import { createCanonicalLink, createSeoMeta, siteName } from "@/lib/seo";
 import { albumQueryKeys } from "@/lib/tanstack-query/query-keys";
-import { getReviewById } from "@/server/functions/review-functions";
+import { getReviewByShareCode } from "@/server/functions/review-functions";
 
-export const Route = createFileRoute("/album/$albumId/review/$reviewId")({
-  component: AlbumReviewRoute,
+export const Route = createFileRoute("/album/$albumId/r/$reviewCode")({
+  component: AlbumReviewByCodeRoute,
   head: ({ params }) => {
-    const path = `/album/${params.albumId}/review/${params.reviewId}`;
+    const path = `/album/${params.albumId}/r/${params.reviewCode}`;
 
     return {
       links: [createCanonicalLink(path)],
@@ -33,8 +33,8 @@ export const Route = createFileRoute("/album/$albumId/review/$reviewId")({
   },
 });
 
-function AlbumReviewRoute() {
-  const { albumId, reviewId } = Route.useParams();
+function AlbumReviewByCodeRoute() {
+  const { albumId, reviewCode } = Route.useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const session = authClient.useSession();
@@ -47,7 +47,7 @@ function AlbumReviewRoute() {
   const viewer = useMemo(() => ({ hasSession, userId }), [hasSession, userId]);
   const [portalReady, setPortalReady] = useState(false);
 
-  const reviewQueryKey = albumQueryKeys.reviewDetail(albumId, reviewId, userId);
+  const reviewQueryKey = albumQueryKeys.reviewDetailByCode(albumId, reviewCode, userId);
   const albumReviewsQueryKey = albumQueryKeys.reviews(albumId, userId);
   const reviewLikeQueryKeys = useMemo(
     () => [reviewQueryKey, albumReviewsQueryKey],
@@ -58,11 +58,11 @@ function AlbumReviewRoute() {
     navigate({ params: { albumId }, to: "/album/$albumId" });
   }, [albumId, navigate]);
 
-  const getReviewByIdFn = useServerFn(getReviewById);
+  const getReviewByShareCodeFn = useServerFn(getReviewByShareCode);
   const reviewQuery = useQuery({
     enabled: !session.isPending,
     meta: { suppressErrorToast: true },
-    queryFn: () => getReviewByIdFn({ data: { albumId, reviewId } }),
+    queryFn: () => getReviewByShareCodeFn({ data: { albumId, reviewCode } }),
     queryKey: reviewQueryKey,
   });
 
@@ -117,7 +117,7 @@ function AlbumReviewRoute() {
       <ReviewLikesDialog
         onOpenChange={(nextOpen) => setLikesOpen(nextOpen)}
         open={likesOpen}
-        reviewId={reviewId}
+        reviewId={reviewQuery.data?.id}
         viewer={viewer}
       />
     </>

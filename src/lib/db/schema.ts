@@ -41,6 +41,7 @@ export const reviews = pgTable(
     albumId: text("album_id")
       .notNull()
       .references(() => albums.id),
+    shareCode: text("share_code").notNull(),
     rating: smallint("rating").notNull(),
     body: text("body"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -54,6 +55,7 @@ export const reviews = pgTable(
     index("reviews_album_created_id_idx").on(table.albumId, table.createdAt, table.id),
     index("reviews_user_id_idx").on(table.userId),
     uniqueIndex("reviews_user_album_unique_idx").on(table.userId, table.albumId),
+    uniqueIndex("reviews_share_code_unique_idx").on(table.shareCode),
     check("reviews_ratings_range_check", sql`${table.rating} >= 1 AND ${table.rating} <= 10`),
   ]
 );
