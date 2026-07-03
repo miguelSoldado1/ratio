@@ -9,7 +9,7 @@
 | Database | Supabase (Postgres) | No Supabase SDK needed; validate Worker-compatible Postgres connectivity before feature work |
 | ORM | Drizzle | Postgres dialect |
 | Auth | Better Auth (self-hosted) | Username + last-login-method plugins already wired |
-| Music data | Spotify Web API | Client Credentials (anonymous) + user token (linked) |
+| Music data | Spotify Web API | Client Credentials for all v1 Spotify API calls; personal user tokens deferred |
 
 ## Coding Conventions
 

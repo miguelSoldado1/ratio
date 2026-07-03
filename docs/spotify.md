@@ -8,22 +8,22 @@ Use an official Spotify logo asset as the minimum visible attribution for that s
 
 For item-level content such as search results, album pages, tracks, and feed cards, keep the mapped `spotifyUrl` available so users can open the applicable album, artist, track, or search result on Spotify.
 
-## Spotify as Login vs. Link
+## Spotify Login and Future Linking
 
-Spotify is registered as a full social provider in Better Auth. Whether the user signs in with Spotify or links it later, the access and refresh tokens are stored identically on the `account` table.
+Spotify is registered as a full social provider in Better Auth for v1 sign-in. Account linking and personal Spotify API token usage are deferred until a product feature needs them, such as Spotify-personalized recommendations or listening-history-based feed sources.
 
-The retrieval call is the same either way:
+If Spotify linking becomes product scope later, Better Auth stores sign-in and linked-account provider tokens on the `account` table. The retrieval call is expected to look like:
 
 ```ts
 const { data } = await authClient.getAccessToken({ providerId: "spotify" })
 const accessToken = data?.accessToken
 ```
 
-This means a user who signs in with another OAuth provider and later links Spotify will have a valid token available on any device they sign into. Tokens are stored against the user record, not the session or device.
+That future flow should treat tokens as user-record data, not session- or device-local data.
 
-## Token Refresh
+## Personal Token Refresh
 
-Configure the Spotify provider with refresh enabled. Better Auth handles silent refresh automatically. Guard all token retrieval in case the refresh token has been invalidated, such as when a user revokes access in Spotify settings.
+Deferred until personal Spotify tokens are used by the product. When this becomes scope, configure the Spotify provider with refresh enabled, let Better Auth handle silent refresh, and guard token retrieval in case the refresh token has been invalidated, such as when a user revokes access in Spotify settings.
 
 ```ts
 async function getSpotifyToken(userId?: string): Promise<string> {
@@ -44,7 +44,7 @@ In server code, retrieve linked-provider tokens through Better Auth's server API
 
 ## Client Credentials Token
 
-Used for all anonymous requests and as fallback for authenticated users without Spotify linked.
+Used for all v1 Spotify Web API requests, including anonymous traffic and authenticated users.
 
 - Cache the token in Cloudflare KV with its expiry timestamp; optionally keep a module-scope in-memory copy as a fast per-isolate layer
 - Refresh proactively before expiry; Spotify tokens last about 1 hour, so refresh around 55 minutes
@@ -57,7 +57,7 @@ KV is the simplest durable shared cache for this token because the token is smal
 
 ## User Token
 
-Used for authenticated users with Spotify linked.
+Deferred until account linking or Spotify-personalized features are in scope.
 
 - Retrieved via Better Auth `getAccessToken`
 - Offloads rate limit from the server token significantly

@@ -4,7 +4,7 @@
 
 ## Core Concept
 
-Ratio lets anyone browse and discover albums without an account. Authenticated users can rate, review, like, and follow others. Spotify is one of several login providers, not a requirement. Spotify-linked personalization is a post-launch direction, not a v1 release requirement.
+Ratio lets anyone browse and discover albums without an account. Authenticated users can rate, review, like, and follow others. Spotify is one of several login providers, not a requirement. Spotify account linking, personal Spotify API tokens, and Spotify-linked personalization are post-launch directions, not v1 release requirements.
 
 ## Authentication
 
@@ -29,13 +29,8 @@ Anonymous
 
 Authenticated (any provider)
   - Can rate, review, like, follow, and manage profile/account settings
-  - Spotify API still via server token unless Spotify is linked
-
-Authenticated + Spotify linked
-  - Same v1 product behavior as other authenticated users
-  - Spotify API calls use their personal access token
-  - Server token preserved for anonymous traffic
-  - Future personalised feed sources can use listening history and top artists
+  - Spotify API still uses the server Client Credentials token in v1
+  - Future Spotify-linked features can use personal access tokens if account linking becomes product scope
 ```
 
 ## Routes
@@ -48,7 +43,7 @@ All album pages (`/album/:spotifyId`) are publicly accessible and shareable. Rev
 /album/:spotifyId/r/:reviewCode
                            Review permalink dialog over the album page
 /user/:username            Profile - ratings, reviews, followers
-/settings                  Account settings, linked providers, Spotify connect
+/settings                  Account settings and linked sign-in methods
 ```
 
 Search is a global command/dialog experience in v1, not a standalone route. Separate `/search`, `/feed`, and `/lists/:id` routes are deferred until the product needs those dedicated surfaces.
@@ -66,7 +61,7 @@ Search is a global command/dialog experience in v1, not a standalone route. Sepa
 - User profiles with rating history
 - Album pages with community score and reviews
 - Search albums via Spotify API and users by username/display username from the global search dialog
-- Link/unlink Spotify in settings
+- Link/unlink sign-in methods in settings
 - Home feed blending recent reviews, recently liked reviews, and followed-user reviews when signed in
 - Album-scoped review permalinks and basic review sharing
 - Basic admin moderation: remove bad reviews/ratings and ban abusive accounts
@@ -75,6 +70,7 @@ Search is a global command/dialog experience in v1, not a standalone route. Sepa
 ### Deferred
 
 - Spotify-personalized feed sources from listening history, top artists, recently played, or saved albums
+- Spotify account linking and personal Spotify API token usage beyond normal Spotify OAuth sign-in
 - Lists: curated ranked or unranked album collections
 - Dedicated `/search` route
 - Dedicated `/feed` route
@@ -130,7 +126,7 @@ Do not block the first production release on these:
 - Add global indexes if feed latency grows, especially `review(created_at, id)` and `review_like(created_at, review_id)`.
 - Add denormalized counters only when measured load justifies the write/storage cost, e.g. `review.likeCount`, `review.lastActivityAt`, or rolling aggregates.
 - Add album-level trend signals such as recent album review counts.
-- Add Spotify-personalized candidate sources once Spotify-linked personalization is in scope.
+- Add Spotify-personalized candidate sources once Spotify account linking and personal token usage are in scope.
 - Add seen/impression tracking if the product needs stronger long-term duplicate suppression.
 - Add explanations such as "because you follow..." only if the feed needs more transparency.
 
@@ -169,11 +165,9 @@ Set `min_votes` to something like 5. Tune `global_mean` from actual data over ti
 | Case | Handling |
 |---|---|
 | Album removed from Spotify | Keep cached metadata in existing local rows; hide or disable Spotify links when live lookup fails |
-| Spotify refresh token revoked | Catch error from `getAccessToken`, fall back to client credentials, surface soft reconnect prompt in settings |
 | Duplicate review attempt | Enforced at DB level via unique constraint on `(userId, albumId)`; block duplicate creates; delete may come later, no edit/update flow planned |
 | Low vote count rating display | Bayesian average until threshold is met, show raw score + count after |
 | Empty social feed (new user) | Fall back to the global feed blend until they follow someone |
 | Spotify personalization unavailable | Keep serving the v1 home feed; Spotify-personalized sources are deferred |
 | Compilation / single vs album | Filter search and product surfaces to albums only; reject non-`album` Spotify IDs before creating local album rows |
-| User signs in on new device | Spotify tokens stored on user record, not session; available immediately after login on any device |
 | Self-follow attempt | Guard in the follow/unfollow endpoint |
