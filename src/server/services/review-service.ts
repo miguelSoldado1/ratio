@@ -136,34 +136,40 @@ export async function getAlbumReviewsService(data: AlbumReviewsInput): Promise<A
     : sql<boolean>`false`;
   const canDelete = viewerUserId ? sql<boolean>`${reviews.userId} = ${viewerUserId}` : sql<boolean>`false`;
   const cursorFilter = cursor ? getAlbumReviewsCursorFilter(cursor) : undefined;
-  const pinnedViewerSort =
+  const albumReviewSelect = {
+    canDelete,
+    liked: likedByViewer,
+    likes: getVisibleReviewLikeCountSql(reviews.id),
+    review: getTableColumns(reviews),
+    user: {
+      avatarUrl: user.image,
+      displayUsername: user.displayUsername,
+      id: user.id,
+      username: user.username,
+    },
+  };
+  const pinnedReviewRows =
     viewerUserId && !cursor
-      ? sql<number>`case when ${reviews.userId} = ${viewerUserId} then 0 else 1 end`
-      : sql<number>`1`;
+      ? await db
+          .select(albumReviewSelect)
+          .from(reviews)
+          .innerJoin(user, eq(reviews.userId, user.id))
+          .where(and(eq(reviews.albumId, data.albumId), eq(reviews.userId, viewerUserId), getVisibleUserFilter(user)))
+          .limit(1)
+      : [];
   const reviewFilter = and(
     eq(reviews.albumId, data.albumId),
     getVisibleUserFilter(user),
     cursorFilter,
-    viewerUserId && cursor ? ne(reviews.userId, viewerUserId) : undefined
+    viewerUserId ? ne(reviews.userId, viewerUserId) : undefined
   );
 
   const albumReviews = await db
-    .select({
-      liked: likedByViewer,
-      likes: getVisibleReviewLikeCountSql(reviews.id),
-      canDelete,
-      review: getTableColumns(reviews),
-      user: {
-        avatarUrl: user.image,
-        displayUsername: user.displayUsername,
-        id: user.id,
-        username: user.username,
-      },
-    })
+    .select(albumReviewSelect)
     .from(reviews)
     .innerJoin(user, eq(reviews.userId, user.id))
     .where(reviewFilter)
-    .orderBy(pinnedViewerSort, desc(reviews.createdAt), desc(reviews.id))
+    .orderBy(desc(reviews.createdAt), desc(reviews.id))
     .limit(reviewsPageSize + 1);
 
   const hasNextPage = albumReviews.length > reviewsPageSize;
@@ -178,7 +184,7 @@ export async function getAlbumReviewsService(data: AlbumReviewsInput): Promise<A
             id: lastReview.id,
           })
         : null,
-    reviews: pageRows.map(mapAlbumReview),
+    reviews: [...pinnedReviewRows, ...pageRows].map(mapAlbumReview),
   };
 }
 
@@ -365,19 +371,36 @@ export async function getReviewLikesService(data: ReviewLikesInput): Promise<Rev
   const likedUser = alias(user, "liked_user");
   const likedUserId = sql.raw('"liked_user"."id"');
   const followedByViewer = getFollowedByViewerSql(viewerUserId, likedUserId);
+  const reviewLikeSelect = {
+    followedByViewer,
+    likeCreatedAt: reviewLikes.createdAt,
+    user: {
+      avatarUrl: likedUser.image,
+      displayUsername: likedUser.displayUsername,
+      id: likedUser.id,
+      name: likedUser.name,
+      username: likedUser.username,
+    },
+  };
+  const pinnedLikeRows =
+    viewerUserId && !cursor
+      ? await db
+          .select(reviewLikeSelect)
+          .from(reviewLikes)
+          .innerJoin(likedUser, eq(reviewLikes.userId, likedUser.id))
+          .where(
+            and(
+              eq(reviewLikes.reviewId, data.reviewId),
+              eq(reviewLikes.userId, viewerUserId),
+              isNotNull(likedUser.username),
+              sql`${likedUser.banned} is not true`
+            )
+          )
+          .limit(1)
+      : [];
 
   const likeRows = await db
-    .select({
-      followedByViewer,
-      likeCreatedAt: reviewLikes.createdAt,
-      user: {
-        avatarUrl: likedUser.image,
-        displayUsername: likedUser.displayUsername,
-        id: likedUser.id,
-        name: likedUser.name,
-        username: likedUser.username,
-      },
-    })
+    .select(reviewLikeSelect)
     .from(reviewLikes)
     .innerJoin(likedUser, eq(reviewLikes.userId, likedUser.id))
     .where(
@@ -385,13 +408,14 @@ export async function getReviewLikesService(data: ReviewLikesInput): Promise<Rev
         eq(reviewLikes.reviewId, data.reviewId),
         isNotNull(likedUser.username),
         sql`${likedUser.banned} is not true`,
+        viewerUserId ? ne(reviewLikes.userId, viewerUserId) : undefined,
         cursorFilter ?? undefined
       )
     )
     .orderBy(desc(reviewLikes.createdAt), desc(reviewLikes.userId))
     .limit(reviewLikesPageSize + 1);
 
-  return mapReviewLikesPage(likeRows);
+  return mapReviewLikesPage(likeRows, pinnedLikeRows);
 }
 
 export async function getAlbumRatingSummaryService({ albumId }: AlbumIdInput) {
@@ -850,7 +874,7 @@ function mapUserReview({ album, liked, likes, pinned, review }: UserReviewRow, c
   };
 }
 
-function mapReviewLikesPage(rows: ReviewLikeUserRow[]): ReviewLikesPage {
+function mapReviewLikesPage(rows: ReviewLikeUserRow[], pinnedRows: ReviewLikeUserRow[] = []): ReviewLikesPage {
   const hasNextPage = rows.length > reviewLikesPageSize;
   const pageRows = hasNextPage ? rows.slice(0, reviewLikesPageSize) : rows;
   const lastRow = pageRows.at(-1);
@@ -863,7 +887,7 @@ function mapReviewLikesPage(rows: ReviewLikeUserRow[]): ReviewLikesPage {
             id: lastRow.user.id,
           })
         : null,
-    users: pageRows.map(mapFollowableUser),
+    users: [...pinnedRows, ...pageRows].map(mapFollowableUser),
   };
 }
 

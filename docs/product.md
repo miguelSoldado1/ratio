@@ -134,7 +134,7 @@ Do not block the first production release on these:
 
 Authenticated album review lists should show the viewer's own review first when present. This makes the disabled `Add a review` action self-explanatory without adding persistent helper text or a tooltip to the album actions.
 
-The v1 query should prefer one database round trip: pin the viewer's review with a computed sort key on the first page, then exclude that review from cursor pages to avoid duplicates. If high-review albums make that sort measurably slow, switch to two index-friendly reads instead: fetch the viewer review by `(userId, albumId)`, fetch the normal album review page by `(albumId, createdAt, id)`, then merge in application code.
+The v1 query uses two index-friendly reads on the first page: fetch the viewer review by `(userId, albumId)`, fetch the normal album review page by `(albumId, createdAt, id)` while excluding the viewer, then merge in application code. Cursor pages only read the normal chronological page and continue excluding the viewer to avoid duplicates. This avoids a computed pin sort on the primary album review list.
 
 ## Rating Display
 
