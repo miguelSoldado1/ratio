@@ -33,8 +33,16 @@ export const Route = createRootRoute({
   notFoundComponent: NotFoundPage,
   component: () => (
     <>
+      <a
+        className="sr-only z-60 rounded-full bg-primary px-4 py-2 font-medium text-primary-foreground text-sm focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:outline-none focus:ring-3 focus:ring-ring/30"
+        href="#main-content"
+      >
+        Skip to main content
+      </a>
       <TopBar />
-      <Outlet />
+      <div id="main-content" tabIndex={-1}>
+        <Outlet />
+      </div>
     </>
   ),
   shellComponent: RootDocument,
