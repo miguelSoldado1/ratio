@@ -60,8 +60,8 @@ export function createCanonicalLink(path: string) {
 
 export function createJsonLdScript(data: unknown) {
   return {
-    attrs: { type: "application/ld+json" },
     children: JSON.stringify(data),
+    type: "application/ld+json",
   };
 }
 
