@@ -18,6 +18,11 @@ export function createAuth(db: Db) {
     baseURL: env.BETTER_AUTH_URL,
     database: drizzleAdapter(db, { provider: "pg", schema }),
     emailAndPassword: { enabled: false },
+    session: {
+      expiresIn: 60 * 60 * 24 * 30,
+      updateAge: 60 * 60 * 24,
+      freshAge: 60 * 60 * 24,
+    },
     user: {
       additionalFields: {
         avatarObjectKey: {
