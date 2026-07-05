@@ -64,9 +64,7 @@ export function AuthDialog({ onOpenChange, open }: AuthDialogProps) {
                 aria-label={`Continue with ${label}`}
                 className="w-full"
                 disabled={pendingProvider !== null}
-                onClick={() => {
-                  continueWithProvider(id);
-                }}
+                onClick={() => continueWithProvider(id)}
                 type="button"
                 variant="outline"
               >

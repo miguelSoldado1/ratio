@@ -40,7 +40,7 @@ export function AlbumActions({ album, className }: AlbumActionsProps) {
             alt=""
             className="h-5.25 w-auto opacity-90"
             height={225}
-            src="/spotify-logo-icon-white.svg"
+            src="/brand/spotify-logo-icon-white.svg"
             width={236}
           />
         </a>

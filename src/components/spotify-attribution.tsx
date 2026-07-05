@@ -33,7 +33,7 @@ export function SpotifyAttribution({
       target="_blank"
     >
       {label && <span>{label}</span>}
-      <img alt="" className={iconClassName} height={225} src="/spotify-logo-icon-white.svg" width={236} />
+      <img alt="" className={iconClassName} height={225} src="/brand/spotify-logo-icon-white.svg" width={236} />
     </a>
   );
 }

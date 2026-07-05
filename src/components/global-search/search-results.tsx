@@ -154,7 +154,7 @@ function SpotifySearchSource({ className, href }: { className?: string; href: st
         alt=""
         className="block h-auto w-17.5 opacity-85"
         height={225}
-        src="/spotify-full-logo-white.svg"
+        src="/brand/spotify-full-logo-white.svg"
         width={823}
       />
     </a>
