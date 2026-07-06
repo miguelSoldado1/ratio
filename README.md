@@ -21,6 +21,68 @@ pnpm run dev
 
 Use `pnpm run dev:cf` when you want to exercise the Cloudflare runtime locally.
 
+## Testing
+
+Tests run under Vitest from the centralized `tests/` directory.
+
+| Command | What it runs | Requires Postgres |
+| --- | --- | --- |
+| `pnpm run test:unit` | Unit, component, and hook tests under `tests/unit` | No |
+| `pnpm run test:db` | DB-backed integration tests under `tests/integration` | Yes, via `DATABASE_TEST_URL` |
+| `pnpm test` | Full suite: unit/component/hook tests plus DB integration tests | Yes, because DB tests are included |
+| `pnpm run test:watch` | Unit/component/hook tests in watch mode | No |
+
+DB-backed integration tests require a disposable Postgres database. The database name must include `test`; the harness refuses to run against names such as `ratio` or `postgres`.
+
+Create the local test database once:
+
+```sh
+createdb ratio_test
+```
+
+Set `DATABASE_TEST_URL` in `.env` or pass it inline. For a local Postgres install using your macOS username:
+
+```sh
+DATABASE_TEST_URL="postgres://$(whoami)@localhost:5432/ratio_test" pnpm run test:db
+```
+
+For Docker Postgres, one simple local setup is:
+
+```sh
+docker run --name ratio-test-postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=ratio_test \
+  -p 5432:5432 \
+  -d postgres:16
+
+DATABASE_TEST_URL="postgres://postgres:postgres@localhost:5432/ratio_test" pnpm run test:db
+```
+
+The integration harness applies committed Drizzle migrations before tests and truncates app tables between tests, so you do not need to run `pnpm db:migrate` against `ratio_test` manually. The guard still checks that `DATABASE_TEST_URL` is a Postgres URL and that the database name clearly includes `test`.
+
+If you need a clean database outside the normal test cleanup:
+
+```sh
+dropdb ratio_test
+createdb ratio_test
+```
+
+When you are done with the local test database:
+
+```sh
+dropdb ratio_test
+```
+
+If `createdb` or `dropdb` are missing, install the PostgreSQL client tools or use the Docker setup above. If Postgres is running locally without a password, `postgres://$(whoami)@localhost:5432/ratio_test` is usually the right URL shape.
+
+Deferred future smoke flows, if the project adds e2e or route-level tests later:
+
+- anonymous search and album browsing
+- signed-in review creation
+- liking a review
+- following a user
+- settings and account safety flows
+
 ## Useful Commands
 
 ```sh
@@ -29,7 +91,9 @@ pnpm run dev:cf
 pnpm run build
 pnpm run typecheck
 pnpm run check
-pnpm test
+pnpm run test:unit
+DATABASE_TEST_URL="postgres://$(whoami)@localhost:5432/ratio_test" pnpm run test:db
+DATABASE_TEST_URL="postgres://$(whoami)@localhost:5432/ratio_test" pnpm test
 ```
 
 ## Cloudflare deployment

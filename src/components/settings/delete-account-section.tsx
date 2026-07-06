@@ -25,6 +25,11 @@ export function DeleteAccountSection({ confirmationHandle, isPending, onDeleteAc
 
   const canDelete = Boolean(confirmationHandle) && confirmation === confirmationHandle && !isPending;
 
+  function setOpen(open: boolean) {
+    setDialogOpen(open);
+    if (!open) setConfirmation("");
+  }
+
   return (
     <section className="flex flex-col gap-4 border-border border-t pt-6">
       <SectionIntro description="Permanently remove your account and Ratio activity." title="Danger zone" />
@@ -45,13 +50,7 @@ export function DeleteAccountSection({ confirmationHandle, isPending, onDeleteAc
         </Button>
       </div>
 
-      <Dialog
-        onOpenChange={(open) => {
-          setDialogOpen(open);
-          if (!open) setConfirmation("");
-        }}
-        open={dialogOpen}
-      >
+      <Dialog onOpenChange={setOpen} open={dialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete account</DialogTitle>
@@ -75,7 +74,7 @@ export function DeleteAccountSection({ confirmationHandle, isPending, onDeleteAc
             </Field>
           </FieldGroup>
           <DialogFooter>
-            <Button onClick={() => setDialogOpen(false)} type="button" variant="outline">
+            <Button onClick={() => setOpen(false)} type="button" variant="outline">
               Cancel
             </Button>
             <Button
