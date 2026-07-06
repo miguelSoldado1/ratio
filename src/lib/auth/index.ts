@@ -21,7 +21,9 @@ export function createAuth(db: Db) {
     session: {
       expiresIn: 60 * 60 * 24 * 30,
       updateAge: 60 * 60 * 24,
-      freshAge: 60 * 60 * 24,
+      // Ratio is OAuth-only, so there is no password challenge that can refresh
+      // Better Auth's sensitive-action freshness window after it expires.
+      freshAge: 0,
     },
     user: {
       additionalFields: {

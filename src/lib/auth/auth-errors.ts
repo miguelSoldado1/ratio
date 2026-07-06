@@ -8,6 +8,7 @@ const authErrorMessages: Record<string, string> = {
   invalid_origin: "The request came from an invalid origin.",
   invalid_redirect_url: "The sign-in redirect URL is invalid.",
   provider_not_found: "That sign-in provider is not available.",
+  session_not_fresh: "Your session needs to be refreshed. Sign out and back in, then try again.",
   unable_to_link_account: "Could not link that provider to your account. Try again.",
   user_already_exists: "An account already exists for that email.",
   user_already_exists_use_another_email: "An account already exists for that email. Use another email.",
