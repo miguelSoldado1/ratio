@@ -39,7 +39,7 @@ export function MobileAlbumHeader({ album, coverUrl }: MobileAlbumHeaderProps) {
           <p className="mt-2 text-muted-foreground text-sm">
             {artist} · {releaseYear}
           </p>
-          <p className="mt-1 text-muted-foreground/70 text-xs">{albumRuntime}</p>
+          <p className="mt-1 text-muted-foreground-subtle text-xs">{albumRuntime}</p>
         </div>
       </div>
       <AlbumActions album={album} className="mt-5" />

@@ -281,7 +281,7 @@ function getLikeHeartClass({ disabled, liked }: { disabled: boolean; liked: bool
 
 function getLikeCountClass({ disabled, liked }: { disabled: boolean; liked: boolean }) {
   if (liked) return "text-primary";
-  if (disabled) return "text-muted-foreground/80";
+  if (disabled) return "text-muted-foreground-subtle";
 
   return "text-muted-foreground group-hover:text-primary";
 }

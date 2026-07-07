@@ -167,7 +167,7 @@ function EmptyReviews({ displayName }: { displayName: string }) {
 
 function ProfileReviewPinnedBadge() {
   return (
-    <span className="inline-flex items-center gap-1 text-muted-foreground/80 text-xs">
+    <span className="inline-flex items-center gap-1 text-muted-foreground-subtle text-xs">
       <Pin className="size-3" />
       Pinned
     </span>

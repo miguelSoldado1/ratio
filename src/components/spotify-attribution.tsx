@@ -23,7 +23,7 @@ export function SpotifyAttribution({
     <a
       aria-label={ariaLabel ?? (label ? `${label} Spotify` : "Spotify")}
       className={cn(
-        "inline-flex h-6 items-center gap-2 rounded-full border border-border/55 bg-muted/25 px-2 text-muted-foreground/80 leading-none",
+        "inline-flex h-6 items-center gap-2 rounded-full border border-border/55 bg-muted/25 px-2 text-muted-foreground-subtle leading-none",
         "[transition:background-color_150ms_ease,border-color_150ms_ease,color_150ms_ease,opacity_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] hover:border-border hover:bg-muted/40 hover:text-muted-foreground hover:opacity-100 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/30 active:scale-[0.98]",
         size === "compact" ? "text-[10px]" : "h-7 px-2.5 text-xs",
         className

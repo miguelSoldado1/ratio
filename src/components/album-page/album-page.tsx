@@ -57,7 +57,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
             <p className="mt-2 text-lg text-muted-foreground">
               {artist} · {releaseYear}
             </p>
-            <p className="mt-1 text-muted-foreground/70 text-sm">{albumRuntime}</p>
+            <p className="mt-1 text-muted-foreground-subtle text-sm">{albumRuntime}</p>
 
             <AlbumActions album={album} className="mt-6" />
           </div>

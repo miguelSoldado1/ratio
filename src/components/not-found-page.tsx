@@ -10,7 +10,7 @@ export function NotFoundPage() {
       <div className="mx-auto flex min-h-[calc(100vh-65px)] w-full max-w-375 flex-col px-5 pt-6 pb-10 sm:justify-center sm:pt-0 sm:pb-24 lg:px-10 xl:px-14 2xl:px-20">
         <article className="mx-auto w-full max-w-lg py-8 sm:-mt-4">
           <p className="font-medium text-muted-foreground text-sm tabular-nums">
-            404 <span className="text-muted-foreground/45">/</span> Page not found
+            404 <span className="text-muted-foreground-subtle">/</span> Page not found
           </p>
 
           <div className="mt-4 min-w-0">

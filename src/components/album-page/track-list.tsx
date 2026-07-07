@@ -20,7 +20,7 @@ export function TrackList({ className, tracks }: { className?: string; tracks: S
                   Disc {group.discNumber}
                 </span>
                 <span className="h-px flex-1 bg-border/60" />
-                <span className="text-[0.625rem] text-muted-foreground/60 tabular-nums">
+                <span className="text-[0.625rem] text-muted-foreground-subtle tabular-nums">
                   {getTrackCountLabel(group.tracks.length)}
                 </span>
               </div>
