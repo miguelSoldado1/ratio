@@ -5,8 +5,8 @@ import { toast } from "sonner";
 import { DeleteAccountSection } from "@/components/settings/delete-account-section";
 import { SessionsSection } from "@/components/settings/sessions-section";
 import { SettingsHeader } from "@/components/settings/settings-header";
+import { SettingsSkeleton } from "@/components/settings/settings-skeleton";
 import { SignInMethodsTable } from "@/components/settings/sign-in-methods-table";
-import { Spinner } from "@/components/ui/spinner";
 import { authClient } from "@/lib/auth/auth-client";
 import { getAuthErrorMessage } from "@/lib/auth/auth-errors";
 import { authProviders } from "@/lib/auth/providers";
@@ -138,14 +138,8 @@ function SettingsPage() {
     window.location.href = "/";
   }
 
-  if (session.isPending || !session.data?.user) {
-    return (
-      <main className="mx-auto flex w-full max-w-5xl flex-col px-4 py-8 sm:px-6 xl:px-0">
-        <div className="flex min-h-56 items-center justify-center">
-          <Spinner />
-        </div>
-      </main>
-    );
+  if (session.isPending || !session.data?.user || accountsQuery.isPending) {
+    return <SettingsSkeleton />;
   }
 
   return (

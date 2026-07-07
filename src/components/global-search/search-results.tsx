@@ -1,4 +1,5 @@
 import { CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command";
+import { Skeleton } from "@/components/ui/skeleton";
 import { UserAvatar } from "@/components/user-avatar";
 import { cn } from "@/lib/utils";
 import type { AlbumResult, UserResult } from "./types";
@@ -36,7 +37,7 @@ export function SearchResults({
   const hasSearchableQuery = debouncedQuery.length >= 2;
 
   if (isFetching && !hasResults) {
-    return <CommandEmpty className="text-muted-foreground">Searching...</CommandEmpty>;
+    return <SearchResultSkeletonRows />;
   }
 
   if (!isFetching && hasSearchableQuery && !hasResults) {
@@ -60,11 +61,7 @@ export function SearchResults({
             {visibleAlbumResults.map((album) => (
               <AlbumResultItem album={album} key={album.id} onSelect={onSelect} />
             ))}
-            {isFetchingAlbums ? (
-              <p className="px-3 py-2 text-muted-foreground text-xs">
-                {hasAlbumResults ? "Updating album results..." : "Searching albums..."}
-              </p>
-            ) : null}
+            {isFetchingAlbums ? <SearchResultSkeletonRows count={hasAlbumResults ? 2 : 4} /> : null}
           </CommandGroup>
         </>
       ) : null}
@@ -82,6 +79,33 @@ export function SearchResults({
         </>
       ) : null}
     </>
+  );
+}
+
+function SearchResultSkeletonRows({ count = 5 }: { count?: number }) {
+  return (
+    <div aria-label="Loading search results" className="px-2 py-1" role="status">
+      <span className="sr-only">Loading search results</span>
+      {Array.from({ length: count }, (_, index) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton placeholders
+        <SearchResultSkeletonRow index={index} key={index} />
+      ))}
+    </div>
+  );
+}
+
+function SearchResultSkeletonRow({ index }: { index: number }) {
+  const titleWidth = index % 3 === 1 ? "w-56" : "w-44";
+  const metaWidth = index % 2 === 0 ? "w-32" : "w-24";
+
+  return (
+    <div className="flex items-center gap-3 rounded-lg px-2 py-2.5">
+      <Skeleton className="size-10 shrink-0 rounded-md" />
+      <div className="min-w-0 flex-1">
+        <Skeleton className={cn("h-4 max-w-full rounded-sm", titleWidth)} />
+        <Skeleton className={cn("mt-2 h-3 max-w-full rounded-sm", metaWidth)} />
+      </div>
+    </div>
   );
 }
 

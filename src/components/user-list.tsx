@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { EmptyState } from "@/components/empty-state";
 import { UserAvatar } from "@/components/user-avatar";
 import type { ReactNode } from "react";
 
@@ -18,7 +19,7 @@ interface UserListProps<TUser extends UserListUser> {
 
 export function UserList<TUser extends UserListUser>({ onUserSelect, renderAction, users }: UserListProps<TUser>) {
   if (users.length === 0) {
-    return <p className="px-2 py-8 text-center text-muted-foreground text-sm">No users yet.</p>;
+    return <EmptyState align="center" className="px-2 text-muted-foreground" title="No users yet" />;
   }
 
   return (

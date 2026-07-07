@@ -1,7 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect } from "react";
 import { AlbumActions } from "@/components/album-page/album-actions";
 import {
   getAlbumArtistNames,
@@ -13,6 +11,7 @@ import { MobileAlbumHeader } from "@/components/album-page/mobile-album-header";
 import { RatingsPanel } from "@/components/album-page/ratings-panel";
 import { ReviewsSection } from "@/components/album-page/reviews-section";
 import { TrackList } from "@/components/album-page/track-list";
+import { InlineError } from "@/components/inline-error";
 import { albumQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { getAlbumDetails } from "@/server/functions/spotify-functions";
 
@@ -21,21 +20,25 @@ interface AlbumPageProps {
 }
 
 export function AlbumPage({ albumId }: AlbumPageProps) {
-  const navigate = useNavigate();
   const getAlbumDetailsFn = useServerFn(getAlbumDetails);
   const albumDetailsQuery = useQuery({
     queryFn: () => getAlbumDetailsFn({ data: { albumId } }),
     queryKey: albumQueryKeys.details(albumId),
   });
 
-  useEffect(() => {
-    if (albumDetailsQuery.isError) {
-      navigate({ to: "/" });
-    }
-  }, [albumDetailsQuery.isError, navigate]);
-
   if (albumDetailsQuery.isPending) return <AlbumLookupLoading albumId={albumId} />;
-  if (albumDetailsQuery.isError) return null;
+  if (albumDetailsQuery.isError) {
+    return (
+      <main className="min-h-screen bg-background text-foreground">
+        <div className="mx-auto w-full max-w-375 px-5 py-12 lg:px-10 xl:px-14 2xl:px-20">
+          <InlineError
+            description="Could not load this album. It may be unavailable on Spotify or temporarily unreachable."
+            title="Album unavailable"
+          />
+        </div>
+      </main>
+    );
+  }
 
   const { album, tracks } = albumDetailsQuery.data;
   const artist = getAlbumArtistNames(album);

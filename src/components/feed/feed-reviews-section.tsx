@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { EmptyState } from "@/components/empty-state";
 import { ReviewCard } from "@/components/review-card";
 import { ReviewCardSkeleton } from "@/components/review-card-skeleton";
 import { ReviewLikesDialog } from "@/components/review-likes-dialog";
@@ -128,12 +129,5 @@ function LoadingMoreReviews() {
 }
 
 function EmptyFeed() {
-  return (
-    <div className="py-8">
-      <p className="font-medium text-sm">No reviews yet</p>
-      <p className="mt-1 max-w-md text-muted-foreground text-sm">
-        Reviews will appear here once people start rating albums.
-      </p>
-    </div>
-  );
+  return <EmptyState description="Reviews will appear here once people start rating albums." title="No reviews yet" />;
 }

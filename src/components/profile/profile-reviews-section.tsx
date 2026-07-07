@@ -1,6 +1,7 @@
 import { Pin } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { EmptyState } from "@/components/empty-state";
 import { ProfileReviewManagementMenu } from "@/components/profile/profile-review-management-menu";
 import { ReviewCard } from "@/components/review-card";
 import { ReviewCardSkeleton } from "@/components/review-card-skeleton";
@@ -157,12 +158,7 @@ function ProfileReviewSkeleton() {
 }
 
 function EmptyReviews({ displayName }: { displayName: string }) {
-  return (
-    <div className="py-8">
-      <p className="font-medium text-sm">No reviews yet</p>
-      <p className="mt-1 max-w-md text-muted-foreground text-sm">{displayName} has not reviewed any albums yet.</p>
-    </div>
-  );
+  return <EmptyState description={`${displayName} has not reviewed any albums yet.`} title="No reviews yet" />;
 }
 
 function ProfileReviewPinnedBadge() {

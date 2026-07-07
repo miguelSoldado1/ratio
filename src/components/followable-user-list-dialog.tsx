@@ -2,6 +2,7 @@ import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { AuthDialog } from "@/components/auth/auth-dialog";
+import { InlineError } from "@/components/inline-error";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -157,9 +158,12 @@ export function FollowableUserListDialog<TUser extends FollowableUser>({
           <div className="max-h-[min(64svh,28rem)] overflow-y-auto px-3 py-3">
             {userListQuery.isPending ? <UserListSkeleton /> : null}
             {isInitialListError ? (
-              <p className="px-2 py-10 text-center text-muted-foreground text-sm">
-                Could not load {title.toLowerCase()}.
-              </p>
+              <InlineError
+                align="center"
+                className="px-2 py-10"
+                description={`Could not load ${title.toLowerCase()}.`}
+                title="Users unavailable"
+              />
             ) : null}
             {canShowListContent ? (
               <UserList
@@ -195,7 +199,11 @@ export function FollowableUserListDialog<TUser extends FollowableUser>({
               </div>
             ) : null}
             {isFetchNextPageError ? (
-              <p className="px-2 py-3 text-center text-muted-foreground text-xs">Could not load more users.</p>
+              <InlineError
+                align="center"
+                className="px-2 py-3 [&_p:first-child]:text-xs [&_p:last-child]:text-xs"
+                title="Could not load more users."
+              />
             ) : null}
           </div>
         </DialogContent>

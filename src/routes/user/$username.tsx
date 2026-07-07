@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { AuthDialog } from "@/components/auth/auth-dialog";
+import { InlineError } from "@/components/inline-error";
 import { ProfileHeader, ProfileHeaderSkeleton } from "@/components/profile/profile-header";
 import { ProfileReviewsSection, ProfileReviewsSectionSkeleton } from "@/components/profile/profile-reviews-section";
 import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
@@ -128,8 +129,7 @@ function UserPage() {
     return (
       <main className="min-h-screen bg-background text-foreground">
         <div className="mx-auto w-full max-w-375 px-5 py-12 lg:px-10 xl:px-14 2xl:px-20">
-          <p className="font-medium text-sm">User unavailable</p>
-          <p className="mt-1 max-w-md text-muted-foreground text-sm">Could not load this profile.</p>
+          <InlineError description="Could not load this profile." title="User unavailable" />
         </div>
       </main>
     );
@@ -151,10 +151,11 @@ function UserPage() {
             viewer={viewer}
           />
           {userReviewsQuery.isError && reviews.length === 0 ? (
-            <section className="mt-7 py-8">
-              <p className="font-medium text-sm">Reviews unavailable</p>
-              <p className="mt-1 max-w-md text-muted-foreground text-sm">Could not load reviews for this profile.</p>
-            </section>
+            <InlineError
+              className="mt-7"
+              description="Could not load reviews for this profile."
+              title="Reviews unavailable"
+            />
           ) : (
             <ProfileReviewsSection
               deletingReviewId={deletingReviewId}

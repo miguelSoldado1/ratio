@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useMemo } from "react";
 import { FeedReviewsSection, FeedReviewsSectionSkeleton } from "@/components/feed/feed-reviews-section";
+import { InlineError } from "@/components/inline-error";
 import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
 import { useReviewDelete } from "@/hooks/use-review-delete";
 import { useReviewLikeToggle } from "@/hooks/use-review-like-toggle";
@@ -88,10 +89,7 @@ function FeedPage() {
       <main className="min-h-screen bg-background text-foreground">
         <div className="mx-auto w-full max-w-375 px-5 pt-0 pb-8 lg:px-10 lg:pb-12 xl:px-14 2xl:px-20">
           <h1 className="sr-only">Album reviews feed</h1>
-          <section className="py-5">
-            <p className="font-medium text-sm">Feed unavailable</p>
-            <p className="mt-1 max-w-md text-muted-foreground text-sm">Could not load reviews right now.</p>
-          </section>
+          <InlineError className="py-5" description="Could not load reviews right now." title="Feed unavailable" />
         </div>
       </main>
     );

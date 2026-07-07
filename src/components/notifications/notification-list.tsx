@@ -1,3 +1,5 @@
+import { EmptyState } from "@/components/empty-state";
+import { InlineError } from "@/components/inline-error";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatRelativeTime } from "@/lib/date-format";
@@ -32,11 +34,18 @@ export function NotificationList({
   }
 
   if (isError) {
-    return <NotificationStateMessage label="Notifications unavailable" />;
+    return (
+      <InlineError
+        align="center"
+        className="px-3 text-muted-foreground"
+        description="Could not load notifications right now."
+        title="Notifications unavailable"
+      />
+    );
   }
 
   if (items.length === 0) {
-    return <NotificationStateMessage label="No activity yet" />;
+    return <EmptyState align="center" className="px-3 text-muted-foreground" title="No activity yet" />;
   }
 
   const groups = groupNotifications(items);
@@ -63,14 +72,6 @@ export function NotificationList({
       ))}
     </div>
   );
-}
-
-interface NotificationStateMessageProps {
-  label: string;
-}
-
-function NotificationStateMessage({ label }: NotificationStateMessageProps) {
-  return <p className="px-3 py-8 text-center text-muted-foreground text-sm">{label}</p>;
 }
 
 function NotificationReviewSkeletons({ variant }: { variant: "menu" | "list" }) {

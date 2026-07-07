@@ -1,6 +1,8 @@
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useMemo, useState } from "react";
+import { EmptyState } from "@/components/empty-state";
+import { InlineError } from "@/components/inline-error";
 import { ReviewCard } from "@/components/review-card";
 import { ReviewLikesDialog } from "@/components/review-likes-dialog";
 import { ReviewManagementMenu } from "@/components/review-management-menu";
@@ -75,8 +77,11 @@ export function ReviewsSection({ album, className }: ReviewsSectionProps) {
     return (
       <section className={cn("border-border/80 border-t py-8", className)}>
         <h2 className="heading-section mb-4">Reviews</h2>
-        <p className="font-medium text-sm">Reviews unavailable</p>
-        <p className="mt-1 max-w-md text-muted-foreground text-sm">Could not load reviews for this album.</p>
+        <InlineError
+          className="py-0"
+          description="Could not load reviews for this album."
+          title="Reviews unavailable"
+        />
       </section>
     );
   }
@@ -85,10 +90,11 @@ export function ReviewsSection({ album, className }: ReviewsSectionProps) {
     return (
       <section className={cn("border-border/80 border-t py-8", className)}>
         <h2 className="heading-section mb-4">Reviews</h2>
-        <p className="font-medium text-sm">No reviews yet</p>
-        <p className="mt-1 max-w-md text-muted-foreground text-sm">
-          Reviews will appear here once people start rating this album.
-        </p>
+        <EmptyState
+          className="py-0"
+          description="Reviews will appear here once people start rating this album."
+          title="No reviews yet"
+        />
       </section>
     );
   }
