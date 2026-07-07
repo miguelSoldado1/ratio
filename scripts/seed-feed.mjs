@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { config } from "dotenv";
 import postgres from "postgres";
 
@@ -20,6 +21,11 @@ const viewerReviewCount = 8;
 const dryRunPreviewCount = 30;
 const maxCurrentReviewAgeHours = 7 * 24;
 const maxOldTrendingReviewAgeHours = 21 * 24;
+const spotifyReleaseYearDatePattern = /^\d{4}$/;
+const spotifyReleaseMonthDatePattern = /^\d{4}-\d{2}$/;
+const spotifyReleaseDayDatePattern = /^\d{4}-\d{2}-\d{2}$/;
+const reviewShareCodeAlphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+const reviewShareCodeLength = 10;
 const resettableTables = [
   "review_like",
   "user_follow",
@@ -344,13 +350,13 @@ async function upsertUsers(transaction, users) {
 async function upsertAlbums(transaction, albums) {
   for (const album of albums) {
     await transaction`
-      insert into album (id, title, artist_names, cover_url, release_year, total_tracks, updated_at)
+      insert into album (id, title, artist_names, cover_url, release_date, total_tracks, updated_at)
       values (
         ${album.id},
         ${album.title},
         ${album.artistNames},
         ${album.coverUrl},
-        ${album.releaseYear},
+        ${album.releaseDate},
         ${album.totalTracks},
         now()
       )
@@ -358,7 +364,7 @@ async function upsertAlbums(transaction, albums) {
         title = excluded.title,
         artist_names = excluded.artist_names,
         cover_url = excluded.cover_url,
-        release_year = excluded.release_year,
+        release_date = excluded.release_date,
         total_tracks = excluded.total_tracks,
         updated_at = excluded.updated_at
     `;
@@ -409,10 +415,10 @@ async function getSpotifyAlbums(albumIds) {
       throw new Error(`Spotify returned unexpected album ${album.id}`);
     }
 
-    const releaseYear = Number(String(album.release_date ?? "").slice(0, 4));
+    const releaseDate = getNormalizedSpotifyReleaseDate(String(album.release_date ?? ""));
 
-    if (!Number.isInteger(releaseYear)) {
-      throw new Error(`Spotify album ${album.id} has an invalid release year`);
+    if (!releaseDate) {
+      throw new Error(`Spotify album ${album.id} has an invalid release date`);
     }
 
     if (!(album.name && album.total_tracks)) {
@@ -423,11 +429,19 @@ async function getSpotifyAlbums(albumIds) {
       artistNames: Array.isArray(album.artists) ? album.artists.map((artist) => artist.name).filter(Boolean) : [],
       coverUrl: getLargestSpotifyImageUrl(album.images),
       id: album.id,
-      releaseYear,
+      releaseDate,
       title: album.name,
       totalTracks: album.total_tracks,
     };
   });
+}
+
+function getNormalizedSpotifyReleaseDate(releaseDate) {
+  if (spotifyReleaseYearDatePattern.test(releaseDate)) return `${releaseDate}-01-01`;
+  if (spotifyReleaseMonthDatePattern.test(releaseDate)) return `${releaseDate}-01`;
+  if (spotifyReleaseDayDatePattern.test(releaseDate)) return releaseDate;
+
+  return null;
 }
 
 async function getSpotifyAccessToken() {
@@ -476,11 +490,13 @@ async function upsertReviews(transaction, reviewPlans) {
     const albumId = seedAlbumIds[spec.album];
     const body = spec.body ? reviewBodies[spec.body] : null;
     const createdAt = new Date(seedStartedAt.getTime() - spec.createdHoursAgo * oneHourMs);
+    const shareCode = getSeedReviewShareCode(authorId, albumId);
 
     const [review] = await transaction`
-      insert into review (user_id, album_id, rating, body, created_at, updated_at)
-      values (${authorId}, ${albumId}, ${spec.rating}, ${body}, ${createdAt}, ${createdAt})
+      insert into review (user_id, album_id, share_code, rating, body, created_at, updated_at)
+      values (${authorId}, ${albumId}, ${shareCode}, ${spec.rating}, ${body}, ${createdAt}, ${createdAt})
       on conflict (user_id, album_id) do update set
+        share_code = excluded.share_code,
         rating = excluded.rating,
         body = excluded.body,
         created_at = excluded.created_at,
@@ -492,6 +508,18 @@ async function upsertReviews(transaction, reviewPlans) {
   }
 
   return seededReviews;
+}
+
+function getSeedReviewShareCode(authorId, albumId) {
+  const bytes = createHash("sha256").update(`${authorId}:${albumId}`).digest();
+  let code = "";
+
+  for (const byte of bytes) {
+    code += reviewShareCodeAlphabet[byte % reviewShareCodeAlphabet.length];
+    if (code.length === reviewShareCodeLength) return code;
+  }
+
+  return code;
 }
 
 async function resetSeedReviewLikes(transaction, seededReviews) {

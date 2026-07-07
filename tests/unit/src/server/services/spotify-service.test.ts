@@ -179,9 +179,20 @@ describe("getAlbumPersistenceMetadata", () => {
       artistNames: ["Artist One"],
       coverUrl: "https://cached.cover",
       id: "cached_album",
-      releaseYear: 1998,
+      releaseDate: "1998-05-01",
       title: "Cached Album",
       totalTracks: 2,
+    });
+    expect(mockCreateSpotifyApi).not.toHaveBeenCalled();
+  });
+
+  it("normalizes cached year-only release dates for persistence", async () => {
+    mockGetSpotifyCacheJson.mockResolvedValue(
+      createCachedAlbumDetails({ albumId: "cached_album", releaseDate: "1998" })
+    );
+
+    await expect(getAlbumPersistenceMetadata("cached_album")).resolves.toMatchObject({
+      releaseDate: "1998-01-01",
     });
     expect(mockCreateSpotifyApi).not.toHaveBeenCalled();
   });
@@ -198,9 +209,22 @@ describe("getAlbumPersistenceMetadata", () => {
       artistNames: ["Artist One"],
       coverUrl: "https://img.large",
       id: "fetched_album",
-      releaseYear: 2001,
+      releaseDate: "2001-09-01",
       title: "Album Details",
       totalTracks: 2,
+    });
+  });
+
+  it("normalizes fetched month-only release dates for persistence", async () => {
+    const spotifyApi = createMockSpotifyApi({
+      getAlbum: vi.fn().mockResolvedValue({
+        body: createSpotifyAlbumDetails({ id: "fetched_album", release_date: "2001-09" }),
+      }),
+    });
+    mockCreateSpotifyApi.mockReturnValue(spotifyApi);
+
+    await expect(getAlbumPersistenceMetadata("fetched_album")).resolves.toMatchObject({
+      releaseDate: "2001-09-01",
     });
   });
 

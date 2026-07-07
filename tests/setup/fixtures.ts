@@ -26,7 +26,7 @@ export async function createTestAlbum(db: Db, overrides: Partial<typeof albums.$
   const values = {
     artistNames: [`Test Artist ${next}`],
     id: `spotify_album_${next}`,
-    releaseYear: 2026,
+    releaseDate: "2026-01-01",
     title: `Test Album ${next}`,
     totalTracks: 10,
     ...overrides,

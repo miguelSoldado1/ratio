@@ -817,7 +817,7 @@ function mapReviewDetail(row: ReviewDetailRow) {
       coverUrl: row.album.coverUrl ?? undefined,
       id: row.album.id,
       title: row.album.title,
-      year: String(row.album.releaseYear),
+      year: row.album.releaseDate.slice(0, 4),
     },
   };
 }
@@ -860,7 +860,7 @@ function mapUserReview({ album, liked, likes, pinned, review }: UserReviewRow, c
       coverUrl: album.coverUrl ?? undefined,
       id: album.id,
       title: album.title,
-      year: String(album.releaseYear),
+      year: album.releaseDate.slice(0, 4),
     },
     canDelete,
     createdAt: review.createdAt,

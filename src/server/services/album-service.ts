@@ -39,7 +39,7 @@ export async function ensureAlbumExistsForWrite(albumMetadata: AlbumWriteMetadat
       set: {
         artistNames: albumValues.artistNames,
         coverUrl: albumValues.coverUrl,
-        releaseYear: albumValues.releaseYear,
+        releaseDate: albumValues.releaseDate,
         title: albumValues.title,
         totalTracks: albumValues.totalTracks,
         updatedAt: albumValues.updatedAt,

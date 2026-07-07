@@ -115,7 +115,7 @@ describe("getFeedService anonymous feed", () => {
     const album = await createTestAlbum(testDb, {
       artistNames: ["Artist One", "Artist Two"],
       coverUrl: "https://example.com/cover.jpg",
-      releaseYear: 1999,
+      releaseDate: "1999-01-01",
       title: "Mapped Album",
     });
     const author = await createTestUser(testDb, {

@@ -1,6 +1,7 @@
 import { relations, sql } from "drizzle-orm";
 import {
   check,
+  date,
   index,
   integer,
   pgEnum,
@@ -22,7 +23,7 @@ export const albums = pgTable("album", {
   title: text("title").notNull(),
   artistNames: text("artist_names").array().notNull(),
   coverUrl: text("cover_url"),
-  releaseYear: integer("release_year").notNull(),
+  releaseDate: date("release_date").notNull(),
   totalTracks: integer("total_tracks").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")

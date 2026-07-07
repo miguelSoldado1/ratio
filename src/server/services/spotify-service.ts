@@ -16,7 +16,7 @@ export interface SpotifyAlbumPersistenceMetadata {
   artistNames: string[];
   coverUrl: string | null;
   id: string;
-  releaseYear: number;
+  releaseDate: string;
   title: string;
   totalTracks: number;
 }
@@ -47,6 +47,9 @@ const SPOTIFY_ALBUM_DETAILS_CACHE_TTL_SECONDS = 24 * 60 * 60; // 24 hours
 
 const SPOTIFY_ALBUM_PERSISTENCE_CACHE_KEY_PREFIX = `${SPOTIFY_CACHE_KEY_PREFIX}:album-persistence`;
 const SPOTIFY_ALBUM_PERSISTENCE_CACHE_TTL_SECONDS = 24 * 60 * 60; // 24 hours
+const SPOTIFY_RELEASE_YEAR_DATE_PATTERN = /^\d{4}$/;
+const SPOTIFY_RELEASE_MONTH_DATE_PATTERN = /^\d{4}-\d{2}$/;
+const SPOTIFY_RELEASE_DAY_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
 const inFlightSpotifyCacheRequests = new Map<string, Promise<unknown>>();
 
@@ -104,7 +107,7 @@ const spotifyAlbumPersistenceMetadataSchema = z.object({
   artistNames: z.array(z.string()),
   coverUrl: z.string().nullable(),
   id: z.string(),
-  releaseYear: z.number(),
+  releaseDate: z.string(),
   title: z.string(),
   totalTracks: z.number(),
 });
@@ -306,7 +309,7 @@ function mapSpotifyAlbumPersistenceMetadata(album: SpotifyAlbumDetails): Spotify
     artistNames: album.artists.map((artist) => artist.name),
     coverUrl: getLargestImageUrl(album.images),
     id: album.id,
-    releaseYear: getSpotifyReleaseYear(album.release_date),
+    releaseDate: getNormalizedSpotifyReleaseDate(album.release_date),
     title: album.name,
     totalTracks: album.total_tracks,
   };
@@ -319,20 +322,18 @@ function mapCachedAlbumDetailsToPersistenceMetadata({
     artistNames: album.artists.map((artist) => artist.name),
     coverUrl: album.coverUrl,
     id: album.id,
-    releaseYear: getSpotifyReleaseYear(album.releaseDate),
+    releaseDate: getNormalizedSpotifyReleaseDate(album.releaseDate),
     title: album.title,
     totalTracks: album.totalTracks,
   };
 }
 
-function getSpotifyReleaseYear(releaseDate: string) {
-  const releaseYear = Number(releaseDate.slice(0, 4));
+function getNormalizedSpotifyReleaseDate(releaseDate: string) {
+  if (SPOTIFY_RELEASE_YEAR_DATE_PATTERN.test(releaseDate)) return `${releaseDate}-01-01`;
+  if (SPOTIFY_RELEASE_MONTH_DATE_PATTERN.test(releaseDate)) return `${releaseDate}-01`;
+  if (SPOTIFY_RELEASE_DAY_DATE_PATTERN.test(releaseDate)) return releaseDate;
 
-  if (!Number.isInteger(releaseYear)) {
-    throw new Error("Spotify album release year is invalid");
-  }
-
-  return releaseYear;
+  throw new Error("Spotify album release date is invalid");
 }
 
 function mapSpotifyAlbumTrack(track: SpotifyAlbumTrack) {

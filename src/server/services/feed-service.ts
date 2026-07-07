@@ -460,7 +460,7 @@ function mapFeedReview(candidate: FeedCandidate) {
       coverUrl: candidate.album.coverUrl ?? undefined,
       id: candidate.album.id,
       title: candidate.album.title,
-      year: String(candidate.album.releaseYear),
+      year: candidate.album.releaseDate.slice(0, 4),
     },
     canDelete: candidate.canDelete,
     createdAt: candidate.review.createdAt,

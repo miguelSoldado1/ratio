@@ -14,6 +14,9 @@ const market = "US";
 const oneHourMs = 60 * 60 * 1000;
 const reviewBodyMaxLength = 2000;
 const spotifyRetryDelaysMs = [500, 1000, 2000];
+const spotifyReleaseYearDatePattern = /^\d{4}$/;
+const spotifyReleaseMonthDatePattern = /^\d{4}-\d{2}$/;
+const spotifyReleaseDayDatePattern = /^\d{4}-\d{2}-\d{2}$/;
 
 const albumSpecs = [
   { id: "5vkqYmiPBYLaalcmjujWxK", artist: "Radiohead", title: "In Rainbows", year: 2007 },
@@ -284,21 +287,29 @@ function validateReviewBody(body, index) {
   }
 }
 
-async function upsertAlbum(transaction, album) {
-  const releaseYear = Number(album.release_date.slice(0, 4));
+function getNormalizedSpotifyReleaseDate(releaseDate) {
+  if (spotifyReleaseYearDatePattern.test(releaseDate)) return `${releaseDate}-01-01`;
+  if (spotifyReleaseMonthDatePattern.test(releaseDate)) return `${releaseDate}-01`;
+  if (spotifyReleaseDayDatePattern.test(releaseDate)) return releaseDate;
 
-  if (!Number.isInteger(releaseYear)) {
+  return null;
+}
+
+async function upsertAlbum(transaction, album) {
+  const releaseDate = getNormalizedSpotifyReleaseDate(album.release_date);
+
+  if (!releaseDate) {
     throw new Error(`Spotify album ${album.id} has an invalid release date: ${album.release_date}`);
   }
 
   await transaction`
-    insert into album (id, title, artist_names, cover_url, release_year, total_tracks, updated_at)
+    insert into album (id, title, artist_names, cover_url, release_date, total_tracks, updated_at)
     values (
       ${album.id},
       ${album.name},
       ${album.artists.map((artist) => artist.name)},
       ${getLargestImageUrl(album.images)},
-      ${releaseYear},
+      ${releaseDate},
       ${album.total_tracks},
       now()
     )
@@ -306,7 +317,7 @@ async function upsertAlbum(transaction, album) {
       title = excluded.title,
       artist_names = excluded.artist_names,
       cover_url = excluded.cover_url,
-      release_year = excluded.release_year,
+      release_date = excluded.release_date,
       total_tracks = excluded.total_tracks,
       updated_at = excluded.updated_at
   `;
