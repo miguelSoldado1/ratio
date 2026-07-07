@@ -10,6 +10,8 @@ import { authClient } from "@/lib/auth/auth-client";
 import { albumQueryKeys, userQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { searchUsers } from "@/server/functions/review-functions";
 import { searchAlbums } from "@/server/functions/spotify-functions";
+import { RecentSearchResults } from "./recent-search-results";
+import { getRecentSearches, type RecentSearch, removeRecentSearch, saveRecentSearch } from "./recent-searches";
 import { SearchResults } from "./search-results";
 import type { AlbumResult, UserResult } from "./types";
 
@@ -22,9 +24,11 @@ export function GlobalSearch({ onOpenChange, open }: GlobalSearchProps) {
   const navigate = useNavigate();
   const session = authClient.useSession();
   const [inputValue, setInputValue] = useState("");
+  const [recentSearches, setRecentSearches] = useState<RecentSearch[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const debouncedQuery = useDebounce(inputValue.trim(), 500);
+  const trimmedInput = inputValue.trim();
+  const debouncedQuery = useDebounce(trimmedInput, 500);
 
   const viewerUserId = session.data?.user.id;
   const searchEnabled = open && debouncedQuery.length >= 2;
@@ -50,13 +54,12 @@ export function GlobalSearch({ onOpenChange, open }: GlobalSearchProps) {
     placeholderData: (prev) => prev,
   });
 
-  const trimmedInput = inputValue.trim();
-
   useEffect(() => {
     if (!open) {
       return setInputValue("");
     }
 
+    setRecentSearches(getRecentSearches());
     inputRef.current?.focus();
   }, [open]);
 
@@ -80,18 +83,34 @@ export function GlobalSearch({ onOpenChange, open }: GlobalSearchProps) {
   }, [onOpenChange]);
 
   function handleAlbumSelect(album: AlbumResult) {
+    saveCommittedSearch();
     navigate({ to: "/album/$albumId", params: { albumId: album.id } });
     onOpenChange(false);
   }
 
   function handleUserSelect(user: UserResult) {
+    saveCommittedSearch();
     navigate({ to: "/user/$username", params: { username: user.username } });
     onOpenChange(false);
+  }
+
+  function handleRecentSearchSelect(query: string) {
+    setInputValue(query);
+    inputRef.current?.focus();
+  }
+
+  function handleRecentSearchRemove(normalizedQuery: string) {
+    setRecentSearches(removeRecentSearch(normalizedQuery));
+    inputRef.current?.focus();
   }
 
   function handleClearSearch() {
     setInputValue("");
     inputRef.current?.focus();
+  }
+
+  function saveCommittedSearch() {
+    setRecentSearches(saveRecentSearch(trimmedInput));
   }
 
   return (
@@ -141,9 +160,17 @@ export function GlobalSearch({ onOpenChange, open }: GlobalSearchProps) {
               onUserSelect={handleUserSelect}
               userResults={userResults}
             />
-          ) : (
+          ) : null}
+          {!trimmedInput && recentSearches.length > 0 ? (
+            <RecentSearchResults
+              onRemove={handleRecentSearchRemove}
+              onSelect={handleRecentSearchSelect}
+              recentSearches={recentSearches}
+            />
+          ) : null}
+          {!trimmedInput && recentSearches.length === 0 ? (
             <CommandEmpty className="py-12 text-muted-foreground">Search for albums or users</CommandEmpty>
-          )}
+          ) : null}
         </CommandList>
       </Command>
     </CommandDialog>

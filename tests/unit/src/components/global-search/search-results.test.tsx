@@ -23,7 +23,7 @@ const user = {
 describe("SearchResults", () => {
   it("renders loading and empty states", () => {
     const { rerender } = renderSearch({ isFetchingAlbums: true });
-    expect(screen.getByText("Searching...")).toBeTruthy();
+    expect(screen.getByRole("status", { name: "Loading search results" })).toBeTruthy();
 
     rerender(renderSearchElement({ debouncedQuery: "nothing" }));
     expect(screen.getByText('No results for "nothing"')).toBeTruthy();
@@ -57,6 +57,13 @@ describe("SearchResults", () => {
 
     fireEvent.click(screen.getByText("Alice"));
     expect(onUserSelect).toHaveBeenCalledWith(user);
+  });
+
+  it("dims existing album results while a new album search is pending", () => {
+    renderSearch({ albumResults: [album], isFetchingAlbums: true });
+
+    expect(screen.getByText("Album One").closest("[data-slot='command-item']")?.className).toContain("opacity-55");
+    expect(screen.getByRole("status", { name: "Loading search results" })).toBeTruthy();
   });
 
   it("builds Spotify attribution link from the query", () => {
