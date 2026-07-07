@@ -23,14 +23,22 @@ export function GlobalSearch({ onOpenChange, open }: GlobalSearchProps) {
   const session = authClient.useSession();
   const [inputValue, setInputValue] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
-  const debouncedQuery = useDebounce(inputValue.trim(), 300);
+
+  const debouncedQuery = useDebounce(inputValue.trim(), 500);
+
   const viewerUserId = session.data?.user.id;
+  const searchEnabled = open && debouncedQuery.length >= 2;
 
   const searchAlbumsFn = useServerFn(searchAlbums);
-  const { data: albumResults = [], isFetching: isFetchingAlbums } = useQuery({
+  const {
+    data: albumResults = [],
+    error: albumSearchError,
+    isFetching: isFetchingAlbums,
+  } = useQuery({
     queryFn: () => searchAlbumsFn({ data: { query: debouncedQuery } }),
     queryKey: albumQueryKeys.search(debouncedQuery),
-    enabled: debouncedQuery.length >= 2,
+    enabled: searchEnabled,
+    meta: { suppressErrorToast: true },
     placeholderData: (prev) => prev,
   });
 
@@ -38,7 +46,7 @@ export function GlobalSearch({ onOpenChange, open }: GlobalSearchProps) {
   const { data: userResults = [], isFetching: isFetchingUsers } = useQuery({
     queryFn: () => searchUsersFn({ data: { query: debouncedQuery } }),
     queryKey: userQueryKeys.search(debouncedQuery, viewerUserId),
-    enabled: debouncedQuery.length >= 2,
+    enabled: searchEnabled,
     placeholderData: (prev) => prev,
   });
 
@@ -125,6 +133,7 @@ export function GlobalSearch({ onOpenChange, open }: GlobalSearchProps) {
           {trimmedInput ? (
             <SearchResults
               albumResults={albumResults}
+              albumSearchError={albumSearchError}
               debouncedQuery={debouncedQuery}
               isFetchingAlbums={isFetchingAlbums}
               isFetchingUsers={isFetchingUsers}

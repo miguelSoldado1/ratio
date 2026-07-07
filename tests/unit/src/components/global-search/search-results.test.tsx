@@ -32,6 +32,21 @@ describe("SearchResults", () => {
     expect(screen.getByText("Search for albums or users")).toBeTruthy();
   });
 
+  it("does not show no-results copy before search is enabled", () => {
+    renderSearch({ debouncedQuery: "a" });
+
+    expect(screen.getByText("Search for albums or users")).toBeTruthy();
+  });
+
+  it("renders an album search error state", () => {
+    renderSearch({
+      albumSearchError: new Error("Spotify rate limit reached, try again shortly"),
+      debouncedQuery: "radiohead",
+    });
+
+    expect(screen.getByText("Spotify rate limit reached, try again shortly")).toBeTruthy();
+  });
+
   it("renders results and calls select callbacks", () => {
     const onSelect = vi.fn();
     const onUserSelect = vi.fn();
@@ -62,6 +77,7 @@ function renderSearchElement(overrides: Partial<Parameters<typeof SearchResults>
     <Command>
       <SearchResults
         albumResults={[]}
+        albumSearchError={null}
         debouncedQuery=""
         isFetchingAlbums={false}
         isFetchingUsers={false}

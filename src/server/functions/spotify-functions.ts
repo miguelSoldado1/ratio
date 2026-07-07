@@ -5,7 +5,7 @@ import * as spotifyService from "../services/spotify-service";
 // Schemas
 
 const searchAlbumsSchema = z.object({
-  query: z.string().trim().min(1).max(100),
+  query: z.string().trim().min(2).max(100),
 });
 
 const albumDetailsSchema = z.object({

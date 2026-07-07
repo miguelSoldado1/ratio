@@ -4,9 +4,11 @@ import { cn } from "@/lib/utils";
 import type { AlbumResult, UserResult } from "./types";
 
 const albumResultsBeforeUsersLimit = 5;
+const albumSearchFallbackErrorMessage = "Album search failed. Try again in a moment.";
 
 interface SearchResultsProps {
   albumResults: AlbumResult[];
+  albumSearchError: Error | null;
   debouncedQuery: string;
   isFetchingAlbums: boolean;
   isFetchingUsers: boolean;
@@ -17,6 +19,7 @@ interface SearchResultsProps {
 
 export function SearchResults({
   albumResults,
+  albumSearchError,
   isFetchingAlbums,
   isFetchingUsers,
   debouncedQuery,
@@ -29,13 +32,19 @@ export function SearchResults({
   const hasResults = hasAlbumResults || hasUserResults;
   const isFetching = isFetchingAlbums || isFetchingUsers;
   const visibleAlbumResults = hasUserResults ? albumResults.slice(0, albumResultsBeforeUsersLimit) : albumResults;
+  const shouldShowAlbumSection = hasAlbumResults || isFetchingAlbums;
+  const hasSearchableQuery = debouncedQuery.length >= 2;
 
   if (isFetching && !hasResults) {
     return <CommandEmpty className="text-muted-foreground">Searching...</CommandEmpty>;
   }
 
-  if (!isFetching && debouncedQuery && !hasResults) {
-    return <CommandEmpty className="text-muted-foreground">No results for "{debouncedQuery}"</CommandEmpty>;
+  if (!isFetching && hasSearchableQuery && !hasResults) {
+    return (
+      <CommandEmpty className="text-muted-foreground">
+        {getEmptySearchMessage(debouncedQuery, albumSearchError)}
+      </CommandEmpty>
+    );
   }
 
   if (!hasResults) {
@@ -44,7 +53,7 @@ export function SearchResults({
 
   return (
     <>
-      {hasAlbumResults || isFetchingAlbums ? (
+      {shouldShowAlbumSection ? (
         <>
           <AlbumSearchSourceHeader query={debouncedQuery} />
           <CommandGroup className="pt-0">
@@ -62,7 +71,7 @@ export function SearchResults({
       {hasUserResults ? (
         <>
           <SearchSectionHeader
-            className={hasAlbumResults || isFetchingAlbums ? "mt-1 border-border/50 border-t" : undefined}
+            className={shouldShowAlbumSection ? "mt-1 border-border/50 border-t" : undefined}
             label="Users"
           />
           <CommandGroup className="pt-0">
@@ -74,6 +83,12 @@ export function SearchResults({
       ) : null}
     </>
   );
+}
+
+function getEmptySearchMessage(debouncedQuery: string, albumSearchError: Error | null) {
+  if (albumSearchError) return albumSearchError.message || albumSearchFallbackErrorMessage;
+
+  return `No results for "${debouncedQuery}"`;
 }
 
 interface UserResultItemProps {
