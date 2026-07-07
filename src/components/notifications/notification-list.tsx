@@ -49,7 +49,7 @@ export function NotificationList({
           {showGroupLabels ? (
             <p
               className={cn(
-                "px-3 pb-1.5 font-semibold text-[11px] text-foreground/75 uppercase tracking-[0.08em]",
+                "px-3 pb-1.5 font-semibold text-2xs text-foreground/75 uppercase tracking-[0.08em]",
                 index === 0 ? "pt-2" : "pt-3"
               )}
             >

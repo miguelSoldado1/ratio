@@ -44,6 +44,7 @@ export function RatingsPanel({ albumId, className }: RatingsPanelProps) {
   if (albumRatingSummaryQuery.isError) {
     return (
       <section aria-label="Album ratings unavailable" className={cn("border-border border-t py-5", className)}>
+        <h2 className="sr-only">Ratings</h2>
         <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
           <p className="font-medium text-base">Ratings unavailable</p>
           <p className="text-muted-foreground text-sm tabular-nums">0 ratings</p>
@@ -60,6 +61,7 @@ export function RatingsPanel({ albumId, className }: RatingsPanelProps) {
 
   return (
     <section aria-label="Album ratings" className={cn("border-border border-t py-5", className)}>
+      <h2 className="sr-only">Ratings</h2>
       <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
           {hasRatings ? (
@@ -81,6 +83,7 @@ export function RatingsPanel({ albumId, className }: RatingsPanelProps) {
 export function RatingsPanelSkeleton({ className }: { className?: string }) {
   return (
     <section aria-label="Loading album ratings" className={cn("border-border border-t py-5", className)}>
+      <h2 className="sr-only">Ratings</h2>
       <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <Skeleton className="h-6 w-28" />
         <Skeleton className="h-4 w-20" />

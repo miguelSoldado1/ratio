@@ -10,17 +10,17 @@ export function TrackList({ className, tracks }: { className?: string; tracks: S
 
   return (
     <section className={cn("pt-5", className)}>
-      <h2 className="font-medium text-muted-foreground text-xs uppercase tracking-[0.24em]">Tracks</h2>
+      <h2 className="heading-section">Tracks</h2>
       <div className="mt-3">
         {trackGroups.map((group, groupIndex) => (
           <div className={cn(groupIndex > 0 && "mt-5")} key={group.discNumber}>
             {hasMultipleDiscs ? (
               <div className="flex items-center gap-2 pb-1.5">
-                <span className="font-medium text-[0.6875rem] text-muted-foreground/90 tabular-nums">
+                <span className="font-medium text-2xs text-muted-foreground/90 tabular-nums">
                   Disc {group.discNumber}
                 </span>
                 <span className="h-px flex-1 bg-border/60" />
-                <span className="text-[0.625rem] text-muted-foreground-subtle tabular-nums">
+                <span className="text-2xs text-muted-foreground-subtle tabular-nums">
                   {getTrackCountLabel(group.tracks.length)}
                 </span>
               </div>

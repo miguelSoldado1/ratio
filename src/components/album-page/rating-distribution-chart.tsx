@@ -40,7 +40,7 @@ export function RatingDistributionChart({ ratingDistribution }: RatingDistributi
             <p className={cn("font-medium text-xs tabular-nums", !hasRatings && "text-muted-foreground")}>
               {getRatingBucketRange(item.rating)}
             </p>
-            <p className="mt-1 text-[10px] text-muted-foreground-subtle tabular-nums">
+            <p className="mt-1 text-2xs text-muted-foreground-subtle tabular-nums">
               {hasRatings ? abbreviateCount(item.count) : "0"}
             </p>
           </div>

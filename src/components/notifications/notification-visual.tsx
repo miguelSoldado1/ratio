@@ -17,7 +17,7 @@ export function NotificationVisual({ item }: NotificationVisualProps) {
 
   return (
     <span className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-muted/60">
-      <UserAvatar className="size-9 text-[11px]" name={displayName} src={actor?.avatarUrl ?? undefined} />
+      <UserAvatar className="size-9 text-2xs" name={displayName} src={actor?.avatarUrl ?? undefined} />
       <NotificationTypeBadge type={item.type} />
     </span>
   );
@@ -38,7 +38,7 @@ function NotificationActorStack({ item }: NotificationActorStackProps) {
         return (
           <UserAvatar
             className={cn(
-              "absolute size-7 bg-muted text-[10px] ring-2 ring-popover",
+              "absolute size-7 bg-muted text-2xs ring-2 ring-popover",
               index === 0 ? "top-0 left-0" : "right-0 bottom-0"
             )}
             key={actor.id}

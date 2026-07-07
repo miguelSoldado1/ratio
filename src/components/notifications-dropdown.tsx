@@ -235,7 +235,7 @@ function NotificationCountBadge({ count, unseenCount }: NotificationCountBadgePr
 
   return (
     <Badge
-      className="absolute -top-1 -right-1 h-4 min-w-4 border-background bg-popover px-1 text-[10px] text-foreground shadow-sm ring-1 ring-border/70"
+      className="absolute -top-1 -right-1 h-4 min-w-4 border-background bg-popover px-1 text-2xs text-foreground shadow-sm ring-1 ring-border/70"
       variant="outline"
     >
       {count}

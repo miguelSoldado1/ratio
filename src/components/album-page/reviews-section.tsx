@@ -74,6 +74,7 @@ export function ReviewsSection({ album, className }: ReviewsSectionProps) {
   if (albumReviewsQuery.isError && reviews.length === 0) {
     return (
       <section className={cn("border-border/80 border-t py-8", className)}>
+        <h2 className="heading-section mb-4">Reviews</h2>
         <p className="font-medium text-sm">Reviews unavailable</p>
         <p className="mt-1 max-w-md text-muted-foreground text-sm">Could not load reviews for this album.</p>
       </section>
@@ -83,6 +84,7 @@ export function ReviewsSection({ album, className }: ReviewsSectionProps) {
   if (reviews.length === 0) {
     return (
       <section className={cn("border-border/80 border-t py-8", className)}>
+        <h2 className="heading-section mb-4">Reviews</h2>
         <p className="font-medium text-sm">No reviews yet</p>
         <p className="mt-1 max-w-md text-muted-foreground text-sm">
           Reviews will appear here once people start rating this album.
@@ -94,6 +96,7 @@ export function ReviewsSection({ album, className }: ReviewsSectionProps) {
   return (
     <>
       <section className={className}>
+        <h2 className="heading-section mb-3">Reviews</h2>
         {reviews.map((review) => (
           <ReviewCard.Root className="border-border/80" key={review.id}>
             <ReviewCard.Header createdAt={review.createdAt} user={review.user} />

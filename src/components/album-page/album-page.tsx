@@ -44,7 +44,6 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
 
   return (
     <main className="min-h-screen bg-background text-foreground" data-album-id={album.id}>
-      <h1 className="sr-only">{album.title}</h1>
       <div className="mx-auto grid w-full max-w-375 gap-8 px-5 py-6 lg:grid-cols-[minmax(240px,340px)_1fr] lg:px-10 xl:gap-12 xl:px-14 2xl:px-20">
         <MobileAlbumHeader album={album} coverUrl={album.coverUrl} />
         <aside className="hidden lg:sticky lg:top-20 lg:block lg:self-start">
@@ -53,7 +52,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
         </aside>
         <section className="min-w-0 pt-3 lg:pt-10">
           <div className="hidden lg:block">
-            <p className="max-w-4xl font-semibold text-4xl leading-tight tracking-normal md:text-5xl">{album.title}</p>
+            <h1 className="heading-page max-w-4xl">{album.title}</h1>
             <p className="mt-2 text-lg text-muted-foreground">
               {artist} · {releaseYear}
             </p>

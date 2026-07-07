@@ -64,7 +64,7 @@ export function HeaderAuthActions({ onAuthClick }: HeaderAuthActionsProps) {
 
   const displayName = user.displayUsername ?? user.username ?? user.name ?? "Account";
   const profileUsername = user.username?.toLowerCase();
-  const avatar = <UserAvatar className="size-7 text-[11px]" name={displayName} src={user.image} />;
+  const avatar = <UserAvatar className="size-7 text-2xs" name={displayName} src={user.image} />;
 
   return (
     <div className="flex min-w-0 items-center rounded-full bg-muted/40 p-0.5">

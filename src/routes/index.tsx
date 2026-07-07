@@ -76,6 +76,7 @@ function FeedPage() {
     return (
       <main className="min-h-screen bg-background text-foreground">
         <div className="mx-auto flex w-full max-w-375 flex-col px-5 pt-0 pb-8 lg:px-10 lg:pb-12 xl:px-14 2xl:px-20">
+          <h1 className="sr-only">Album reviews feed</h1>
           <FeedReviewsSectionSkeleton className="mt-0" />
         </div>
       </main>
@@ -86,6 +87,7 @@ function FeedPage() {
     return (
       <main className="min-h-screen bg-background text-foreground">
         <div className="mx-auto w-full max-w-375 px-5 pt-0 pb-8 lg:px-10 lg:pb-12 xl:px-14 2xl:px-20">
+          <h1 className="sr-only">Album reviews feed</h1>
           <section className="py-5">
             <p className="font-medium text-sm">Feed unavailable</p>
             <p className="mt-1 max-w-md text-muted-foreground text-sm">Could not load reviews right now.</p>
@@ -98,6 +100,7 @@ function FeedPage() {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex w-full max-w-375 flex-col px-5 pt-0 pb-8 lg:px-10 lg:pb-12 xl:px-14 2xl:px-20">
+        <h1 className="sr-only">Album reviews feed</h1>
         <FeedReviewsSection
           className="mt-0"
           deletingReviewId={deletingReviewId}

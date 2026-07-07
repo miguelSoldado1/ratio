@@ -64,14 +64,14 @@ function Header({ user, createdAt, className, meta }: HeaderProps) {
           params={{ username: user.username }}
           to="/user/$username"
         >
-          <UserAvatar className="size-6 text-[11px]" name={user.displayUsername} src={user.avatarUrl} />
+          <UserAvatar className="size-6 text-2xs" name={user.displayUsername} src={user.avatarUrl} />
           <span className={cn(displayNameClass, "truncate transition-colors group-hover:text-primary")}>
             {user.displayUsername}
           </span>
         </Link>
       ) : (
         <div className={identityClass}>
-          <UserAvatar className="size-6 text-[11px]" name={user.displayUsername} src={user.avatarUrl} />
+          <UserAvatar className="size-6 text-2xs" name={user.displayUsername} src={user.avatarUrl} />
           <span className={displayNameClass}>{user.displayUsername}</span>
         </div>
       )}
@@ -486,7 +486,7 @@ function Likes({ count, disabled = false, liked = false, onShowLikes, onToggle, 
         <Button
           aria-label={`Show people who liked this review, ${like.count} ${likeLabel}`}
           className={cn(
-            "h-8 pr-1 pl-0 text-[13px] tabular-nums [transition:color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] hover:bg-transparent hover:text-primary active:scale-[0.99] dark:hover:bg-transparent",
+            "h-8 pr-1 pl-0 text-xs tabular-nums [transition:color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] hover:bg-transparent hover:text-primary active:scale-[0.99] dark:hover:bg-transparent",
             getLikeCountClass({ disabled: false, liked: like.liked })
           )}
           onClick={onShowLikes}
@@ -499,7 +499,7 @@ function Likes({ count, disabled = false, liked = false, onShowLikes, onToggle, 
       ) : (
         <span
           className={cn(
-            "flex h-8 items-center px-1 text-[13px] tabular-nums",
+            "flex h-8 items-center px-1 text-xs tabular-nums",
             getLikeCountClass({ disabled, liked: like.liked })
           )}
         >

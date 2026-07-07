@@ -146,7 +146,7 @@ function AlbumResultItem({ album, onSelect }: AlbumResultItemProps) {
 function SearchSectionHeader({ className, label }: { className?: string; label: string }) {
   return (
     <div className={cn("flex shrink-0 items-center justify-between px-4 pt-3 pb-1", className)}>
-      <span className="font-medium text-[10px] text-muted-foreground uppercase tracking-widest">{label}</span>
+      <span className="font-medium text-2xs text-muted-foreground uppercase tracking-widest">{label}</span>
     </div>
   );
 }
@@ -156,7 +156,7 @@ function SpotifySearchSource({ className, href }: { className?: string; href: st
     <a
       aria-label="Open search results on Spotify"
       className={cn(
-        "inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-[11px] text-muted-foreground-subtle leading-none",
+        "inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-2xs text-muted-foreground-subtle leading-none",
         "[transition:background-color_150ms_ease,color_150ms_ease,opacity_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] hover:bg-muted/40 hover:text-muted-foreground hover:opacity-100 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/30 active:scale-[0.98]",
         className
       )}
@@ -179,7 +179,7 @@ function SpotifySearchSource({ className, href }: { className?: string; href: st
 function AlbumSearchSourceHeader({ className, query }: { className?: string; query: string }) {
   return (
     <div className={cn("flex shrink-0 items-center justify-between px-4 pt-3 pb-1", className)}>
-      <span className="font-medium text-[10px] text-muted-foreground uppercase tracking-widest">Albums</span>
+      <span className="font-medium text-2xs text-muted-foreground uppercase tracking-widest">Albums</span>
       <SpotifySearchSource className="-mr-2" href={getSpotifySearchUrl(query)} />
     </div>
   );
