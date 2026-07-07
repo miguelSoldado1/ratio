@@ -1,9 +1,9 @@
 "use client";
 
 import { Command as CommandPrimitive } from "cmdk";
-import { CheckIcon, SearchIcon } from "lucide-react";
+import { CheckIcon, SearchIcon, XIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { InputGroup, InputGroupAddon } from "@/components/ui/input-group";
+import { InputGroup, InputGroupAddon, InputGroupButton } from "@/components/ui/input-group";
 import { cn } from "@/lib/utils";
 import type * as React from "react";
 
@@ -56,13 +56,18 @@ function CommandDialog({
 function CommandInput({
   className,
   inputGroupClassName,
+  onClear,
   ref,
+  value,
   wrapperClassName,
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.Input> & {
   inputGroupClassName?: string;
+  onClear?: () => void;
   wrapperClassName?: string;
 }) {
+  const showClearButton = typeof value === "string" && value.length > 0 && onClear;
+
   return (
     <div className={cn("p-2 pb-1", wrapperClassName)} data-slot="command-input-wrapper">
       <InputGroup className={cn("h-11 bg-input/50", inputGroupClassName)}>
@@ -70,10 +75,23 @@ function CommandInput({
           className={cn("w-full text-sm outline-hidden disabled:cursor-not-allowed disabled:opacity-50", className)}
           data-slot="command-input"
           ref={ref}
+          value={value}
           {...props}
         />
+        {showClearButton ? (
+          <InputGroupAddon align="inline-end">
+            <InputGroupButton
+              aria-label="Clear search"
+              onClick={onClear}
+              onMouseDown={(event) => event.preventDefault()}
+              size="icon-xs"
+            >
+              <XIcon />
+            </InputGroupButton>
+          </InputGroupAddon>
+        ) : null}
         <InputGroupAddon>
-          <SearchIcon className="size-4 shrink-0 opacity-50" />
+          <SearchIcon className="shrink-0 opacity-50" />
         </InputGroupAddon>
       </InputGroup>
     </div>

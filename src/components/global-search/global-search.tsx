@@ -81,6 +81,11 @@ export function GlobalSearch({ onOpenChange, open }: GlobalSearchProps) {
     onOpenChange(false);
   }
 
+  function handleClearSearch() {
+    setInputValue("");
+    inputRef.current?.focus();
+  }
+
   return (
     <CommandDialog
       className="top-0 left-0 h-svh max-h-svh max-w-none translate-x-0 rounded-none! sm:top-18 sm:left-1/2 sm:h-auto sm:max-h-[calc(100svh-4.5rem)] sm:max-w-2xl sm:-translate-x-1/2 sm:rounded-4xl!"
@@ -107,6 +112,7 @@ export function GlobalSearch({ onOpenChange, open }: GlobalSearchProps) {
             autoCorrect="off"
             autoFocus
             inputGroupClassName="h-10 sm:h-11"
+            onClear={handleClearSearch}
             onValueChange={setInputValue}
             placeholder="Search..."
             ref={inputRef}
