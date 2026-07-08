@@ -459,12 +459,12 @@ function Likes({ count, disabled = false, liked = false, onShowLikes, onToggle, 
   );
 
   return (
-    <div className={cn("-ml-2.5 flex h-8 items-center", className)}>
+    <div className={cn("-ml-2 flex h-8 items-center", className)}>
       <Button
         aria-label={like.liked ? "Unlike review" : "Like review"}
         aria-pressed={like.liked}
         className={cn(
-          "group hover:bg-transparent dark:hover:bg-transparent [&_svg:not([class*='size-'])]:size-3.5",
+          "group -mr-1 hover:bg-transparent dark:hover:bg-transparent [&_svg:not([class*='size-'])]:size-3.5",
           getLikeButtonClass({ disabled })
         )}
         disabled={disabled}
