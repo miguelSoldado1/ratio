@@ -155,11 +155,11 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
                   <FieldLabel htmlFor={reviewFormIds.review}>Review</FieldLabel>
                   <Textarea
                     aria-describedby={reviewFormIds.reviewDescription}
+                    className="min-h-40 sm:min-h-32"
                     id={reviewFormIds.review}
                     maxLength={2000}
                     onChange={(event) => setReviewForm((form) => ({ ...form, body: event.target.value }))}
                     placeholder="Write your review here..."
-                    rows={5}
                     value={reviewForm.body}
                   />
                   <FieldDescription id={reviewFormIds.reviewDescription}>
