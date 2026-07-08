@@ -1,1 +1,0 @@
-ALTER TABLE "review" ADD COLUMN "share_code" text;

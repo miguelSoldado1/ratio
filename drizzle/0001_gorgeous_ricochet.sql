@@ -1,1 +1,0 @@
-ALTER TABLE "user" ADD COLUMN "avatar_object_key" text;

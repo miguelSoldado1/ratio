@@ -1,1 +1,0 @@
-CREATE INDEX "review_likes_review_created_user_idx" ON "review_like" USING btree ("review_id","created_at","user_id");
