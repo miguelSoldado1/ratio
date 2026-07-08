@@ -4,8 +4,8 @@ Ratio is a social album review and rating app for discovering albums, reading co
 
 ## Important Pages
 
-- Home feed: https://ratiomusic.live/
-- Sitemap: https://ratiomusic.live/sitemap.xml
+- [Home feed](https://ratiomusic.live/)
+- [Sitemap](https://ratiomusic.live/sitemap.xml)
 
 ## Public Route Patterns
 
