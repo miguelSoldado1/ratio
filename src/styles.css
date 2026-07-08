@@ -144,6 +144,11 @@
   .focus-ring {
     @apply focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30;
   }
+
+  .animate-equalizer {
+    transform-origin: bottom;
+    animation: equalizer-bounce 1.4s ease-in-out infinite;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -191,5 +196,15 @@
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes equalizer-bounce {
+  0%,
+  100% {
+    transform: scaleY(0.25);
+  }
+  50% {
+    transform: scaleY(1);
   }
 }
