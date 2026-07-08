@@ -286,18 +286,12 @@ async function getCloudflareRateLimiter(bindingName: string) {
 }
 
 async function getCloudflareWorkersModule(): Promise<CloudflareWorkersModule | null> {
-  if (!isCloudflareWorkersRuntime()) return null;
-
   try {
     return await import(/* @vite-ignore */ CLOUDFLARE_WORKERS_MODULE);
   } catch (error) {
     console.warn("Failed to load Cloudflare Workers bindings", error);
     return null;
   }
-}
-
-function isCloudflareWorkersRuntime() {
-  return typeof navigator !== "undefined" && navigator.userAgent === "Cloudflare-Workers";
 }
 
 function getContextUserId(context: unknown) {
