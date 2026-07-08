@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import z from "zod";
 import { authMiddleware } from "../auth-middleware";
+import { createCloudflareRateLimitMiddleware, followMutationRateLimit } from "../rate-limit";
 import * as followService from "../services/follow-service";
 
 // Schemas
@@ -26,6 +27,6 @@ export const getUserFollowing = createServerFn()
   .handler(({ data }) => followService.getUserFollowingService(data));
 
 export const setUserFollow = createServerFn({ method: "POST" })
-  .middleware([authMiddleware])
+  .middleware([authMiddleware, createCloudflareRateLimitMiddleware(followMutationRateLimit)])
   .validator(userFollowSchema)
   .handler(({ context, data }) => followService.setUserFollowService(data, context));
