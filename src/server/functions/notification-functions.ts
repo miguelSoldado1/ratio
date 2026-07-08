@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import z from "zod";
 import { authMiddleware } from "../auth-middleware";
-import { createCloudflareRateLimitMiddleware, notificationMutationRateLimit } from "../rate-limit";
+import { createCloudflareRateLimitMiddleware, userMutationRateLimit } from "../rate-limit";
 import * as notificationService from "../services/notification-service";
 
 // Schemas
@@ -22,5 +22,5 @@ export const getNotifications = createServerFn()
   .handler(({ context, data }) => notificationService.getNotificationsService(data, context));
 
 export const markNotificationsSeen = createServerFn({ method: "POST" })
-  .middleware([authMiddleware, createCloudflareRateLimitMiddleware(notificationMutationRateLimit)])
+  .middleware([authMiddleware, createCloudflareRateLimitMiddleware(userMutationRateLimit)])
   .handler(({ context }) => notificationService.markNotificationsSeenService(context));
