@@ -80,8 +80,8 @@ export function DeleteReviewDialog({
           <Trash2 className="size-3.5" />
         </Button>
       ) : null}
-      <DialogContent className="sm:max-w-95">
-        <DialogHeader className="pr-7">
+      <DialogContent size="sm">
+        <DialogHeader>
           <DialogTitle>{copy.title}</DialogTitle>
           <DialogDescription>{copy.description}</DialogDescription>
         </DialogHeader>

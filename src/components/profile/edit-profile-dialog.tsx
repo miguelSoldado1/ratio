@@ -146,8 +146,8 @@ export function EditProfileDialog({
         <Pencil data-icon="inline-start" />
         Edit
       </Button>
-      <DialogContent className="sm:max-w-115">
-        <DialogHeader className="gap-2 pr-7">
+      <DialogContent size="md">
+        <DialogHeader className="gap-2">
           <DialogTitle>Edit profile</DialogTitle>
           <DialogDescription>Update the identity people see on your reviews.</DialogDescription>
         </DialogHeader>

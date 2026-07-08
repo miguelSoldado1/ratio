@@ -150,8 +150,8 @@ export function FollowableUserListDialog<TUser extends FollowableUser>({
       <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} />
       <Dialog onOpenChange={handleOpenChange} open={currentOpen}>
         {trigger ? <DialogTrigger render={trigger} /> : null}
-        <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-md">
-          <DialogHeader className="shrink-0 gap-1 border-border/70 border-b px-5 py-4 pr-12">
+        <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-0 overflow-hidden p-0" size="md">
+          <DialogHeader className="shrink-0 gap-1 border-border/70 border-b py-4 pl-5">
             <DialogTitle>{title}</DialogTitle>
             <DialogDescription>{description}</DialogDescription>
           </DialogHeader>

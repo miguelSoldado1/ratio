@@ -52,8 +52,8 @@ export function AuthDialog({ onOpenChange, open }: AuthDialogProps) {
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent className="sm:max-w-105">
-        <DialogHeader className="gap-2 pr-7">
+      <DialogContent size="md">
+        <DialogHeader className="gap-2">
           <DialogTitle className="text-xl">Continue to Ratio</DialogTitle>
           <DialogDescription>Sign in or create an account to continue.</DialogDescription>
         </DialogHeader>

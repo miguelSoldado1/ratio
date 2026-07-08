@@ -18,8 +18,8 @@ interface ProfileBanUserDialogProps {
 export function ProfileBanUserDialog({ isPending, onBan, onOpenChange, open }: ProfileBanUserDialogProps) {
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent className="sm:max-w-95">
-        <DialogHeader className="pr-7">
+      <DialogContent size="sm">
+        <DialogHeader>
           <DialogTitle>Ban this user?</DialogTitle>
           <DialogDescription>This will prevent them from using Ratio. You can unban them later.</DialogDescription>
         </DialogHeader>

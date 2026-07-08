@@ -2,7 +2,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tansta
 import { useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Bell } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { NotificationList } from "@/components/notifications/notification-list";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Spinner } from "@/components/ui/spinner";
 import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { notificationQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { cn } from "@/lib/utils";
 import {
@@ -289,20 +290,4 @@ function NotificationsPanel({
       </div>
     </div>
   );
-}
-
-function useMediaQuery(query: string) {
-  const [matches, setMatches] = useState(false);
-
-  useEffect(() => {
-    const mediaQueryList = window.matchMedia(query);
-    const handleChange = () => setMatches(mediaQueryList.matches);
-
-    handleChange();
-    mediaQueryList.addEventListener("change", handleChange);
-
-    return () => mediaQueryList.removeEventListener("change", handleChange);
-  }, [query]);
-
-  return matches;
 }
