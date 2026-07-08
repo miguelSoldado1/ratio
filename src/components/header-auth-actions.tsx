@@ -117,6 +117,10 @@ export function HeaderAuthActions({ onAuthClick }: HeaderAuthActionsProps) {
                   <ShieldCheck />
                   Admin mode
                 </DropdownMenuCheckboxItem>
+                <DropdownMenuItem onClick={() => navigate({ to: "/admin/users" })}>
+                  <ShieldCheck />
+                  Admin users
+                </DropdownMenuItem>
               </DropdownMenuGroup>
             </>
           ) : null}
