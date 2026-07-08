@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMemo, useState } from "react";
 import { AuthDialog } from "@/components/auth/auth-dialog";
 import { InlineError } from "@/components/inline-error";
+import { PageContainer } from "@/components/page-container";
 import { ProfileHeader, ProfileHeaderSkeleton } from "@/components/profile/profile-header";
 import { ProfileReviewsSection, ProfileReviewsSectionSkeleton } from "@/components/profile/profile-reviews-section";
 import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
@@ -117,10 +118,10 @@ function UserPage() {
   if (userProfileQuery.isPending || (profile && userReviewsQuery.isPending)) {
     return (
       <main className="min-h-screen bg-background text-foreground">
-        <div className="mx-auto flex w-full max-w-375 flex-col gap-8 px-5 py-8 lg:px-10 lg:py-12 xl:px-14 2xl:px-20">
+        <PageContainer className="flex flex-col gap-8 lg:py-12">
           <ProfileHeaderSkeleton />
           <ProfileReviewsSectionSkeleton className="mt-0" />
-        </div>
+        </PageContainer>
       </main>
     );
   }
@@ -128,9 +129,9 @@ function UserPage() {
   if (userProfileQuery.isError || !profile) {
     return (
       <main className="min-h-screen bg-background text-foreground">
-        <div className="mx-auto w-full max-w-375 px-5 py-12 lg:px-10 xl:px-14 2xl:px-20">
+        <PageContainer className="py-12">
           <InlineError description="Could not load this profile." title="User unavailable" />
-        </div>
+        </PageContainer>
       </main>
     );
   }
@@ -139,7 +140,7 @@ function UserPage() {
     <>
       <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} />
       <main className="min-h-screen bg-background text-foreground">
-        <div className="mx-auto flex w-full max-w-375 flex-col px-5 py-8 lg:px-10 lg:py-12 xl:px-14 2xl:px-20">
+        <PageContainer className="flex flex-col lg:py-12">
           <ProfileHeader
             onAuthRequired={() => setAuthDialogOpen(true)}
             profile={profile}
@@ -171,7 +172,7 @@ function UserPage() {
               viewer={viewer}
             />
           )}
-        </div>
+        </PageContainer>
       </main>
     </>
   );

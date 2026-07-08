@@ -4,6 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useMemo } from "react";
 import { FeedReviewsSection, FeedReviewsSectionSkeleton } from "@/components/feed/feed-reviews-section";
 import { InlineError } from "@/components/inline-error";
+import { PageContainer } from "@/components/page-container";
 import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
 import { useReviewDelete } from "@/hooks/use-review-delete";
 import { useReviewLikeToggle } from "@/hooks/use-review-like-toggle";
@@ -76,10 +77,10 @@ function FeedPage() {
   if (feedQuery.isPending) {
     return (
       <main className="min-h-screen bg-background text-foreground">
-        <div className="mx-auto flex w-full max-w-375 flex-col px-5 pt-0 pb-8 lg:px-10 lg:pb-12 xl:px-14 2xl:px-20">
+        <PageContainer className="flex flex-col pt-0 pb-8 lg:pb-12">
           <h1 className="sr-only">Album reviews feed</h1>
           <FeedReviewsSectionSkeleton className="mt-0" />
-        </div>
+        </PageContainer>
       </main>
     );
   }
@@ -87,17 +88,17 @@ function FeedPage() {
   if (feedQuery.isError && reviews.length === 0) {
     return (
       <main className="min-h-screen bg-background text-foreground">
-        <div className="mx-auto w-full max-w-375 px-5 pt-0 pb-8 lg:px-10 lg:pb-12 xl:px-14 2xl:px-20">
+        <PageContainer className="pt-0 pb-8 lg:pb-12">
           <h1 className="sr-only">Album reviews feed</h1>
           <InlineError className="py-5" description="Could not load reviews right now." title="Feed unavailable" />
-        </div>
+        </PageContainer>
       </main>
     );
   }
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex w-full max-w-375 flex-col px-5 pt-0 pb-8 lg:px-10 lg:pb-12 xl:px-14 2xl:px-20">
+      <PageContainer className="flex flex-col pt-0 pb-8 lg:pb-12">
         <h1 className="sr-only">Album reviews feed</h1>
         <FeedReviewsSection
           className="mt-0"
@@ -109,7 +110,7 @@ function FeedPage() {
           reviews={reviews}
           viewer={viewer}
         />
-      </div>
+      </PageContainer>
     </main>
   );
 }

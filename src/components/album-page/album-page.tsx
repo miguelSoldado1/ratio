@@ -12,6 +12,7 @@ import { RatingsPanel } from "@/components/album-page/ratings-panel";
 import { ReviewsSection } from "@/components/album-page/reviews-section";
 import { TrackList } from "@/components/album-page/track-list";
 import { InlineError } from "@/components/inline-error";
+import { PageContainer } from "@/components/page-container";
 import { albumQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { getAlbumDetails } from "@/server/functions/spotify-functions";
 
@@ -30,12 +31,12 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   if (albumDetailsQuery.isError) {
     return (
       <main className="min-h-screen bg-background text-foreground">
-        <div className="mx-auto w-full max-w-375 px-5 py-12 lg:px-10 xl:px-14 2xl:px-20">
+        <PageContainer className="py-12">
           <InlineError
             description="Could not load this album. It may be unavailable on Spotify or temporarily unreachable."
             title="Album unavailable"
           />
-        </div>
+        </PageContainer>
       </main>
     );
   }
@@ -47,7 +48,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
 
   return (
     <main className="min-h-screen bg-background text-foreground" data-album-id={album.id}>
-      <div className="mx-auto grid w-full max-w-375 gap-8 px-5 py-6 lg:grid-cols-[minmax(240px,340px)_1fr] lg:px-10 xl:gap-12 xl:px-14 2xl:px-20">
+      <PageContainer className="grid gap-8 py-6 lg:grid-cols-[minmax(240px,340px)_1fr] xl:gap-12">
         <MobileAlbumHeader album={album} coverUrl={album.coverUrl} />
         <aside className="hidden lg:sticky lg:top-20 lg:block lg:self-start">
           <AlbumCover albumTitle={album.title} coverUrl={album.coverUrl} />
@@ -66,7 +67,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
           <RatingsPanel albumId={album.id} className="mt-2 lg:mt-8" />
           <ReviewsSection album={album} className="mt-10 lg:mt-12" />
         </section>
-      </div>
+      </PageContainer>
     </main>
   );
 }
