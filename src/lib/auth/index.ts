@@ -7,6 +7,7 @@ import { env } from "@/env";
 import { isUsernameAllowed } from "@/lib/users/username-policy.server";
 import { normalizeUsername } from "@/lib/users/username-policy.shared";
 import { deleteAvatarObject } from "@/server/avatar-storage";
+import { createBetterAuthRateLimitStorage } from "@/server/rate-limit";
 import { getDb } from "../db";
 import * as schema from "../db/schema";
 import { limitDisplayUsername, trimDisplayUsername } from "./profile-identity";
@@ -24,6 +25,22 @@ export function createAuth(db: Db) {
       // Ratio is OAuth-only, so there is no password challenge that can refresh
       // Better Auth's sensitive-action freshness window after it expires.
       freshAge: 0,
+    },
+    rateLimit: {
+      customRules: {
+        "/callback/*": { max: 30, window: 60 },
+        "/get-session": false,
+        "/sign-in/social": { max: 20, window: 60 },
+      },
+      customStorage: createBetterAuthRateLimitStorage(),
+      enabled: true,
+      max: 100,
+      window: 60,
+    },
+    advanced: {
+      ipAddress: {
+        ipAddressHeaders: ["cf-connecting-ip", "x-forwarded-for"],
+      },
     },
     user: {
       additionalFields: {

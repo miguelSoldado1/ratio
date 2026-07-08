@@ -1,6 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import z from "zod";
 import { authMiddleware } from "../auth-middleware";
+import {
+  createCloudflareRateLimitMiddleware,
+  createFixedWindowRateLimitMiddleware,
+  reviewCreateHourlyRateLimit,
+  reviewMutationRateLimit,
+} from "../rate-limit";
 import * as reviewService from "../services/review-service";
 
 // Schemas
@@ -57,22 +63,22 @@ const createReviewSchema = z.object({
 // Server functions
 
 export const createReview = createServerFn({ method: "POST" })
-  .middleware([authMiddleware])
+  .middleware([authMiddleware, createFixedWindowRateLimitMiddleware(reviewCreateHourlyRateLimit)])
   .validator(createReviewSchema)
   .handler(({ context, data }) => reviewService.createReviewService(data, context));
 
 export const deleteReview = createServerFn({ method: "POST" })
-  .middleware([authMiddleware])
+  .middleware([authMiddleware, createCloudflareRateLimitMiddleware(reviewMutationRateLimit)])
   .validator(deleteReviewSchema)
   .handler(({ context, data }) => reviewService.deleteReviewService(data, context));
 
 export const pinProfileReview = createServerFn({ method: "POST" })
-  .middleware([authMiddleware])
+  .middleware([authMiddleware, createCloudflareRateLimitMiddleware(reviewMutationRateLimit)])
   .validator(profilePinnedReviewSchema)
   .handler(({ context, data }) => reviewService.pinProfileReviewService(data, context));
 
 export const unpinProfileReview = createServerFn({ method: "POST" })
-  .middleware([authMiddleware])
+  .middleware([authMiddleware, createCloudflareRateLimitMiddleware(reviewMutationRateLimit)])
   .validator(profilePinnedReviewSchema)
   .handler(({ context, data }) => reviewService.unpinProfileReviewService(data, context));
 
@@ -110,6 +116,6 @@ export const hasMyAlbumReview = createServerFn()
   .handler(({ context, data }) => reviewService.hasMyAlbumReviewService(data, context));
 
 export const setReviewLike = createServerFn({ method: "POST" })
-  .middleware([authMiddleware])
+  .middleware([authMiddleware, createCloudflareRateLimitMiddleware(reviewMutationRateLimit)])
   .validator(reviewLikeSchema)
   .handler(({ context, data }) => reviewService.setReviewLikeService(data, context));

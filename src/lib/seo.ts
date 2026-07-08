@@ -1,4 +1,4 @@
-const fallbackSiteUrl = "https://ratio.sticky-puddingz.workers.dev";
+const fallbackSiteUrl = "https://ratiomusic.live";
 
 export const siteName = "Ratio";
 export const defaultSeoTitle = "Ratio - Album Reviews";

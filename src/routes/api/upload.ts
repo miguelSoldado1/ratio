@@ -5,6 +5,14 @@ import { createAuth } from "@/lib/auth";
 import { avatarFileTypes, avatarMaxFileSize } from "@/lib/avatar";
 import { getDb } from "@/lib/db";
 import { createAvatarObjectKey, createR2Client, getAvatarPublicUrl } from "@/server/avatar-storage";
+import {
+  createRateLimitResponse,
+  enforceCloudflareRateLimitForRequest,
+  enforceFixedWindowRateLimitForRequest,
+  isRateLimitError,
+  uploadSignHourlyRateLimit,
+  uploadSignRateLimit,
+} from "@/server/rate-limit";
 
 const uploadRouter: Router = {
   bucketName: env.CLOUDFLARE_R2_BUCKET_NAME,
@@ -28,6 +36,16 @@ const uploadRouter: Router = {
           throw new RejectUpload("Sign in to upload a profile photo.");
         }
 
+        try {
+          await enforceFixedWindowRateLimitForRequest(req, uploadSignHourlyRateLimit, session.user.id);
+        } catch (error) {
+          if (isRateLimitError(error)) {
+            throw new RejectUpload("Too many upload attempts. Try again shortly.");
+          }
+
+          throw error;
+        }
+
         const objectKey = createAvatarObjectKey({ fileType: file.type, userId: session.user.id });
 
         return {
@@ -46,7 +64,16 @@ const uploadRouter: Router = {
 export const Route = createFileRoute("/api/upload")({
   server: {
     handlers: {
-      POST: async ({ request }) => handleRequest(request, uploadRouter),
+      POST: async ({ request }) => {
+        try {
+          await enforceCloudflareRateLimitForRequest(request, uploadSignRateLimit);
+        } catch (error) {
+          if (isRateLimitError(error)) return createRateLimitResponse(error);
+          throw error;
+        }
+
+        return handleRequest(request, uploadRouter);
+      },
     },
   },
 });
