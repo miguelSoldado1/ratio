@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ChevronDown, Heart } from "lucide-react";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { AlbumArtwork } from "@/components/album-artwork";
 import { RatingStarIcon } from "@/components/rating-star-icon";
 import { ReviewShareButton } from "@/components/review-share-button";
 import { Button } from "@/components/ui/button";
@@ -89,20 +90,15 @@ interface AlbumProps {
 function Album({ album, linked, className }: AlbumProps) {
   const inner = (
     <>
-      <div className="size-14 shrink-0 overflow-hidden bg-muted">
-        {album.coverUrl ? (
-          <img
-            alt={`${album.title} by ${album.artist}`}
-            className="size-full object-cover"
-            decoding="async"
-            height={56}
-            loading="lazy"
-            referrerPolicy="no-referrer"
-            src={album.coverUrl}
-            width={56}
-          />
-        ) : null}
-      </div>
+      <AlbumArtwork
+        alt={`${album.title} by ${album.artist}`}
+        className="size-14"
+        decoding="async"
+        height={56}
+        loading="lazy"
+        src={album.coverUrl}
+        width={56}
+      />
       <div className="min-w-0 flex-1 pt-0.5">
         <p className="truncate font-semibold text-foreground text-sm leading-snug">{album.title}</p>
         <p className="mt-0.5 truncate text-muted-foreground text-xs">
