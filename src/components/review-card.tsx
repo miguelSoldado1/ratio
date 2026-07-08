@@ -167,7 +167,9 @@ interface ReviewProps {
   collapsed?: boolean;
 }
 
-const collapsedReviewMaxHeightPx = 160;
+// ~8 lines at the review's line-height (15px × 1.45 ≈ 21.75px). Keep in sync
+// with the `max-h-44` (176px) clamp applied below.
+const collapsedReviewMaxHeightPx = 176;
 
 function Review({ children, className, collapsed = true }: ReviewProps) {
   const reviewId = useId();
@@ -210,7 +212,7 @@ function Review({ children, className, collapsed = true }: ReviewProps) {
         <p
           className={cn(
             "wrap-break-word whitespace-pre-wrap text-[15px] text-foreground/90 leading-[1.45]",
-            collapsed && !expanded && "max-h-40 overflow-hidden",
+            collapsed && !expanded && "max-h-44 overflow-hidden",
             className
           )}
           id={reviewId}
@@ -221,7 +223,7 @@ function Review({ children, className, collapsed = true }: ReviewProps) {
         {collapsed && canToggle ? (
           <div
             className={cn(
-              "pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-linear-to-b from-background/0 via-background/80 to-background opacity-0 [transition:opacity_160ms_cubic-bezier(0.23,1,0.32,1)]",
+              "pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-linear-to-b from-[var(--review-fade-color,var(--background))]/0 via-[var(--review-fade-color,var(--background))]/80 to-[var(--review-fade-color,var(--background))] opacity-0 [transition:opacity_160ms_cubic-bezier(0.23,1,0.32,1)]",
               !expanded && "opacity-100"
             )}
           />

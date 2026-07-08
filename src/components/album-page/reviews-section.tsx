@@ -1,12 +1,11 @@
 import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { InlineError } from "@/components/inline-error";
 import { ReviewCard } from "@/components/review-card";
-import { ReviewLikesDialog } from "@/components/review-likes-dialog";
+import { ReviewList } from "@/components/review-list";
 import { ReviewManagementMenu } from "@/components/review-management-menu";
-import { Spinner } from "@/components/ui/spinner";
 import { useAdminMode } from "@/hooks/use-admin-mode";
 import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
 import { useReviewDelete } from "@/hooks/use-review-delete";
@@ -35,7 +34,6 @@ export function ReviewsSection({ album, className }: ReviewsSectionProps) {
   const hasSession = Boolean(userId);
   const viewer = useMemo(() => ({ hasSession, userId }), [hasSession, userId]);
   const { adminModeEnabled, isAdmin } = useAdminMode();
-  const [likesReviewId, setLikesReviewId] = useState<string>();
   const albumArtist = getAlbumArtistNames(album);
   const reviewsQueryKey = albumQueryKeys.reviews(album.id, userId);
 
@@ -100,57 +98,34 @@ export function ReviewsSection({ album, className }: ReviewsSectionProps) {
   }
 
   return (
-    <>
-      <section className={className}>
-        <h2 className="heading-section mb-3">Reviews</h2>
-        {reviews.map((review) => (
-          <ReviewCard.Root className="border-border/80" key={review.id}>
-            <ReviewCard.Header createdAt={review.createdAt} user={review.user} />
-            <ReviewCard.Rating value={review.rating} />
-            {review.review ? <ReviewCard.Review>{review.review}</ReviewCard.Review> : null}
-            <ReviewCard.Footer>
-              <ReviewCard.Likes
-                count={review.likes}
-                disabled={!hasSession}
-                liked={review.liked}
-                onShowLikes={() => setLikesReviewId(review.id)}
-                onToggle={hasSession ? (liked) => handleReviewLikeToggle(review.id, liked) : undefined}
-              />
-              <ReviewCard.Share
-                album={{ artist: albumArtist, id: album.id, title: album.title }}
-                rating={review.rating}
-                reviewBody={review.review}
-                reviewCode={review.shareCode}
-                userDisplayName={review.user.displayUsername}
-              />
-              <ReviewManagementMenu
-                canDeleteAsAdmin={isAdmin && adminModeEnabled && !review.canDelete}
-                canDeleteOwnReview={review.canDelete}
-                isDeleting={deletingReviewId === review.id}
-                onDelete={() => handleReviewDelete(review.id)}
-              />
-            </ReviewCard.Footer>
-          </ReviewCard.Root>
-        ))}
-        <div aria-hidden="true" className="h-px" ref={loadMoreRef} />
-        {isFetchingNextPage ? <LoadingMoreReviews /> : null}
-      </section>
-      <ReviewLikesDialog
-        onOpenChange={(open) => {
-          if (!open) setLikesReviewId(undefined);
-        }}
-        open={Boolean(likesReviewId)}
-        reviewId={likesReviewId}
+    <section className={className}>
+      <h2 className="heading-section mb-3">Reviews</h2>
+      <ReviewList
+        isFetchingNextPage={isFetchingNextPage}
+        loadMoreRef={loadMoreRef}
+        onReviewLikeToggle={handleReviewLikeToggle}
+        renderActions={(review) => (
+          <>
+            <ReviewCard.Share
+              album={{ artist: albumArtist, id: album.id, title: album.title }}
+              rating={review.rating}
+              reviewBody={review.review}
+              reviewCode={review.shareCode}
+              userDisplayName={review.user.displayUsername}
+            />
+            <ReviewManagementMenu
+              canDeleteAsAdmin={isAdmin && adminModeEnabled && !review.canDelete}
+              canDeleteOwnReview={review.canDelete}
+              isDeleting={deletingReviewId === review.id}
+              onDelete={() => handleReviewDelete(review.id)}
+            />
+          </>
+        )}
+        resolveUser={(review) => review.user}
+        reviews={reviews}
+        showAlbum={false}
         viewer={viewer}
       />
-    </>
-  );
-}
-
-function LoadingMoreReviews() {
-  return (
-    <div className="flex justify-center border-border/80 border-t py-6">
-      <Spinner className="size-5 text-muted-foreground" />
-    </div>
+    </section>
   );
 }

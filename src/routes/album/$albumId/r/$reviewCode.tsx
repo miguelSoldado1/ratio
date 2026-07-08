@@ -3,8 +3,9 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ReviewLikesDialog } from "@/components/review-likes-dialog";
+import { ReviewRow } from "@/components/review-list";
+import { ReviewManagementMenu } from "@/components/review-management-menu";
 import { InitialReviewDialogShell } from "@/components/review-permalink/initial-review-dialog-shell";
-import { ReviewDialogReview } from "@/components/review-permalink/review-dialog-review";
 import { ReviewDialogSkeleton } from "@/components/review-permalink/review-dialog-skeleton";
 import { ReviewUnavailable } from "@/components/review-permalink/review-unavailable";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -15,6 +16,7 @@ import { authClient } from "@/lib/auth/auth-client";
 import { createCanonicalLink, createSeoMeta, siteName } from "@/lib/seo";
 import { albumQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { getReviewByShareCode } from "@/server/functions/review-functions";
+import type { CSSProperties } from "react";
 
 export const Route = createFileRoute("/album/$albumId/r/$reviewCode")({
   component: AlbumReviewByCodeRoute,
@@ -96,19 +98,28 @@ function AlbumReviewByCodeRoute() {
             <DialogTitle>Review</DialogTitle>
             <DialogDescription>Focused review dialog.</DialogDescription>
           </DialogHeader>
-          <div className="overflow-y-auto px-5 pt-5 pr-12 pb-5 sm:px-6 sm:pt-6 sm:pr-14 sm:pb-6">
+          <div
+            className="overflow-y-auto px-5 pt-5 pr-12 pb-5 sm:px-6 sm:pt-6 sm:pr-14 sm:pb-6"
+            style={{ "--review-fade-color": "var(--popover)" } as CSSProperties}
+          >
             {reviewQuery.isPending ? <ReviewDialogSkeleton /> : null}
             {reviewQuery.isError ? <ReviewUnavailable onClose={closeReviewDialog} /> : null}
             {reviewQuery.data ? (
-              <ReviewDialogReview
-                adminModeEnabled={adminModeEnabled}
-                deletingReviewId={deletingReviewId}
-                hasSession={hasSession}
-                isAdmin={isAdmin}
-                onDelete={handleReviewDelete}
-                onLikeToggle={handleReviewLikeToggle}
+              <ReviewRow
+                className="border-0 py-0"
+                onReviewLikeToggle={handleReviewLikeToggle}
                 onShowLikes={() => setLikesOpen(true)}
+                renderActions={(review) => (
+                  <ReviewManagementMenu
+                    canDeleteAsAdmin={isAdmin && adminModeEnabled && !review.canDelete}
+                    canDeleteOwnReview={review.canDelete}
+                    isDeleting={deletingReviewId === review.id}
+                    onDelete={() => handleReviewDelete(review.id)}
+                  />
+                )}
+                resolveUser={(review) => review.user}
                 review={reviewQuery.data}
+                viewer={viewer}
               />
             ) : null}
           </div>
