@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -135,13 +135,15 @@ export function AdminUsersTable({
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       {userRow.username ? (
-                        <Button
-                          render={<Link params={{ username: userRow.username }} target="_blank" to="/user/$username" />}
-                          size="sm"
-                          variant="outline"
+                        <Link
+                          className={buttonVariants({ size: "sm", variant: "outline" })}
+                          params={{ username: userRow.username }}
+                          preload={false}
+                          target="_blank"
+                          to="/user/$username"
                         >
                           View
-                        </Button>
+                        </Link>
                       ) : null}
                       <Button
                         disabled={isBanPending || !userRow.canBan}
