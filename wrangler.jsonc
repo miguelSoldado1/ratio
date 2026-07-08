@@ -23,6 +23,36 @@
       "id": "818e83343b7f4ec4a1c9808e30075445"
     }
   ],
+  "env": {
+    "development": {
+      "workers_dev": false,
+      "routes": [
+        {
+          "pattern": "dev.ratiomusic.live",
+          "custom_domain": true
+        }
+      ],
+      "vars": {
+        "BETTER_AUTH_URL": "https://dev.ratiomusic.live",
+        "VITE_SITE_URL": "https://dev.ratiomusic.live",
+        "CLOUDFLARE_ACCOUNT_ID": "ce2122099880570dc3d6f5908544bb21",
+        "CLOUDFLARE_R2_BUCKET_NAME": "ratio-images-dev",
+        "CLOUDFLARE_R2_PUBLIC_URL": "https://assets-dev.ratiomusic.live"
+      },
+      "kv_namespaces": [
+        {
+          "binding": "CACHE",
+          "id": "d10b116f10364595a1619b6b2e625354"
+        }
+      ],
+      "hyperdrive": [
+        {
+          "binding": "HYPERDRIVE",
+          "id": "8c63fba1acc94cc0a7ec4a9274eccdef"
+        }
+      ]
+    }
+  },
   "observability": {
     "enabled": true,
     "logs": {
