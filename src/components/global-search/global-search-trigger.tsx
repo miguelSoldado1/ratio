@@ -14,7 +14,7 @@ export function GlobalSearchTrigger({ className, compact = false, onOpen }: Glob
       <Button
         aria-keyshortcuts="/"
         aria-label="Search albums and users"
-        className={cn("rounded-3xl text-muted-foreground hover:text-foreground active:scale-[0.97]", className)}
+        className={cn("rounded-3xl text-muted-foreground hover:text-foreground", className)}
         onClick={onOpen}
         size="icon-sm"
         type="button"
@@ -30,7 +30,7 @@ export function GlobalSearchTrigger({ className, compact = false, onOpen }: Glob
       aria-keyshortcuts="/"
       aria-label="Search albums and users"
       className={cn(
-        "group h-10 w-full justify-start rounded-4xl border-border/70 bg-card/40 px-2.5 text-muted-foreground shadow-none transition-[background-color,border-color,transform] hover:border-border hover:bg-muted/60 hover:text-foreground active:scale-[0.99]",
+        "group h-10 w-full justify-start rounded-4xl border-border/70 bg-card/40 px-2.5 text-muted-foreground shadow-none hover:border-border hover:bg-muted/60 hover:text-foreground",
         className
       )}
       onClick={onOpen}

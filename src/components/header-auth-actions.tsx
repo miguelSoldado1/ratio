@@ -50,8 +50,9 @@ export function HeaderAuthActions({ onAuthClick }: HeaderAuthActionsProps) {
     return (
       <div className="flex min-w-0 items-center rounded-full bg-muted/40 p-0.5">
         <Button
-          className="h-8 gap-1.5 rounded-full px-2.5 text-muted-foreground hover:bg-background/80 hover:text-foreground active:scale-[0.97] sm:px-3"
+          className="h-8 gap-1.5 px-2.5 text-muted-foreground hover:bg-background/80 hover:text-foreground sm:px-3"
           onClick={onAuthClick}
+          shape="pill"
           type="button"
           variant="ghost"
         >
@@ -71,7 +72,7 @@ export function HeaderAuthActions({ onAuthClick }: HeaderAuthActionsProps) {
       {profileUsername ? (
         <Link
           aria-label={`View ${displayName}'s profile`}
-          className="inline-flex size-8 min-w-0 items-center justify-center rounded-full transition-[background-color,transform] hover:bg-background/80 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/30 active:scale-[0.97] lg:w-auto lg:max-w-52 lg:justify-start lg:gap-2 lg:px-1 lg:pr-2"
+          className="press-feedback focus-ring inline-flex size-8 min-w-0 items-center justify-center rounded-full hover:bg-background/80 lg:w-auto lg:max-w-52 lg:justify-start lg:gap-2 lg:px-1 lg:pr-2"
           params={{ username: profileUsername }}
           to="/user/$username"
         >
@@ -89,7 +90,8 @@ export function HeaderAuthActions({ onAuthClick }: HeaderAuthActionsProps) {
           render={
             <Button
               aria-label="Open account menu"
-              className="size-8 rounded-full px-0 text-muted-foreground hover:bg-background/80 active:scale-[0.97]"
+              className="size-8 px-0 text-muted-foreground hover:bg-background/80"
+              shape="pill"
               type="button"
               variant="ghost"
             />

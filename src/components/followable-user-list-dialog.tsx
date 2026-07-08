@@ -171,7 +171,7 @@ export function FollowableUserListDialog<TUser extends FollowableUser>({
                 renderAction={(user) =>
                   user.id === viewer.userId ? null : (
                     <Button
-                      className="min-w-22 rounded-full active:scale-[0.97]"
+                      className="min-w-22"
                       disabled={pendingUserId === user.id}
                       onClick={() => {
                         if (!viewer.hasSession) {
@@ -182,6 +182,7 @@ export function FollowableUserListDialog<TUser extends FollowableUser>({
 
                         handleFollowToggle(user, !user.followedByViewer);
                       }}
+                      shape="pill"
                       size="sm"
                       type="button"
                       variant={user.followedByViewer ? "secondary" : "default"}

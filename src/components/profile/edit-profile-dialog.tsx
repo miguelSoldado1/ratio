@@ -135,7 +135,7 @@ export function EditProfileDialog({
       <Button
         aria-label="Edit profile"
         className={cn(
-          "h-auto gap-1 px-0 font-normal text-muted-foreground [transition:color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] hover:bg-transparent hover:text-foreground active:translate-y-0 active:scale-[0.98] [&_svg:not([class*='size-'])]:size-3.5",
+          "h-auto gap-1 px-0 font-normal text-muted-foreground hover:bg-transparent hover:text-foreground [&_svg:not([class*='size-'])]:size-3.5",
           className
         )}
         onClick={() => setOpen(true)}

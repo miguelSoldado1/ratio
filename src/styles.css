@@ -47,6 +47,8 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-control: var(--radius-control);
+  --radius-overlay: var(--radius-overlay);
   --animate-heart-pop: heart-pop 350ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
   --animate-count-up: count-up 150ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
   --animate-count-down: count-down 150ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
@@ -78,6 +80,8 @@
   --chart-4: oklch(0.48 0.13 148.941);
   --chart-5: oklch(0.36 0.09 148.941);
   --radius: 0.5rem;
+  --radius-control: 1.5rem;
+  --radius-overlay: 2rem;
   --sidebar: oklch(0.205 0 0);
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: var(--primary);
@@ -131,6 +135,14 @@
     .heading-page {
       font-size: 3rem;
     }
+  }
+
+  .press-feedback {
+    @apply [transition:transform_130ms_cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97];
+  }
+
+  .focus-ring {
+    @apply focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30;
   }
 }
 

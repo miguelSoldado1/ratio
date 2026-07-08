@@ -125,8 +125,9 @@ export function GlobalSearch({ onOpenChange, open }: GlobalSearchProps) {
         <div className="flex shrink-0 items-center gap-2 border-border/70 border-b p-3 sm:block sm:border-b-0 sm:p-0">
           <Button
             aria-label="Go back"
-            className="shrink-0 rounded-full text-muted-foreground hover:text-foreground sm:hidden"
+            className="shrink-0 text-muted-foreground hover:text-foreground sm:hidden"
             onClick={() => onOpenChange(false)}
+            shape="pill"
             size="icon-sm"
             type="button"
             variant="ghost"

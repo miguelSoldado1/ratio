@@ -69,10 +69,7 @@ export function DeleteReviewDialog({
       {!renderTrigger && open === undefined ? (
         <Button
           aria-label="Delete review"
-          className={cn(
-            "text-muted-foreground [transition:color_150ms_ease,background-color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] hover:bg-destructive/10 hover:text-destructive active:scale-[0.97]",
-            className
-          )}
+          className={cn("text-muted-foreground hover:bg-destructive/10 hover:text-destructive", className)}
           disabled={isDeleting}
           onClick={() => setDialogOpen(true)}
           size="icon-sm"

@@ -51,7 +51,7 @@ export function ReviewShareButton({ album, rating, reviewBody, reviewCode, userD
   return (
     <Button
       aria-label="Share review"
-      className="h-8 w-6 p-0 text-muted-foreground [transition:color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] hover:bg-transparent hover:text-primary active:scale-[0.97] dark:hover:bg-transparent"
+      className="text-muted-foreground hover:bg-transparent hover:text-primary dark:hover:bg-transparent"
       onClick={handleShareClick}
       size="icon-sm"
       type="button"

@@ -53,8 +53,7 @@ interface HeaderProps {
 function Header({ user, createdAt, className, meta }: HeaderProps) {
   const displayNameClass = "font-medium text-foreground/75 text-sm";
   const identityClass = "flex min-w-0 items-center gap-2";
-  const identityLinkClass =
-    "group -ml-1.5 h-8 rounded-full px-1.5 pr-2.5 [transition:color_150ms_ease,background-color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] hover:bg-primary/10 active:scale-[0.98]";
+  const identityLinkClass = "group -ml-1.5 h-8 rounded-full px-1.5 pr-2.5 press-feedback hover:bg-primary/10";
 
   return (
     <div className={cn("mb-3 flex items-center gap-2", className)}>
@@ -232,7 +231,7 @@ function Review({ children, className, collapsed = true }: ReviewProps) {
         <button
           aria-controls={reviewId}
           aria-expanded={expanded}
-          className="group/review-toggle mt-2 -ml-2 inline-flex h-7 items-center gap-1 rounded-full px-2 font-semibold text-primary text-sm outline-none [transition:color_150ms_ease,background-color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] hover:bg-primary/10 hover:text-primary/90 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 active:scale-[0.97]"
+          className="group/review-toggle press-feedback focus-ring mt-2 -ml-2 inline-flex h-7 items-center gap-1 rounded-full px-2 font-semibold text-primary text-sm outline-none hover:bg-primary/10 hover:text-primary/90"
           onClick={() => setExpanded((isExpanded) => !isExpanded)}
           type="button"
         >
@@ -289,7 +288,7 @@ function getLikeCountClass({ disabled, liked }: { disabled: boolean; liked: bool
 function getLikeButtonClass({ disabled }: { disabled: boolean }) {
   if (disabled) return "cursor-default";
 
-  return "cursor-pointer active:scale-[0.97]";
+  return "cursor-pointer press-feedback";
 }
 
 function useDebouncedOptimisticLike({ count, liked, onToggle }: UseDebouncedOptimisticLikeParams) {
@@ -458,12 +457,12 @@ function Likes({ count, disabled = false, liked = false, onShowLikes, onToggle, 
   );
 
   return (
-    <div className={cn("-ml-2 flex h-8 items-center", className)}>
+    <div className={cn("-ml-2.5 flex h-8 items-center", className)}>
       <Button
         aria-label={like.liked ? "Unlike review" : "Like review"}
         aria-pressed={like.liked}
         className={cn(
-          "group h-8 w-6 p-0 [transition:color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] hover:bg-transparent active:translate-y-0 dark:hover:bg-transparent [&_svg:not([class*='size-'])]:size-3.5",
+          "group hover:bg-transparent dark:hover:bg-transparent [&_svg:not([class*='size-'])]:size-3.5",
           getLikeButtonClass({ disabled })
         )}
         disabled={disabled}
@@ -486,7 +485,7 @@ function Likes({ count, disabled = false, liked = false, onShowLikes, onToggle, 
         <Button
           aria-label={`Show people who liked this review, ${like.count} ${likeLabel}`}
           className={cn(
-            "h-8 pr-1 pl-0 text-xs tabular-nums [transition:color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] hover:bg-transparent hover:text-primary active:scale-[0.99] dark:hover:bg-transparent",
+            "h-8 pr-1 pl-0 text-xs tabular-nums hover:bg-transparent hover:text-primary dark:hover:bg-transparent",
             getLikeCountClass({ disabled: false, liked: like.liked })
           )}
           onClick={onShowLikes}

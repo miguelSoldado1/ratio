@@ -28,7 +28,7 @@ export function ReviewUnavailable({ onClose }: ReviewUnavailableProps) {
       </div>
 
       <div className="mt-4 flex items-center">
-        <Button className="active:scale-[0.97]" onClick={onClose} size="sm" type="button" variant="secondary">
+        <Button onClick={onClose} size="sm" type="button" variant="secondary">
           <ArrowLeft data-icon="inline-start" />
           Back to album
         </Button>

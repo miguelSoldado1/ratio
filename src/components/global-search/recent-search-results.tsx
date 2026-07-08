@@ -28,7 +28,7 @@ export function RecentSearchResults({ onRemove, onSelect, recentSearches }: Rece
             <CommandShortcut>
               <Button
                 aria-label={`Remove ${search.query} from recent searches`}
-                className="rounded-full text-muted-foreground opacity-70 hover:text-foreground hover:opacity-100"
+                className="text-muted-foreground opacity-70 hover:text-foreground hover:opacity-100"
                 onClick={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
@@ -38,6 +38,7 @@ export function RecentSearchResults({ onRemove, onSelect, recentSearches }: Rece
                   event.preventDefault();
                   event.stopPropagation();
                 }}
+                shape="pill"
                 size="icon-xs"
                 type="button"
                 variant="ghost"

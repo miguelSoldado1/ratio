@@ -132,8 +132,9 @@ export function NotificationsDropdown({ userId }: NotificationsDropdownProps) {
       <>
         <Button
           aria-label={unseenCount > 0 ? `Open notifications, ${unseenCount} unseen` : "Open notifications"}
-          className="relative size-8 rounded-full px-0 text-muted-foreground hover:bg-muted hover:text-foreground active:scale-[0.97]"
+          className="relative size-8 px-0 text-muted-foreground hover:bg-muted hover:text-foreground"
           onClick={handleMobileTriggerClick}
+          shape="pill"
           type="button"
           variant="ghost"
         >
@@ -148,8 +149,9 @@ export function NotificationsDropdown({ userId }: NotificationsDropdownProps) {
             <DialogHeader className="flex-row items-center gap-3 border-border/70 border-b p-3 text-left">
               <Button
                 aria-label="Close notifications"
-                className="shrink-0 rounded-full text-muted-foreground hover:text-foreground"
+                className="shrink-0 text-muted-foreground hover:text-foreground"
                 onClick={handleCloseButtonClick}
+                shape="pill"
                 size="icon-sm"
                 type="button"
                 variant="ghost"
@@ -186,7 +188,8 @@ export function NotificationsDropdown({ userId }: NotificationsDropdownProps) {
         render={
           <Button
             aria-label={unseenCount > 0 ? `Open notifications, ${unseenCount} unseen` : "Open notifications"}
-            className="relative size-8 rounded-full px-0 text-muted-foreground hover:bg-muted hover:text-foreground active:scale-[0.97]"
+            className="relative size-8 px-0 text-muted-foreground hover:bg-muted hover:text-foreground"
+            shape="pill"
             type="button"
             variant="ghost"
           />
@@ -197,7 +200,7 @@ export function NotificationsDropdown({ userId }: NotificationsDropdownProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="w-md max-w-md overflow-hidden rounded-3xl p-0 sm:max-h-[min(760px,calc(100vh-6rem))]"
+        className="w-md max-w-md overflow-hidden p-0 sm:max-h-[min(760px,calc(100vh-6rem))]"
         sideOffset={8}
       >
         <DropdownMenuGroup className="flex max-h-[inherit] min-h-0 flex-col">

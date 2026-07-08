@@ -79,9 +79,10 @@ export function ProfileActions({ onAuthRequired, profile, viewer }: ProfileActio
         {showFollowAction ? (
           <Button
             aria-pressed={profile.followedByViewer}
-            className="h-9 w-full min-w-28 rounded-full px-5 text-sm [transition:background-color_150ms_ease,color_150ms_ease,border-color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] sm:w-auto md:h-10 md:min-w-32 md:px-6"
+            className="h-9 w-full min-w-28 px-5 text-sm sm:w-auto md:h-10 md:min-w-32 md:px-6"
             disabled={isUserFollowPending}
             onClick={handleFollowClick}
+            shape="pill"
             size="sm"
             type="button"
             variant={profile.followedByViewer ? "secondary" : "default"}
@@ -92,9 +93,10 @@ export function ProfileActions({ onAuthRequired, profile, viewer }: ProfileActio
         {showAdminAction ? (
           <Button
             aria-pressed={profile.banned}
-            className="h-9 w-full min-w-28 rounded-full px-5 text-sm [transition:background-color_150ms_ease,color_150ms_ease,border-color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97] sm:w-auto md:h-10 md:min-w-32 md:px-6"
+            className="h-9 w-full min-w-28 px-5 text-sm sm:w-auto md:h-10 md:min-w-32 md:px-6"
             disabled={isBanPending}
             onClick={() => (profile.banned ? handleBanClick(false) : setBanDialogOpen(true))}
+            shape="pill"
             size="sm"
             type="button"
             variant={profile.banned ? "outline" : "destructive"}
