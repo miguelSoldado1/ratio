@@ -1,6 +1,12 @@
 import z from "zod";
 import { createSpotifyApi, getClientCredentialsToken } from "../spotify";
 import { getSpotifyCacheJson, setSpotifyCacheJson } from "../spotify-cache";
+import {
+  getSpotifyErrorStatus,
+  logSpotifyApiError,
+  logSpotifyInvalidCache,
+  SpotifyTokenError,
+} from "../spotify-observability";
 
 // Spotify API types
 
@@ -138,7 +144,14 @@ export async function searchAlbumsService({ query }: SearchAlbumsInput) {
       },
     });
   } catch (error) {
-    const status = isSpotifyError(error) ? error.statusCode : 500;
+    const status = getSpotifyErrorStatus(error);
+
+    if (!(error instanceof SpotifyTokenError)) {
+      logSpotifyApiError("search", error, {
+        queryLength: normalizeAlbumSearchText(query).length,
+      });
+    }
+
     throw new Error(spotifyErrorMessage(status, "Spotify search failed"));
   }
 }
@@ -219,7 +232,7 @@ async function getParsedSpotifyCacheValue<T>(cacheKey: string, schema: z.ZodType
   const parsedCachedValue = schema.safeParse(cachedValue);
   if (parsedCachedValue.success) return parsedCachedValue.data;
 
-  console.warn("Ignoring invalid cached Spotify response", parsedCachedValue.error);
+  logSpotifyInvalidCache("parse_response", parsedCachedValue.error);
   return null;
 }
 
@@ -241,7 +254,12 @@ async function getSpotifyAlbum(albumId: string) {
 
     return { album, spotifyApi };
   } catch (error) {
-    const status = isSpotifyError(error) ? error.statusCode : 500;
+    const status = getSpotifyErrorStatus(error);
+
+    if (!(error instanceof SpotifyTokenError)) {
+      logSpotifyApiError("album_lookup", error, { albumId });
+    }
+
     throw new Error(spotifyErrorMessage(status, "Spotify album lookup failed"));
   }
 }
@@ -254,11 +272,6 @@ function spotifyErrorMessage(status: number, fallbackMessage: string): string {
   if (status === 400) return "Invalid Spotify album ID";
   if (status === 404) return "Spotify album not found";
   return fallbackMessage;
-}
-
-function isSpotifyError(error: unknown): error is { statusCode: number; message: string } {
-  if (typeof error !== "object" || error === null || !("statusCode" in error)) return false;
-  return typeof error.statusCode === "number";
 }
 
 function assertAlbumType(album: SpotifyAlbumDetails) {
@@ -366,11 +379,19 @@ async function getAlbumTracks(spotifyApi: SpotifyApiClient, albumId: string, tra
   const tracks = [...tracksPage.items];
 
   while (tracks.length < tracksPage.total) {
-    const { body } = await spotifyApi.getAlbumTracks(albumId, {
-      limit: ALBUM_TRACKS_LIMIT,
-      market: SPOTIFY_MARKET,
-      offset: tracks.length,
-    });
+    const offset = tracks.length;
+    let body: SpotifyAlbumTracks;
+
+    try {
+      ({ body } = await spotifyApi.getAlbumTracks(albumId, {
+        limit: ALBUM_TRACKS_LIMIT,
+        market: SPOTIFY_MARKET,
+        offset,
+      }));
+    } catch (error) {
+      logSpotifyApiError("album_tracks", error, { albumId, offset });
+      throw error;
+    }
 
     tracks.push(...body.items);
 
