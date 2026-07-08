@@ -4,4 +4,4 @@ Allow: /
 Disallow: /api/
 Disallow: /settings
 
-Sitemap: https://ratio.sticky-puddingz.workers.dev/sitemap.xml
+Sitemap: https://ratiomusic.live/sitemap.xml
