@@ -39,6 +39,7 @@ export function ProfileReviewManagementMenu({
     >
       {canManageOwnReview ? (
         <DropdownMenuItem
+          className="rounded-none"
           disabled={pinActionDisabled}
           onClick={() => {
             if (!pinActionDisabled) onPinToggle();

@@ -50,12 +50,17 @@ export function ReviewManagementMenu({
         >
           <MoreHorizontal />
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
+        <DropdownMenuContent align="end" className="overflow-hidden rounded-xl! p-0">
           <DropdownMenuGroup>
             {children}
-            {children && canDelete ? <DropdownMenuSeparator /> : null}
+            {children && canDelete ? <DropdownMenuSeparator className="mx-0" /> : null}
             {canDelete ? (
-              <DropdownMenuItem disabled={isDeleting} onClick={() => setDeleteDialogOpen(true)} variant="destructive">
+              <DropdownMenuItem
+                className="rounded-none"
+                disabled={isDeleting}
+                onClick={() => setDeleteDialogOpen(true)}
+                variant="destructive"
+              >
                 <Trash2 />
                 {canDeleteOwnReview ? "Delete review" : "Delete as admin"}
               </DropdownMenuItem>
