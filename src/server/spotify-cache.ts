@@ -1,3 +1,5 @@
+import { logSpotifyCacheError } from "./spotify-observability";
+
 const CLOUDFLARE_WORKERS_MODULE = "cloudflare:workers";
 
 type CloudflareWorkersModule = typeof import("cloudflare:workers");
@@ -9,7 +11,7 @@ export async function getSpotifyCacheJson(key: string) {
   try {
     return await spotifyCache.get<unknown>(key, "json");
   } catch (error) {
-    console.warn("Failed to read Spotify response from KV", error);
+    logSpotifyCacheError("read_response", error);
     return null;
   }
 }
@@ -21,7 +23,7 @@ export async function setSpotifyCacheJson(key: string, value: unknown, ttlSecond
   try {
     await spotifyCache.put(key, JSON.stringify(value), { expirationTtl: ttlSeconds });
   } catch (error) {
-    console.warn("Failed to write Spotify response to KV", error);
+    logSpotifyCacheError("write_response", error);
   }
 }
 
@@ -32,7 +34,7 @@ export async function getSpotifyCache() {
     const cloudflareWorkers: CloudflareWorkersModule = await import(/* @vite-ignore */ CLOUDFLARE_WORKERS_MODULE);
     return cloudflareWorkers.env.CACHE;
   } catch (error) {
-    console.warn("Failed to load Cloudflare Workers bindings", error);
+    logSpotifyCacheError("load_bindings", error);
     return null;
   }
 }
