@@ -26,15 +26,17 @@ export function useReviewDelete({ onDeleted }: UseReviewDeleteParams = {}) {
         const { data: deletedReview, error } = await tryCatch(deleteReviewMutation.mutateAsync({ data: { reviewId } }));
 
         if (error) {
-          toast.error("Error", { description: error instanceof Error ? error.message : "Could not delete review" });
+          toast.error("Couldn't delete review", {
+            description: error instanceof Error ? error.message : "Something went wrong. Try again.",
+          });
           return false;
         }
 
         const { error: deletedError } = await tryCatch(Promise.resolve(onDeleted?.(deletedReview)));
 
         if (deletedError) {
-          toast.error("Error", {
-            description: deletedError instanceof Error ? deletedError.message : "Could not refresh review data",
+          toast.error("Couldn't refresh reviews", {
+            description: deletedError instanceof Error ? deletedError.message : "Something went wrong. Try again.",
           });
           return false;
         }

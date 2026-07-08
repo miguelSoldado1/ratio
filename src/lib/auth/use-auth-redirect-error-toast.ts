@@ -11,7 +11,7 @@ export function useAuthRedirectErrorToast(setAuthDialogOpen: (open: boolean) => 
     if (!error) return;
 
     const toastTimeoutId = window.setTimeout(() => {
-      toast.error("Authentication failed", { description: getAuthErrorMessage(error), id: `auth-error-${error}` });
+      toast.error("Couldn't sign in", { description: getAuthErrorMessage(error), id: `auth-error-${error}` });
       setAuthDialogOpen(true);
     }, 0);
 

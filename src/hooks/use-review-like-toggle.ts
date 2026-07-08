@@ -37,8 +37,8 @@ export function useReviewLikeToggle<TPage extends ReviewLikePage>({ enabled, que
         setReviewLikeMutation.mutateAsync({ data: { liked, reviewId } })
       );
       if (error) {
-        toast.error("Error", {
-          description: error instanceof Error ? error.message : "Could not update review like",
+        toast.error("Couldn't update like", {
+          description: error instanceof Error ? error.message : "Something went wrong while updating the like.",
         });
         return false;
       }

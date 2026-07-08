@@ -124,8 +124,8 @@ export function FollowableUserListDialog<TUser extends FollowableUser>({
       queryClient.setQueryData(queryKey, previousList);
       setPendingUserId(undefined);
 
-      const errorMessage = error instanceof Error ? error.message : "Could not update follow status";
-      return toast.error("Error", { description: errorMessage });
+      const errorMessage = error instanceof Error ? error.message : "Something went wrong while updating follow.";
+      return toast.error("Couldn't update follow", { description: errorMessage });
     }
 
     queryClient.setQueryData<InfiniteData<FollowableUserPage<TUser>, string | null>>(queryKey, (list) =>

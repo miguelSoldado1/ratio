@@ -34,8 +34,8 @@ export function HeaderAuthActions({ onAuthClick }: HeaderAuthActionsProps) {
 
     if (error) {
       setIsSigningOut(false);
-      return toast.error("Sign out failed", {
-        description: error.message ?? "Could not sign out. Try again.",
+      return toast.error("Couldn't sign out", {
+        description: error.message ?? "Something went wrong. Try again.",
       });
     }
 

@@ -40,11 +40,11 @@ export function ReviewShareButton({ album, rating, reviewBody, reviewCode, userD
     sharingRef.current = false;
 
     if (error) {
-      return toast.error("Error", { description: "Could not share review" });
+      return toast.error("Couldn't copy review", { description: "Something went wrong while copying the review." });
     }
 
     if (copiedToClipboard) {
-      return toast.success("Success", { description: "Review copied to clipboard" });
+      return toast.success("Review copied", { description: "The review is on your clipboard." });
     }
   }
 

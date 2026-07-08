@@ -11,8 +11,8 @@ const queryClientOptions: QueryClientConfig = {
     onError: (error, query) => {
       if (query.meta?.suppressErrorToast) return;
 
-      const message = error instanceof Error ? error.message : "Something went wrong";
-      toast.error("Error", { description: message });
+      const message = error instanceof Error ? error.message : "Please try again.";
+      toast.error("Something went wrong", { description: message });
     },
   }),
 };

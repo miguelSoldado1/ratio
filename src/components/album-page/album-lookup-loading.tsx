@@ -22,16 +22,14 @@ export function AlbumLookupLoading({ albumId }: { albumId: string }) {
   return (
     <main aria-busy="true" className="min-h-screen bg-background text-foreground" data-album-id={albumId}>
       <div className="mx-auto grid w-full max-w-375 gap-8 px-5 py-6 lg:grid-cols-[minmax(240px,340px)_1fr] lg:px-10 xl:gap-12 xl:px-14 2xl:px-20">
-        <MobileAlbumHeaderSkeleton />
-
         <aside className="hidden lg:sticky lg:top-20 lg:block lg:self-start">
           <Skeleton className="aspect-square w-full rounded-none" />
           <TrackListSkeleton className="mt-6" />
         </aside>
 
-        <section className="min-w-0 pt-3 lg:pt-10">
-          <DesktopAlbumHeaderSkeleton />
-          <RatingsPanelSkeleton className="mt-2 lg:mt-8" />
+        <section className="min-w-0 lg:pt-10">
+          <AlbumHeaderSkeleton />
+          <RatingsPanelSkeleton className="mt-6 lg:mt-8" />
           <ReviewsSectionSkeleton className="mt-10 lg:mt-12" />
         </section>
       </div>
@@ -39,30 +37,21 @@ export function AlbumLookupLoading({ albumId }: { albumId: string }) {
   );
 }
 
-function MobileAlbumHeaderSkeleton() {
+function AlbumHeaderSkeleton() {
   return (
-    <section className="lg:hidden">
-      <div className="grid grid-cols-[112px_1fr] gap-4 sm:grid-cols-[144px_1fr]">
-        <Skeleton className="aspect-square w-full rounded-none" />
-        <div className="min-w-0 self-end">
-          <Skeleton className="h-7.5 w-full max-w-70 sm:h-9.5" />
-          <Skeleton className="mt-2 h-5 w-4/5 max-w-56" />
-          <Skeleton className="mt-1 h-4 w-2/3 max-w-44" />
+    <section>
+      <div className="grid grid-cols-[112px_1fr] gap-4 sm:grid-cols-[144px_1fr] lg:block">
+        <div className="lg:hidden">
+          <Skeleton className="aspect-square w-full rounded-none" />
+        </div>
+        <div className="min-w-0 self-end lg:self-auto">
+          <Skeleton className="h-7.5 w-full max-w-70 sm:h-9.5 lg:h-11 lg:max-w-4xl xl:h-14" />
+          <Skeleton className="mt-2 h-5 w-4/5 max-w-56 lg:h-7 lg:max-w-80" />
+          <Skeleton className="mt-1 h-4 w-2/3 max-w-44 lg:h-5 lg:max-w-52" />
         </div>
       </div>
-      <ActionSkeletons className="mt-5 grid grid-cols-[1fr_auto_auto] gap-2" />
+      <ActionSkeletons className="mt-5 grid grid-cols-[1fr_auto_auto] gap-2 lg:mt-6 lg:flex lg:flex-wrap lg:items-center lg:gap-3" />
     </section>
-  );
-}
-
-function DesktopAlbumHeaderSkeleton() {
-  return (
-    <div className="hidden lg:block">
-      <Skeleton className="h-15 w-full max-w-4xl" />
-      <Skeleton className="mt-2 h-7 w-80 max-w-full" />
-      <Skeleton className="mt-1 h-5 w-52 max-w-full" />
-      <ActionSkeletons className="mt-6 flex flex-wrap items-center gap-3" />
-    </div>
   );
 }
 

@@ -52,13 +52,15 @@ export function ProfileActions({ onAuthRequired, profile, viewer }: ProfileActio
       const { error } = await authClient.admin.banUser({ userId: profile.id });
       if (error) {
         setIsBanPending(false);
-        return toast.error("Ban failed", { description: error.message ?? "Could not update this user." });
+        return toast.error("Couldn't ban user", { description: error.message ?? "Something went wrong. Try again." });
       }
     } else {
       const { error } = await authClient.admin.unbanUser({ userId: profile.id });
       if (error) {
         setIsBanPending(false);
-        return toast.error("Unban failed", { description: error.message ?? "Could not update this user." });
+        return toast.error("Couldn't unban user", {
+          description: error.message ?? "Something went wrong. Try again.",
+        });
       }
     }
 

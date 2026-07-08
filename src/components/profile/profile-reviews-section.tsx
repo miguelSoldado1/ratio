@@ -54,8 +54,8 @@ export function ProfileReviewsSection({
     setPinningReviewId(null);
 
     if (error) {
-      toast.error("Error", {
-        description: error instanceof Error ? error.message : "Could not update pinned review",
+      toast.error("Couldn't update pin", {
+        description: error instanceof Error ? error.message : "Something went wrong while updating the pin.",
       });
     }
   }

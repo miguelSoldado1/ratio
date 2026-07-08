@@ -44,7 +44,7 @@ describe("ReviewShareButton", () => {
     await waitFor(() =>
       expect(writeText).toHaveBeenCalledWith(expect.stringContaining("https://ratio.test/album/album_1/r/code_1"))
     );
-    expect(mockToastSuccess).toHaveBeenCalledWith("Success", { description: "Review copied to clipboard" });
+    expect(mockToastSuccess).toHaveBeenCalledWith("Review copied", { description: "The review is on your clipboard." });
   });
 
   it("handles native share cancellation without error toast", async () => {

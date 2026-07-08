@@ -102,7 +102,7 @@ describe("useUserFollowToggle", () => {
     await expect(result.current.toggleUserFollow("user_1", true)).resolves.toBe(false);
 
     expect(queryClient.getQueryData(queryKey)).toEqual(profile);
-    expect(mockToastError).toHaveBeenCalledWith("Error", { description: "Nope" });
+    expect(mockToastError).toHaveBeenCalledWith("Couldn't update follow", { description: "Nope" });
   });
 });
 

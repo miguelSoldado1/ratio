@@ -50,7 +50,7 @@ export function ProfilePhotoEditor({
   const avatarUpload = useUploadFile({
     route: "avatar",
     onError: (error) => {
-      toast.error("Photo upload failed", { description: error.message });
+      toast.error("Couldn't upload photo", { description: error.message });
     },
   });
 
@@ -99,7 +99,7 @@ export function ProfilePhotoEditor({
     );
 
     if (error) {
-      return toast.error("Photo upload failed", {
+      return toast.error("Couldn't upload photo", {
         description: getErrorMessage(error, "Could not update your profile photo."),
       });
     }
@@ -115,7 +115,7 @@ export function ProfilePhotoEditor({
     await session.refetch().catch(() => undefined);
 
     if (avatarResult.cleanupFailed) {
-      toast.error("Storage cleanup failed", { description: "The previous profile photo could not be deleted." });
+      toast.error("Couldn't remove old photo", { description: "The previous profile photo couldn't be deleted." });
     }
   }
 
@@ -125,7 +125,7 @@ export function ProfilePhotoEditor({
     const { data: avatarResult, error } = await tryCatch(removeAvatarMutation.mutateAsync());
 
     if (error) {
-      return toast.error("Photo removal failed", {
+      return toast.error("Couldn't remove photo", {
         description: getErrorMessage(error, "Could not remove your profile photo."),
       });
     }
@@ -141,7 +141,7 @@ export function ProfilePhotoEditor({
     await session.refetch().catch(() => undefined);
 
     if (avatarResult.cleanupFailed) {
-      toast.error("Storage cleanup failed", { description: "The previous profile photo could not be deleted." });
+      toast.error("Couldn't remove old photo", { description: "The previous profile photo couldn't be deleted." });
     }
   }
 

@@ -76,7 +76,9 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
     const { error } = await tryCatch(createReviewMutation.mutateAsync({ data }));
     if (error) {
       setIsSubmittingReview(false);
-      return toast.error("Error", { description: error instanceof Error ? error.message : "Something went wrong" });
+      return toast.error("Couldn't save review", {
+        description: error instanceof Error ? error.message : "Something went wrong. Try again.",
+      });
     }
 
     await queryClient.invalidateQueries({ queryKey: albumQueryKeys.review(albumId) });

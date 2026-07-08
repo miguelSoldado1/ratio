@@ -1,17 +1,25 @@
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
-export function useMediaQuery(query: string) {
-  const [matches, setMatches] = useState(false);
-
-  useEffect(() => {
+/**
+ * SSR-safe media query hook. On the client the first render already reflects the
+ * real match (no post-mount flash); during SSR/hydration it uses `defaultValue`,
+ * so pass the value that matches the layout rendered on the server.
+ */
+export function useMediaQuery(query: string, defaultValue = false) {
+  function subscribe(onChange: () => void) {
     const mediaQueryList = window.matchMedia(query);
-    const handleChange = () => setMatches(mediaQueryList.matches);
+    mediaQueryList.addEventListener("change", onChange);
 
-    handleChange();
-    mediaQueryList.addEventListener("change", handleChange);
+    return () => mediaQueryList.removeEventListener("change", onChange);
+  }
 
-    return () => mediaQueryList.removeEventListener("change", handleChange);
-  }, [query]);
+  function getSnapshot() {
+    return window.matchMedia(query).matches;
+  }
 
-  return matches;
+  function getServerSnapshot() {
+    return defaultValue;
+  }
+
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }

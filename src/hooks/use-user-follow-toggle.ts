@@ -51,8 +51,8 @@ export function useUserFollowToggle({ enabled, queryKey }: UseUserFollowTogglePa
 
       if (error) {
         queryClient.setQueryData(queryKey, previousProfile);
-        toast.error("Error", {
-          description: error instanceof Error ? error.message : "Could not update follow status",
+        toast.error("Couldn't update follow", {
+          description: error instanceof Error ? error.message : "Something went wrong while updating follow.",
         });
         return false;
       }

@@ -92,7 +92,7 @@ describe("useReviewLikeToggle", () => {
     await expect(result.current("review_1", true)).resolves.toBe(false);
 
     expect(queryClient.getQueryData(queryKey)).toEqual({ id: "review_1", liked: false, likes: 2 });
-    expect(mockToastError).toHaveBeenCalledWith("Error", { description: "Nope" });
+    expect(mockToastError).toHaveBeenCalledWith("Couldn't update like", { description: "Nope" });
   });
 });
 

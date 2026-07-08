@@ -59,8 +59,8 @@ function SettingsPage() {
     });
 
     if (error) {
-      toast.error("Provider link failed", {
-        description: error.message ? getAuthErrorMessage(error.message) : "Could not link provider.",
+      toast.error("Couldn't link provider", {
+        description: error.message ? getAuthErrorMessage(error.message) : "Something went wrong. Try again.",
       });
 
       return setPendingProvider(null);
@@ -88,8 +88,8 @@ function SettingsPage() {
     });
 
     if (error) {
-      toast.error("Provider unlink failed", {
-        description: error.message ? getAuthErrorMessage(error.message) : "Could not unlink provider.",
+      toast.error("Couldn't unlink provider", {
+        description: error.message ? getAuthErrorMessage(error.message) : "Something went wrong. Try again.",
       });
 
       return setUnlinkingProvider(null);
@@ -97,7 +97,7 @@ function SettingsPage() {
 
     await queryClient.invalidateQueries({ queryKey: accountQueryKeys.providers() });
     setUnlinkingProvider(null);
-    toast.success("Success", { description: "Sign-in method removed" });
+    toast.success("Sign-in method removed");
   }
 
   async function handleRevokeOtherSessions() {
@@ -105,15 +105,15 @@ function SettingsPage() {
     const { error } = await authClient.revokeOtherSessions({});
 
     if (error) {
-      toast.error("Session sign-out failed", {
-        description: error.message ? getAuthErrorMessage(error.message) : "Could not sign out other sessions.",
+      toast.error("Couldn't sign out sessions", {
+        description: error.message ? getAuthErrorMessage(error.message) : "Something went wrong. Try again.",
       });
 
       return setIsRevokingOtherSessions(false);
     }
 
     setIsRevokingOtherSessions(false);
-    toast.success("Success", { description: "Other sessions signed out" });
+    toast.success("Other sessions signed out");
   }
 
   async function handleDeleteAccount(confirmation: string) {
@@ -129,8 +129,8 @@ function SettingsPage() {
     });
 
     if (error) {
-      toast.error("Account deletion failed", {
-        description: error.message ? getAuthErrorMessage(error.message) : "Could not delete account.",
+      toast.error("Couldn't delete account", {
+        description: error.message ? getAuthErrorMessage(error.message) : "Something went wrong. Try again.",
       });
 
       return setIsDeletingAccount(false);

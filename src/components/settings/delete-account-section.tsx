@@ -12,6 +12,7 @@ import {
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { SectionIntro } from "./section-intro";
+import { SettingsActionCard } from "./settings-action-card";
 
 interface DeleteAccountSectionProps {
   confirmationHandle?: string;
@@ -33,22 +34,17 @@ export function DeleteAccountSection({ confirmationHandle, isPending, onDeleteAc
   return (
     <section className="flex flex-col gap-4 border-border border-t pt-6">
       <SectionIntro description="Permanently remove your account and Ratio activity." title="Danger zone" />
-      <div className="flex flex-col gap-4 rounded-3xl bg-destructive/5 p-4 ring-1 ring-destructive/20 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-start gap-3">
-          <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-destructive/10 text-destructive">
-            <Trash2 className="size-4" />
-          </span>
-          <div className="min-w-0">
-            <p className="font-medium text-sm">Delete account</p>
-            <p className="text-muted-foreground text-sm">
-              Deletes your profile, reviews, ratings, likes, follows, linked sign-in methods, and sessions.
-            </p>
-          </div>
-        </div>
-        <Button onClick={() => setDialogOpen(true)} type="button" variant="destructive">
-          Delete account
-        </Button>
-      </div>
+      <SettingsActionCard
+        action={
+          <Button onClick={() => setDialogOpen(true)} type="button" variant="destructive">
+            Delete account
+          </Button>
+        }
+        description="Deletes your profile, reviews, ratings, likes, follows, linked sign-in methods, and sessions."
+        icon={<Trash2 />}
+        title="Delete account"
+        variant="destructive"
+      />
 
       <Dialog onOpenChange={setOpen} open={dialogOpen}>
         <DialogContent>

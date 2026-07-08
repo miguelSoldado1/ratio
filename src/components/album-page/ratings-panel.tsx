@@ -45,9 +45,9 @@ export function RatingsPanel({ albumId, className }: RatingsPanelProps) {
     return (
       <section aria-label="Album ratings unavailable" className={cn("border-border border-t py-5", className)}>
         <h2 className="sr-only">Ratings</h2>
-        <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+        <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-1">
           <p className="font-medium text-base">Ratings unavailable</p>
-          <p className="text-muted-foreground text-sm tabular-nums">0 ratings</p>
+          <span className="text-muted-foreground text-sm tabular-nums">0 ratings</span>
         </div>
         <RatingDistributionChart ratingDistribution={emptyRatingDistribution} />
       </section>
@@ -62,21 +62,29 @@ export function RatingsPanel({ albumId, className }: RatingsPanelProps) {
   return (
     <section aria-label="Album ratings" className={cn("border-border border-t py-5", className)}>
       <h2 className="sr-only">Ratings</h2>
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
-        <div>
-          {hasRatings ? (
-            <ReviewCard.Rating
-              className="**:data-[slot=rating-star-icon]:size-5.5 **:data-[slot=rating-star-value]:text-lg"
-              value={ratingSummary.average}
-            />
-          ) : (
-            <p className="font-medium text-base">No ratings yet</p>
-          )}
-        </div>
-        <p className="text-muted-foreground text-sm tabular-nums">{hasRatings ? ratingSummary.total : "0 ratings"}</p>
+      <div className="mb-5 flex flex-wrap items-center gap-y-1">
+        {hasRatings ? (
+          <AlbumRatingSummary average={ratingSummary.average} total={ratingSummary.total} />
+        ) : (
+          <p className="font-medium text-base">No ratings yet</p>
+        )}
       </div>
       <RatingDistributionChart ratingDistribution={ratingDistribution} />
     </section>
+  );
+}
+
+function AlbumRatingSummary({ average, total }: { average: number; total: string }) {
+  return (
+    <div className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
+      <ReviewCard.Rating
+        className="gap-1 leading-none **:data-[slot=rating-star-value]:ml-1.5 **:data-[slot=rating-star-icon]:size-5 **:data-[slot=rating-star-value]:text-base **:data-[slot=rating-star-value]:leading-none"
+        value={average}
+      />
+      <span className="inline-flex h-5 items-center border-border border-l pl-2 text-muted-foreground text-sm tabular-nums leading-none">
+        {total}
+      </span>
+    </div>
   );
 }
 
@@ -84,9 +92,9 @@ export function RatingsPanelSkeleton({ className }: { className?: string }) {
   return (
     <section aria-label="Loading album ratings" className={cn("border-border border-t py-5", className)}>
       <h2 className="sr-only">Ratings</h2>
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
+      <div className="mb-5 flex flex-wrap items-center gap-x-3 gap-y-1">
         <Skeleton className="h-6 w-28" />
-        <Skeleton className="h-4 w-20" />
+        <Skeleton className="h-4 w-16" />
       </div>
       <div className="grid h-32 grid-cols-5 items-end gap-3 border-border border-b pb-2 sm:h-40 sm:gap-5">
         {ratingBarSkeletons.map((bar) => (
@@ -98,8 +106,8 @@ export function RatingsPanelSkeleton({ className }: { className?: string }) {
       <div className="grid grid-cols-5 gap-3 pt-2 sm:gap-5">
         {ratingLabelSkeletons.map((labelId) => (
           <div className="flex min-w-0 flex-col items-center gap-2" key={labelId}>
-            <Skeleton className="h-3 w-3" />
-            <Skeleton className="h-2 w-7" />
+            <Skeleton className="h-3 w-8" />
+            <Skeleton className="h-3 w-7" />
           </div>
         ))}
       </div>

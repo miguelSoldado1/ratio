@@ -1,13 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { AlbumActions } from "@/components/album-page/album-actions";
-import {
-  getAlbumArtistNames,
-  getAlbumReleaseYear,
-  getAlbumRuntimeLabel,
-} from "@/components/album-page/album-format.ts";
+import { AlbumHeader } from "@/components/album-page/album-header";
 import { AlbumLookupLoading } from "@/components/album-page/album-lookup-loading";
-import { MobileAlbumHeader } from "@/components/album-page/mobile-album-header";
 import { RatingsPanel } from "@/components/album-page/ratings-panel";
 import { ReviewsSection } from "@/components/album-page/reviews-section";
 import { TrackList } from "@/components/album-page/track-list";
@@ -42,29 +36,17 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   }
 
   const { album, tracks } = albumDetailsQuery.data;
-  const artist = getAlbumArtistNames(album);
-  const releaseYear = getAlbumReleaseYear(album);
-  const albumRuntime = getAlbumRuntimeLabel(album);
 
   return (
     <main className="min-h-screen bg-background text-foreground" data-album-id={album.id}>
       <PageContainer className="grid gap-8 py-6 lg:grid-cols-[minmax(240px,340px)_1fr] xl:gap-12">
-        <MobileAlbumHeader album={album} coverUrl={album.coverUrl} />
         <aside className="hidden lg:sticky lg:top-20 lg:block lg:self-start">
           <AlbumCover albumTitle={album.title} coverUrl={album.coverUrl} />
           <TrackList className="mt-6" tracks={tracks} />
         </aside>
-        <section className="min-w-0 pt-3 lg:pt-10">
-          <div className="hidden lg:block">
-            <h1 className="heading-page max-w-4xl">{album.title}</h1>
-            <p className="mt-2 text-lg text-muted-foreground">
-              {artist} · {releaseYear}
-            </p>
-            <p className="mt-1 text-muted-foreground-subtle text-sm">{albumRuntime}</p>
-
-            <AlbumActions album={album} className="mt-6" />
-          </div>
-          <RatingsPanel albumId={album.id} className="mt-2 lg:mt-8" />
+        <section className="min-w-0 lg:pt-10">
+          <AlbumHeader album={album} coverUrl={album.coverUrl} />
+          <RatingsPanel albumId={album.id} className="mt-6 lg:mt-8" />
           <ReviewsSection album={album} className="mt-10 lg:mt-12" />
         </section>
       </PageContainer>

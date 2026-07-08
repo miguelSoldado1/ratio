@@ -43,8 +43,8 @@ export function AuthDialog({ onOpenChange, open }: AuthDialogProps) {
     });
 
     if (authError) {
-      toast.error("Authentication failed", {
-        description: authError.message ?? "Could not continue. Try again.",
+      toast.error("Couldn't sign in", {
+        description: authError.message ?? "Something went wrong. Try again.",
       });
       setPendingProvider(null);
     }
