@@ -2,7 +2,7 @@ import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-r
 import { NotFoundPage } from "@/components/not-found-page";
 import { TopBar } from "@/components/top-bar";
 import { Toaster } from "@/components/ui/sonner";
-import { defaultSeoDescription, defaultSeoTitle } from "@/lib/seo";
+import { defaultSeoDescription, defaultSeoTitle, faviconLinks } from "@/lib/seo";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
@@ -18,14 +18,7 @@ export const Route = createRootRoute({
       },
       { title: defaultSeoTitle },
     ],
-    links: [
-      { rel: "stylesheet", href: appCss },
-      { rel: "icon", type: "image/png", href: "/favicon-96x96.png", sizes: "96x96" },
-      { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
-      { rel: "shortcut icon", href: "/favicon.ico" },
-      { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
-      { rel: "manifest", href: "/site.webmanifest" },
-    ],
+    links: [{ rel: "stylesheet", href: appCss }, ...faviconLinks],
   }),
   notFoundComponent: NotFoundPage,
   component: RootComponent,
