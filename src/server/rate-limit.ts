@@ -54,16 +54,8 @@ export const reviewCreateHourlyRateLimit = defineFixedWindowRateLimitRule({
   windowSeconds: 60 * 60,
 });
 
-export const reviewMutationRateLimit = defineCloudflareRateLimitRule({
-  bindingName: "REVIEW_MUTATION_RATE_LIMITER",
-});
-
-export const followMutationRateLimit = defineCloudflareRateLimitRule({
-  bindingName: "FOLLOW_MUTATION_RATE_LIMITER",
-});
-
-export const profileMutationRateLimit = defineCloudflareRateLimitRule({
-  bindingName: "PROFILE_MUTATION_RATE_LIMITER",
+export const userMutationRateLimit = defineCloudflareRateLimitRule({
+  bindingName: "USER_MUTATION_RATE_LIMITER",
 });
 
 export const uploadSignRateLimit = defineCloudflareRateLimitRule({
@@ -74,10 +66,6 @@ export const uploadSignHourlyRateLimit = defineFixedWindowRateLimitRule({
   limit: 20,
   scope: "upload-sign-hourly",
   windowSeconds: 60 * 60,
-});
-
-export const notificationMutationRateLimit = defineCloudflareRateLimitRule({
-  bindingName: "NOTIFICATION_MUTATION_RATE_LIMITER",
 });
 
 export function createCloudflareRateLimitMiddleware(rule: CloudflareRateLimitRule) {

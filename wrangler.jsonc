@@ -35,26 +35,10 @@
       }
     },
     {
-      "name": "REVIEW_MUTATION_RATE_LIMITER",
+      "name": "USER_MUTATION_RATE_LIMITER",
       "namespace_id": "1003",
       "simple": {
-        "limit": 120,
-        "period": 60
-      }
-    },
-    {
-      "name": "FOLLOW_MUTATION_RATE_LIMITER",
-      "namespace_id": "1004",
-      "simple": {
-        "limit": 90,
-        "period": 60
-      }
-    },
-    {
-      "name": "PROFILE_MUTATION_RATE_LIMITER",
-      "namespace_id": "1005",
-      "simple": {
-        "limit": 60,
+        "limit": 240,
         "period": 60
       }
     },
@@ -63,14 +47,6 @@
       "namespace_id": "1006",
       "simple": {
         "limit": 20,
-        "period": 60
-      }
-    },
-    {
-      "name": "NOTIFICATION_MUTATION_RATE_LIMITER",
-      "namespace_id": "1007",
-      "simple": {
-        "limit": 60,
         "period": 60
       }
     }
@@ -121,26 +97,10 @@
           }
         },
         {
-          "name": "REVIEW_MUTATION_RATE_LIMITER",
+          "name": "USER_MUTATION_RATE_LIMITER",
           "namespace_id": "2003",
           "simple": {
-            "limit": 120,
-            "period": 60
-          }
-        },
-        {
-          "name": "FOLLOW_MUTATION_RATE_LIMITER",
-          "namespace_id": "2004",
-          "simple": {
-            "limit": 90,
-            "period": 60
-          }
-        },
-        {
-          "name": "PROFILE_MUTATION_RATE_LIMITER",
-          "namespace_id": "2005",
-          "simple": {
-            "limit": 60,
+            "limit": 240,
             "period": 60
           }
         },
@@ -149,14 +109,6 @@
           "namespace_id": "2006",
           "simple": {
             "limit": 20,
-            "period": 60
-          }
-        },
-        {
-          "name": "NOTIFICATION_MUTATION_RATE_LIMITER",
-          "namespace_id": "2007",
-          "simple": {
-            "limit": 60,
             "period": 60
           }
         }
