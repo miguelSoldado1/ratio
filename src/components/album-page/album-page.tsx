@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { AlbumArtwork } from "@/components/album-artwork";
 import { AlbumHeader } from "@/components/album-page/album-header";
 import { AlbumLookupLoading } from "@/components/album-page/album-lookup-loading";
 import { RatingsPanel } from "@/components/album-page/ratings-panel";
@@ -60,18 +61,11 @@ interface AlbumCoverProps {
 }
 
 function AlbumCover({ albumTitle, coverUrl }: AlbumCoverProps) {
-  if (!coverUrl) {
-    return (
-      <div aria-label={`${albumTitle} album cover unavailable`} className="aspect-square w-full bg-muted" role="img" />
-    );
-  }
-
   return (
-    <img
+    <AlbumArtwork
       alt={`${albumTitle} album cover`}
       className="aspect-square w-full object-cover"
       height={640}
-      referrerPolicy="no-referrer"
       src={coverUrl}
       width={640}
     />

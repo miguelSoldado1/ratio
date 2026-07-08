@@ -1,3 +1,4 @@
+import { AlbumArtwork } from "@/components/album-artwork";
 import { CommandItem } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import type { AlbumResult } from "./types";
@@ -17,18 +18,13 @@ export function AlbumResultItem({ album, dimmed = false, onSelect }: AlbumResult
       onSelect={() => onSelect(album)}
       value={`album:${album.id}`}
     >
-      <div className="size-10 shrink-0 overflow-hidden rounded-md bg-muted">
-        {album.image ? (
-          <img
-            alt={album.name}
-            className="size-full object-cover"
-            height={40}
-            referrerPolicy="no-referrer"
-            src={album.image}
-            width={40}
-          />
-        ) : null}
-      </div>
+      <AlbumArtwork
+        alt={`${album.name} album cover`}
+        className="size-10 rounded-md"
+        height={40}
+        src={album.image}
+        width={40}
+      />
       <div className="min-w-0 flex-1 text-left">
         <p className="truncate font-medium text-foreground text-sm">{album.name}</p>
         <p className="truncate text-muted-foreground text-xs">
