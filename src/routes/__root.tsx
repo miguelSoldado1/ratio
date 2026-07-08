@@ -1,7 +1,4 @@
-import { TanStackDevtools } from "@tanstack/react-devtools";
-import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
-import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import { NotFoundPage } from "@/components/not-found-page";
 import { TopBar } from "@/components/top-bar";
 import { Toaster } from "@/components/ui/sonner";
@@ -31,8 +28,12 @@ export const Route = createRootRoute({
     ],
   }),
   notFoundComponent: NotFoundPage,
-  component: () => (
-    <>
+  component: RootComponent,
+});
+
+function RootComponent() {
+  return (
+    <RootDocument>
       <a
         className="sr-only z-60 rounded-full bg-primary px-4 py-2 font-medium text-primary-foreground text-sm focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:outline-none focus:ring-3 focus:ring-ring/30"
         href="#main-content"
@@ -43,10 +44,9 @@ export const Route = createRootRoute({
       <div id="main-content" tabIndex={-1}>
         <Outlet />
       </div>
-    </>
-  ),
-  shellComponent: RootDocument,
-});
+    </RootDocument>
+  );
+}
 
 function RootDocument({ children }: { children: React.ReactNode }) {
   return (
@@ -57,15 +57,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body>
         <Toaster />
         {children}
-        <TanStackDevtools
-          config={{
-            position: "bottom-right",
-          }}
-          plugins={[
-            { name: "Tanstack Router", render: <TanStackRouterDevtoolsPanel /> },
-            { name: "Tanstack Query", render: <ReactQueryDevtoolsPanel /> },
-          ]}
-        />
         <Scripts />
       </body>
     </html>
