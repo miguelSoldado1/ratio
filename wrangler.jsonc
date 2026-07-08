@@ -5,8 +5,8 @@
   "compatibility_date": "2026-06-12",
   "compatibility_flags": ["nodejs_compat"],
   "vars": {
-    "BETTER_AUTH_URL": "https://ratio.sticky-puddingz.workers.dev",
-    "VITE_SITE_URL": "https://ratio.sticky-puddingz.workers.dev",
+    "BETTER_AUTH_URL": "https://ratiomusic.live",
+    "VITE_SITE_URL": "https://ratiomusic.live",
     "CLOUDFLARE_ACCOUNT_ID": "ce2122099880570dc3d6f5908544bb21",
     "CLOUDFLARE_R2_BUCKET_NAME": "ratio-images",
     "CLOUDFLARE_R2_PUBLIC_URL": "https://pub-e820f0290b824c3d9e2edeb1b021759e.r2.dev"
