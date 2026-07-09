@@ -6,8 +6,8 @@ import type { getAlbumDetails } from "@/server/functions/spotify-functions";
 type SpotifyAlbumDetails = Awaited<ReturnType<typeof getAlbumDetails>>;
 type SpotifyAlbumTrack = SpotifyAlbumDetails["tracks"][number];
 
-/** Tracks rendered in the collapsed peek; the last one is clipped by the fade to hint at more. */
-const PEEK_COUNT = 3;
+/** Only collapse into a peek when the album has more tracks than this; shorter lists show in full. */
+const PEEK_THRESHOLD = 3;
 
 interface TrackListProps {
   className?: string;
@@ -30,24 +30,16 @@ export function TrackList({ className, collapsible = false, tracks }: TrackListP
 
 function CollapsibleTrackList({ className, tracks }: { className?: string; tracks: SpotifyAlbumTrack[] }) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const hasMore = tracks.length > PEEK_COUNT;
-  const hasMultipleDiscs = getTrackGroups(tracks).length > 1;
+  const hasMore = tracks.length > PEEK_THRESHOLD;
 
   return (
     <section className={cn("border-border/70 border-t pt-4", className)}>
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="heading-section">Tracks</h2>
-        <span className="text-2xs text-muted-foreground-subtle tabular-nums">{getTrackCountLabel(tracks.length)}</span>
-      </div>
+      <h2 className="heading-section">Tracks</h2>
       {isExpanded || !hasMore ? (
         <TrackGroups className="mt-2" tracks={tracks} />
       ) : (
         <div className="mt-2 max-h-28 overflow-hidden [-webkit-mask-image:linear-gradient(to_bottom,#000_55%,transparent)] [mask-image:linear-gradient(to_bottom,#000_55%,transparent)]">
-          <div className="divide-y divide-border/70">
-            {tracks.slice(0, PEEK_COUNT).map((track, trackIndex) => (
-              <TrackRow key={track.id} label={hasMultipleDiscs ? track.trackNumber : trackIndex + 1} track={track} />
-            ))}
-          </div>
+          <TrackGroups tracks={tracks} />
         </div>
       )}
       {hasMore ? (
