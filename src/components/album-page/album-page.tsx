@@ -48,7 +48,8 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
         <section className="min-w-0 lg:pt-10">
           <AlbumHeader album={album} coverUrl={album.coverUrl} />
           <RatingsPanel albumId={album.id} className="mt-6 lg:mt-8" />
-          <ReviewsSection album={album} className="mt-10 lg:mt-12" />
+          <TrackList className="mt-8 lg:hidden" collapsible tracks={tracks} />
+          <ReviewsSection album={album} className="mt-8 lg:mt-12" />
         </section>
       </PageContainer>
     </main>
