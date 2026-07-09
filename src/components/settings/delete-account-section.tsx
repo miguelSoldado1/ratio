@@ -57,7 +57,11 @@ export function DeleteAccountSection({ confirmationHandle, isPending, onDeleteAc
           </DialogHeader>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor="delete-confirmation">Type {confirmationHandle} to confirm</FieldLabel>
+              <FieldLabel className="gap-0" htmlFor="delete-confirmation">
+                <span style={{ fontWeight: 400 }}>Type&nbsp;</span>
+                <strong style={{ fontWeight: 700 }}>{confirmationHandle}</strong>
+                <span style={{ fontWeight: 400 }}>&nbsp;to confirm</span>
+              </FieldLabel>
               <Input
                 autoComplete="off"
                 id="delete-confirmation"
