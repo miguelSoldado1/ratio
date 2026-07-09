@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { ChevronDown } from "lucide-react";
 import { ReviewCard } from "@/components/review-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { albumQueryKeys } from "@/lib/tanstack-query/query-keys";
@@ -81,9 +82,13 @@ function AlbumRatingSummary({ average, total }: { average: number; total: string
         className="gap-1 leading-none **:data-[slot=rating-star-value]:ml-1.5 **:data-[slot=rating-star-icon]:size-5 **:data-[slot=rating-star-value]:text-base **:data-[slot=rating-star-value]:leading-none"
         value={average}
       />
-      <span className="inline-flex h-5 items-center border-border border-l pl-2 text-muted-foreground text-sm tabular-nums leading-none">
+      <a
+        className="focus-ring inline-flex h-5 items-center gap-1 rounded-sm border-border border-l pl-2 text-muted-foreground text-sm tabular-nums leading-none transition-colors hover:text-foreground"
+        href="#album-reviews"
+      >
         {total}
-      </span>
+        <ChevronDown aria-hidden className="size-3.5" />
+      </a>
     </div>
   );
 }

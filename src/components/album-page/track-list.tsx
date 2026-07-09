@@ -38,7 +38,7 @@ function CollapsibleTrackList({ className, tracks }: { className?: string; track
       {isExpanded || !hasMore ? (
         <TrackGroups className="mt-2" tracks={tracks} />
       ) : (
-        <div className="mt-2 max-h-28 overflow-hidden [-webkit-mask-image:linear-gradient(to_bottom,#000_55%,transparent)] [mask-image:linear-gradient(to_bottom,#000_55%,transparent)]">
+        <div className="mask-[linear-gradient(to_bottom,#000_55%,transparent)] mt-2 max-h-28 overflow-hidden [-webkit-mask-image:linear-gradient(to_bottom,#000_55%,transparent)]">
           <TrackGroups tracks={tracks} />
         </div>
       )}
