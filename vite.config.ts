@@ -18,8 +18,8 @@ const config = defineConfig(({ command, mode }) => {
       tsconfigPaths: true,
     },
     plugins: [
-      ...(useCloudflareRuntime ? [cloudflare({ viteEnvironment: { name: "ssr" } })] : []),
       devtools(),
+      ...(useCloudflareRuntime ? [cloudflare({ viteEnvironment: { name: "ssr" } })] : []),
       tailwindcss(),
       tanstackStart(),
       viteReact(),

@@ -1,3 +1,5 @@
+import { TanStackDevtools } from "@tanstack/react-devtools";
+import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { NotFoundPage } from "@/components/not-found-page";
 import { TopBar } from "@/components/top-bar";
@@ -50,6 +52,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       <body>
         <Toaster />
         {children}
+        <TanStackDevtools plugins={[{ name: "TanStack Query", render: <ReactQueryDevtoolsPanel /> }]} />
         <Scripts />
       </body>
     </html>
