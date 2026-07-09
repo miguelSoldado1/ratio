@@ -167,6 +167,7 @@ export function NotificationsDropdown({ userId }: NotificationsDropdownProps) {
               </div>
             </DialogHeader>
             <NotificationsPanel
+              hasNextPage={hasNextPage}
               isError={notificationsQuery.isError}
               isFetchingNextPage={isFetchingNextPage}
               isLoading={notificationsQuery.isPending && open}
@@ -212,6 +213,7 @@ export function NotificationsDropdown({ userId }: NotificationsDropdownProps) {
             </span>
           </DropdownMenuLabel>
           <NotificationsPanel
+            hasNextPage={hasNextPage}
             isError={notificationsQuery.isError}
             isFetchingNextPage={isFetchingNextPage}
             isLoading={notificationsQuery.isPending && open}
@@ -248,6 +250,7 @@ function NotificationCountBadge({ count, unseenCount }: NotificationCountBadgePr
 }
 
 interface NotificationsPanelProps {
+  hasNextPage: boolean;
   isError: boolean;
   isFetchingNextPage: boolean;
   isLoading: boolean;
@@ -260,6 +263,7 @@ interface NotificationsPanelProps {
 }
 
 function NotificationsPanel({
+  hasNextPage,
   isError,
   isFetchingNextPage,
   isLoading,
@@ -285,9 +289,11 @@ function NotificationsPanel({
         onNotificationClick={onNotificationClick}
         variant={variant}
       />
-      <div className="flex h-8 items-center justify-center" ref={loadMoreRef}>
-        {isFetchingNextPage ? <Spinner className="text-muted-foreground" /> : null}
-      </div>
+      {hasNextPage || isFetchingNextPage ? (
+        <div className="flex h-8 items-center justify-center" ref={loadMoreRef}>
+          {isFetchingNextPage ? <Spinner className="text-muted-foreground" /> : null}
+        </div>
+      ) : null}
     </div>
   );
 }
