@@ -36,14 +36,11 @@ Server code retrieves user tokens through `getSpotifyUserAccessToken` (`src/serv
 
 Better Auth 1.6.23 sanitizes token-refresh failures into the same error, so Ratio cannot distinguish Spotify's permanent `invalid_grant` from a transient token-endpoint failure. The v1 policy intentionally maps any Better Auth token retrieval or refresh failure to reconnect-required. This keeps expiration recoverable without storing a separate authorization timestamp, at the accepted cost of an occasional unnecessary reconnect prompt during an outage. Ratio never adds a second token-refresh attempt. Spotify API responses that reject an otherwise retrieved token with `401` or `403` are also reconnect-required.
 
-OAuth access and refresh tokens are encrypted at rest with Better Auth's `account.encryptOAuthTokens` option and `BETTER_AUTH_SECRET`. Better Auth can still read legacy plaintext tokens during rollout. After deploying the encryption-aware code, migrate existing values without exposing token material:
-
-```sh
-pnpm auth:encrypt-oauth-tokens
-pnpm auth:encrypt-oauth-tokens -- --apply
-```
-
-The first command is a dry run and reports only the affected account count. The second updates access and refresh tokens transactionally. Each update verifies that its original token values are unchanged, so a concurrent OAuth login or refresh is skipped instead of overwritten; rerun the command to pick up any skipped accounts. Rollout order is: deploy the encryption-aware application, dry-run the token migration, then apply it. Keep the same `BETTER_AUTH_SECRET`; rotating it requires a separate decrypt-and-re-encrypt plan.
+OAuth access and refresh tokens are encrypted at rest with Better Auth's `account.encryptOAuthTokens` option and
+`BETTER_AUTH_SECRET`. The legacy plaintext production values were migrated after the encryption-aware application was
+deployed; the one-off migration utility was removed after completion. New sign-ins, links, and token refreshes are
+encrypted automatically. Keep the same `BETTER_AUTH_SECRET`; rotating it requires a separate decrypt-and-re-encrypt
+plan for stored OAuth tokens.
 
 Failures classify into conditions that drive different homepage UI:
 
