@@ -24,6 +24,8 @@ const mockSetSpotifyCacheJson = vi.mocked(setSpotifyCacheJson);
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.spyOn(console, "error").mockImplementation(() => undefined);
+  vi.spyOn(console, "warn").mockImplementation(() => undefined);
   mockGetClientCredentialsToken.mockResolvedValue("access-token");
   mockGetSpotifyCacheJson.mockResolvedValue(null);
   mockSetSpotifyCacheJson.mockResolvedValue(undefined);
@@ -56,7 +58,7 @@ describe("searchAlbumsService", () => {
         spotifyUrl: "https://open.spotify.com/album/album_1",
       },
     ]);
-    expect(spotifyApi.searchAlbums).toHaveBeenCalledWith("first album", { limit: 10, market: "US" });
+    expect(spotifyApi.searchAlbums).toHaveBeenCalledWith("first album", { limit: 10 });
   });
 
   it("uses valid cached search results without calling Spotify", async () => {
@@ -146,6 +148,8 @@ describe("getAlbumDetailsService", () => {
         expect.objectContaining({ durationMs: 2500, id: "track_2", title: "Track Two" }),
       ],
     });
+    expect(spotifyApi.getAlbum).toHaveBeenCalledWith("album_1");
+    expect(spotifyApi.getAlbumTracks).toHaveBeenCalledWith("album_1", { limit: 50, offset: 1 });
   });
 
   it("rejects non-album details", async () => {

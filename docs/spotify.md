@@ -128,3 +128,9 @@ Search is the most token-expensive endpoint.
 - Filter Spotify search results to albums only
 - Cache common or repeated queries server-side with a short TTL
 - Deduplicate in-flight requests
+- Catalog requests intentionally omit Spotify's `market` parameter. Ratio prioritizes broad, deterministic album
+  discovery over matching local playback availability, and one global result set lets anonymous and authenticated
+  users share the same cache. Keep client-credentials tokens for catalog requests; personal user tokens would make
+  results depend on the country associated with each Spotify account.
+- Search, album details, and album-track pagination must use the same marketless catalog behavior. Their cache keys use
+  an explicit versioned global scope so results from the former fixed-US behavior cannot be reused.
