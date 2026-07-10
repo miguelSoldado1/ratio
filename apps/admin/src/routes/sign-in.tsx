@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Spinner } from "@/components/ui/spinner";
 import { useAdminAccess } from "@/hooks/use-admin-access";
 import { authClient } from "@/lib/auth-client";
+import { getAuthErrorMessage } from "@/lib/auth-errors";
 import { authRedirectSearchSchema, getSafeAuthRedirect, getSignInHref } from "@/lib/auth-redirect";
 import type { AuthProviderId } from "@ratio/auth-providers";
 
@@ -49,21 +50,18 @@ function SignInPage() {
   }, []);
 
   useEffect(() => {
-    if (!search.error) return;
+    const authError = search.error;
+    if (accessQuery.data?.status !== "unauthenticated" || !authError) return;
 
-    const toastTimeoutId = window.setTimeout(() => {
-      toast.error("Couldn't sign in", {
-        description: "Use an existing Ratio account or try another provider.",
-        id: `auth-error-${search.error}`,
-      });
-    }, 0);
+    toast.error("Couldn't sign in", {
+      description: getAuthErrorMessage(authError),
+      id: `auth-error-${authError}`,
+    });
 
     const url = new URL(window.location.href);
     url.searchParams.delete("error");
     window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
-
-    return () => window.clearTimeout(toastTimeoutId);
-  }, [search.error]);
+  }, [accessQuery.data?.status, search.error]);
 
   async function continueWithProvider(provider: AuthProviderId) {
     setPendingProvider(provider);
@@ -77,8 +75,11 @@ function SignInPage() {
 
     if (!error) return;
 
+    const message = error.message
+      ? getAuthErrorMessage(error.message)
+      : "Use an existing Ratio account or try another provider.";
     toast.error("Couldn't sign in", {
-      description: error.message ?? "Use an existing Ratio account or try another provider.",
+      description: message,
     });
     setPendingProvider(null);
   }
