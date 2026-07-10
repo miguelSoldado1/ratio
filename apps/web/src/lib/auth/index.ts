@@ -1,4 +1,5 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
+import { authProviders } from "@ratio/auth-providers";
 import * as schema from "@ratio/database/schema";
 import { APIError, betterAuth } from "better-auth";
 import { admin, lastLoginMethod, username } from "better-auth/plugins";
@@ -97,7 +98,7 @@ export function createAuth(db: Db) {
     },
     account: {
       accountLinking: {
-        trustedProviders: ["spotify", "google", "discord"],
+        trustedProviders: authProviders.map(({ id }) => id),
         disableImplicitLinking: true,
       },
       encryptOAuthTokens: true,

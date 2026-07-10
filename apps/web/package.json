@@ -24,6 +24,7 @@
     "@better-upload/client": "^3.0.19",
     "@better-upload/server": "^3.0.19",
     "@fontsource-variable/figtree": "^5.2.10",
+    "@ratio/auth-providers": "workspace:*",
     "@ratio/database": "workspace:*",
     "@t3-oss/env-core": "^0.13.11",
     "@tailwindcss/vite": "^4",

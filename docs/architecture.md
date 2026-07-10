@@ -2,18 +2,20 @@
 
 ## Workspace
 
-Ratio is a pnpm monorepo with two independently built TanStack Start applications and one shared database package:
+Ratio is a pnpm monorepo with two independently built TanStack Start applications and two narrow shared packages:
 
 ```text
 apps/web              Public Ratio application (`@ratio/web`)
 apps/admin            Authentication-only admin application (`@ratio/admin`)
+packages/auth-providers
+                      Shared OAuth provider catalog, types, and brand icons
 packages/database     Shared Drizzle schema, types, and Worker-compatible client factory
 drizzle               Authoritative migration history
 ```
 
 The public application remains the `ratio` Cloudflare Worker at `ratiomusic.live`; its `development` Wrangler environment remains at `dev.ratiomusic.live`. The admin application is a separate `ratio-admin` Worker intended for `admin.ratiomusic.live`, with the explicit development Worker `ratio-admin-dev` intended for `admin-dev.ratiomusic.live`.
 
-Each app owns its routes, dependencies, Vite build, generated route tree, tests, Wrangler configuration, and deployment output. No UI package is shared. `packages/database` is deliberately narrow and contains no Spotify, cache, upload, R2, rate-limit, or product-service code.
+Each app owns its routes, shadcn components, authentication UI and behavior, dependencies, Vite build, generated route tree, tests, Wrangler configuration, and deployment output. `packages/auth-providers` owns one canonical provider array containing the provider IDs, labels, and approved brand-image components, but no buttons, dialogs, pages, or auth clients. `packages/database` is deliberately narrow and contains no Spotify, cache, upload, R2, rate-limit, or product-service code.
 
 ## Stack
 
@@ -28,9 +30,9 @@ Each app owns its routes, dependencies, Vite build, generated route tree, tests,
 
 ## Admin Boundary
 
-Admin v1 is intentionally empty beyond authentication and authorization. It supports sign-in for existing Ratio accounts, rejects OAuth user creation, verifies sessions and comma-separated admin roles on the server, and exposes a strict authorization middleware for future server functions. It has no dashboard, tables, analytics, reviews, reports, moderation queries, or polling.
+Admin v1 is intentionally empty beyond authentication and authorization. It supports sign-in for existing Ratio accounts, rejects OAuth user creation, verifies sessions and comma-separated admin roles through server functions, and exposes a strict authorization middleware for future server functions. Admin UI routes disable SSR and fetch access state from the client through `useServerFn` and TanStack Query. Unauthenticated protected routes redirect through `/sign-in` with a validated internal return path; authenticated non-admin users go to `/access-denied`. It has no dashboard data, tables, analytics, reviews, reports, moderation queries, or polling.
 
-The admin cookie uses its own `ratio-admin` prefix, does not enable cross-subdomain cookies, and therefore remains host-only. The public and admin hosts do not share browser sessions even though Better Auth uses the same database schema and relevant secret/provider configuration.
+The admin cookie uses its own `ratio-admin` prefix, does not enable cross-subdomain cookies, and therefore remains host-only. The public and admin hosts do not share browser sessions or last-used-login history even though Better Auth uses the same database schema and relevant secret/provider configuration.
 
 Future admin scope may include bounded dashboard metrics, users, reviews, and reports. Under the free-hosting constraint, prefer bounded indexed queries, no polling, and no new infrastructure by default.
 

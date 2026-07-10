@@ -1,3 +1,4 @@
+import { authProviders } from "@ratio/auth-providers";
 import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -13,7 +14,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { authProviders } from "@/lib/auth/providers";
 import type { AdminUser } from "@/server/services/admin-service";
 
 const adminUsersSkeletonRows = [

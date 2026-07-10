@@ -1,45 +1,223 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/figtree";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: "Figtree Variable", sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted-foreground-subtle: var(--muted-foreground-subtle);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+  --radius-control: var(--radius-control);
+  --radius-overlay: var(--radius-overlay);
+  --animate-heart-pop: heart-pop 350ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  --animate-count-up: count-up 150ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
+  --animate-count-down: count-down 150ms cubic-bezier(0.23, 1, 0.32, 1) forwards;
+}
+
 :root {
-  font-family: system-ui, sans-serif;
-  color: #171717;
-  background: #fafafa;
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(68.884% 0.18695 148.941);
+  --primary-foreground: oklch(17.819% 0.0299 154.001);
+  --secondary: oklch(0.274 0.006 286.033);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --muted-foreground-subtle: oklch(0.58 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.82 0.18 148.941);
+  --chart-2: var(--primary);
+  --chart-3: oklch(0.58 0.16 148.941);
+  --chart-4: oklch(0.48 0.13 148.941);
+  --chart-5: oklch(0.36 0.09 148.941);
+  --radius: 0.5rem;
+  --radius-control: 1.5rem;
+  --radius-overlay: 2rem;
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: oklch(0.982 0.018 155.826);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
 }
 
-body {
-  margin: 0;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  html {
+    scrollbar-gutter: stable;
+    @apply font-sans;
+  }
 }
 
-main {
-  width: min(32rem, calc(100% - 2rem));
-  margin: 8rem auto;
+@layer utilities {
+  .heading-page {
+    font-size: 2.25rem;
+    font-weight: 600;
+    line-height: 1.1;
+    letter-spacing: 0;
+  }
+
+  .heading-section {
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1rem;
+    color: var(--muted-foreground);
+    text-transform: uppercase;
+    letter-spacing: 0.24em;
+  }
+
+  .text-2xs {
+    font-size: 0.625rem;
+    line-height: 0.875rem;
+  }
+
+  @media (min-width: 48rem) {
+    .heading-page {
+      font-size: 3rem;
+    }
+  }
+
+  .press-feedback {
+    @apply [transition:transform_130ms_cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97];
+  }
+
+  .focus-ring {
+    @apply focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30;
+  }
+
+  .recent-rotation-enter {
+    opacity: 1;
+    transform: translateY(0);
+    transition:
+      opacity 180ms cubic-bezier(0.23, 1, 0.32, 1),
+      transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
+
+    @starting-style {
+      opacity: 0;
+      transform: translateY(-0.25rem);
+    }
+  }
+
+  .animate-equalizer {
+    transform-origin: bottom;
+    animation: equalizer-bounce 1.4s ease-in-out infinite;
+  }
 }
 
-h1 {
-  font-size: 1.5rem;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
-section {
-  display: grid;
-  gap: 1rem;
+@keyframes heart-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.4);
+  }
+  70% {
+    transform: scale(0.85);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+@keyframes count-up {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-button {
-  width: fit-content;
-  padding: 0.55rem 0.8rem;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-  background: white;
-  border: 1px solid #b8b8b8;
-  border-radius: 0.35rem;
+@keyframes count-down {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-button:disabled {
-  cursor: wait;
-  opacity: 0.6;
+@keyframes equalizer-bounce {
+  0%,
+  100% {
+    transform: scaleY(0.25);
+  }
+  50% {
+    transform: scaleY(1);
+  }
 }

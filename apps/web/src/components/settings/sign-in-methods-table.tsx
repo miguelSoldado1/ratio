@@ -1,11 +1,11 @@
+import { authProviders } from "@ratio/auth-providers";
 import { KeyRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { authProviders } from "@/lib/auth/providers";
 import { cn } from "@/lib/utils";
 import { SectionIntro } from "./section-intro";
-import type { AuthProviderId } from "@/lib/auth/providers";
+import type { AuthProviderId } from "@ratio/auth-providers";
 
 export interface LinkedAccount {
   accountId: string;

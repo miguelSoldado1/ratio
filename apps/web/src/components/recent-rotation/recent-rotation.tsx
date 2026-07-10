@@ -5,7 +5,6 @@ import { AlbumArtwork } from "@/components/album-artwork";
 import { SpotifyAttribution } from "@/components/spotify-attribution";
 import { Button } from "@/components/ui/button";
 import { useSpotifyRecentListeningReconnect } from "@/hooks/use-spotify-recent-listening-reconnect";
-import { SpotifyIcon } from "@/lib/auth/providers";
 import { formatRelativeTime } from "@/lib/date-format";
 import { spotifyQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { cn } from "@/lib/utils";
@@ -114,7 +113,15 @@ function RecentRotationReconnectCard({ className, viewerUserId }: RecentRotation
       <div className="flex w-full flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-2xl border border-border/55 bg-muted/25 px-4 py-3">
         <p className="min-w-0 text-muted-foreground text-sm">Reconnect Spotify to show your recent listening.</p>
         <Button disabled={isReconnecting} onClick={handleReconnect} size="sm" type="button" variant="outline">
-          <SpotifyIcon className="size-4" data-icon="inline-start" />
+          <img
+            alt=""
+            aria-hidden="true"
+            className="size-4"
+            data-icon="inline-start"
+            height="18"
+            src="/brand/spotify-logo-icon-white.svg"
+            width="18"
+          />
           Reconnect Spotify
         </Button>
       </div>

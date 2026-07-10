@@ -1,11 +1,11 @@
+import { authProviders } from "@ratio/auth-providers";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AuthMethodBadge } from "@/components/auth/auth-method-badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { authClient } from "@/lib/auth/auth-client";
-import { authProviders } from "@/lib/auth/providers";
-import type { AuthProviderId } from "@/lib/auth/providers";
+import type { AuthProviderId } from "@ratio/auth-providers";
 
 interface AuthDialogProps {
   onOpenChange: (open: boolean) => void;

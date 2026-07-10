@@ -1,3 +1,4 @@
+import { authProviders } from "@ratio/auth-providers";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
@@ -10,10 +11,9 @@ import { SettingsSkeleton } from "@/components/settings/settings-skeleton";
 import { SignInMethodsTable } from "@/components/settings/sign-in-methods-table";
 import { authClient } from "@/lib/auth/auth-client";
 import { getAuthErrorMessage } from "@/lib/auth/auth-errors";
-import { authProviders } from "@/lib/auth/providers";
 import { accountQueryKeys, spotifyQueryKeys } from "@/lib/tanstack-query/query-keys";
+import type { AuthProviderId } from "@ratio/auth-providers";
 import type { LinkedAccount } from "@/components/settings/sign-in-methods-table";
-import type { AuthProviderId } from "@/lib/auth/providers";
 
 export const Route = createFileRoute("/settings")({
   component: SettingsPage,
