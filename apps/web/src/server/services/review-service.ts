@@ -350,7 +350,7 @@ export async function getUserReviewsService(data: UserReviewsInput): Promise<Use
   };
 }
 
-export async function getReviewLikesService(data: ReviewLikesInput): Promise<ReviewLikesPage> {
+export async function getReviewLikesService(data: ReviewLikesInput) {
   const db = await getDb();
   const currentUser = await getOptionalCurrentUser(db);
   const viewerUserId = currentUser?.id;

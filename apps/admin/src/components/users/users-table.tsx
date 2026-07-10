@@ -5,7 +5,7 @@ import { DataTableSortList } from "@/components/data-table/data-table-sort-list"
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { useQueryTable } from "@/hooks/use-query-table";
 import { adminQueryKeys } from "@/lib/tanstack-query/query-keys";
-import { getTableUsers } from "@/server/users-functions";
+import { getTableUsers } from "@/server/functions/users-functions";
 import { usersColumns } from "./users-columns";
 
 export function UsersTable() {

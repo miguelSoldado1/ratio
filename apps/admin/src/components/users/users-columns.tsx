@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { formatDate } from "@/lib/format";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { AdminUserRow } from "@/server/users-functions";
+import type { AdminUserRow } from "@/server/services/users-service";
 
 function parseRoles(role: string | null) {
   return (role ?? "user")
