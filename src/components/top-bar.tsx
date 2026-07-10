@@ -1,5 +1,5 @@
-import { Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { Link, useRouterState } from "@tanstack/react-router";
+import { type MouseEvent, useState } from "react";
 import { AuthDialog } from "@/components/auth/auth-dialog";
 import { GlobalSearch } from "@/components/global-search/global-search";
 import { GlobalSearchTrigger } from "@/components/global-search/global-search-trigger";
@@ -10,10 +10,24 @@ import { authClient } from "@/lib/auth/auth-client";
 import { useAuthRedirectErrorToast } from "@/lib/auth/use-auth-redirect-error-toast";
 
 function LogoHomeLink() {
+  const isHome = useRouterState({ select: (state) => state.location.pathname === "/" });
+
+  function handleClick(event: MouseEvent<HTMLAnchorElement>) {
+    const isModifiedClick = event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey;
+
+    if (!(isHome && !event.defaultPrevented && !isModifiedClick)) return;
+
+    event.preventDefault();
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    window.scrollTo({ behavior: prefersReducedMotion ? "auto" : "smooth", top: 0 });
+  }
+
   return (
     <Link
       aria-label="Go to home"
       className="inline-flex size-10 items-center justify-start rounded-3xl transition-opacity hover:opacity-85 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/30"
+      onClick={handleClick}
+      resetScroll
       to="/"
     >
       <img alt="" className="size-10 shrink-0" height={32} src="/favicon.svg" width={32} />
