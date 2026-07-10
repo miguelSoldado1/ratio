@@ -48,6 +48,10 @@ export const spotifyAlbumDetailsRateLimit = defineCloudflareRateLimitRule({
   bindingName: "SPOTIFY_ALBUM_DETAILS_RATE_LIMITER",
 });
 
+export const spotifyRecentRotationRateLimit = defineCloudflareRateLimitRule({
+  bindingName: "SPOTIFY_RECENT_ROTATION_RATE_LIMITER",
+});
+
 export const reviewCreateHourlyRateLimit = defineFixedWindowRateLimitRule({
   limit: 12,
   scope: "review-create-hourly",

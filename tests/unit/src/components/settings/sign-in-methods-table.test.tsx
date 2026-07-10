@@ -51,6 +51,14 @@ describe("SignInMethodsTable", () => {
     expect((screen.getByText("Spotify").closest("tr") as HTMLElement).textContent).toContain("Connected");
     expect((screen.getByText("Google").closest("tr") as HTMLElement).textContent).toContain("Available");
   });
+
+  it("renders the link action while Spotify is not linked", () => {
+    renderTable({ linkedAccounts: [linkedGoogle], linkedProviderCount: 1 });
+
+    expect(
+      within(screen.getByText("Spotify").closest("tr") as HTMLElement).getByRole("button", { name: "Link" })
+    ).toBeTruthy();
+  });
 });
 
 function renderTable({

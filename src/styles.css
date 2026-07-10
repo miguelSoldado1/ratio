@@ -145,6 +145,19 @@
     @apply focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30;
   }
 
+  .recent-rotation-enter {
+    opacity: 1;
+    transform: translateY(0);
+    transition:
+      opacity 180ms cubic-bezier(0.23, 1, 0.32, 1),
+      transform 180ms cubic-bezier(0.23, 1, 0.32, 1);
+
+    @starting-style {
+      opacity: 0;
+      transform: translateY(-0.25rem);
+    }
+  }
+
   .animate-equalizer {
     transform-origin: bottom;
     animation: equalizer-bounce 1.4s ease-in-out infinite;

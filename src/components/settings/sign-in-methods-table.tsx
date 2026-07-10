@@ -12,7 +12,6 @@ export interface LinkedAccount {
   createdAt: Date | string;
   id: string;
   providerId: string;
-  scopes?: string[];
   updatedAt: Date | string;
   userId: string;
 }

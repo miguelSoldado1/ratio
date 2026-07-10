@@ -5,6 +5,7 @@ import { useCallback, useMemo } from "react";
 import { FeedReviewsSection, FeedReviewsSectionSkeleton } from "@/components/feed/feed-reviews-section";
 import { InlineError } from "@/components/inline-error";
 import { PageContainer } from "@/components/page-container";
+import { RecentRotation } from "@/components/recent-rotation/recent-rotation";
 import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
 import { useReviewDelete } from "@/hooks/use-review-delete";
 import { useReviewLikeToggle } from "@/hooks/use-review-like-toggle";
@@ -74,42 +75,30 @@ function FeedPage() {
     onLoadMore: fetchNextPage,
   });
 
-  if (feedQuery.isPending) {
-    return (
-      <main className="min-h-screen bg-background text-foreground">
-        <PageContainer className="flex flex-col pt-0 pb-8 lg:pb-12">
-          <h1 className="sr-only">Album reviews feed</h1>
-          <FeedReviewsSectionSkeleton className="mt-0" />
-        </PageContainer>
-      </main>
-    );
-  }
-
-  if (feedQuery.isError && reviews.length === 0) {
-    return (
-      <main className="min-h-screen bg-background text-foreground">
-        <PageContainer className="pt-0 pb-8 lg:pb-12">
-          <h1 className="sr-only">Album reviews feed</h1>
-          <InlineError className="py-5" description="Could not load reviews right now." title="Feed unavailable" />
-        </PageContainer>
-      </main>
-    );
-  }
+  const showFeedError = !feedQuery.isPending && feedQuery.isError && reviews.length === 0;
+  const showFeedReviews = !(feedQuery.isPending || showFeedError);
 
   return (
     <main className="min-h-screen bg-background text-foreground">
       <PageContainer className="flex flex-col pt-0 pb-8 lg:pb-12">
         <h1 className="sr-only">Album reviews feed</h1>
-        <FeedReviewsSection
-          className="mt-0"
-          deletingReviewId={deletingReviewId}
-          isFetchingNextPage={isFetchingNextPage}
-          loadMoreRef={loadMoreRef}
-          onReviewDelete={handleReviewDelete}
-          onReviewLikeToggle={handleReviewLikeToggle}
-          reviews={reviews}
-          viewer={viewer}
-        />
+        <RecentRotation viewerUserId={viewerUserId} />
+        {feedQuery.isPending ? <FeedReviewsSectionSkeleton className="mt-0" /> : null}
+        {showFeedError ? (
+          <InlineError className="py-5" description="Could not load reviews right now." title="Feed unavailable" />
+        ) : null}
+        {showFeedReviews ? (
+          <FeedReviewsSection
+            className="mt-0"
+            deletingReviewId={deletingReviewId}
+            isFetchingNextPage={isFetchingNextPage}
+            loadMoreRef={loadMoreRef}
+            onReviewDelete={handleReviewDelete}
+            onReviewLikeToggle={handleReviewLikeToggle}
+            reviews={reviews}
+            viewer={viewer}
+          />
+        ) : null}
       </PageContainer>
     </main>
   );

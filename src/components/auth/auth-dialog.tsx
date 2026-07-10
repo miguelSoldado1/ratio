@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { LastUsedBadge } from "@/components/last-used-badge";
+import { AuthMethodBadge } from "@/components/auth/auth-method-badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { authClient } from "@/lib/auth/auth-client";
@@ -13,23 +13,24 @@ interface AuthDialogProps {
 }
 
 export function AuthDialog({ onOpenChange, open }: AuthDialogProps) {
+  const [lastUsedMethod, setLastUsedMethod] = useState<string | null>();
   const [pendingProvider, setPendingProvider] = useState<AuthProviderId | null>(null);
-  const lastUsedMethod = authClient.getLastUsedLoginMethod();
   const returnUrl = getCurrentAuthReturnUrl();
 
   useEffect(() => {
-    function resetPendingProvider() {
+    function syncDialogState() {
       setPendingProvider(null);
+      setLastUsedMethod(authClient.getLastUsedLoginMethod());
     }
 
     if (open) {
-      resetPendingProvider();
+      syncDialogState();
     }
 
-    window.addEventListener("pageshow", resetPendingProvider);
+    window.addEventListener("pageshow", syncDialogState);
 
     return () => {
-      window.removeEventListener("pageshow", resetPendingProvider);
+      window.removeEventListener("pageshow", syncDialogState);
     };
   }, [open]);
 
@@ -71,7 +72,10 @@ export function AuthDialog({ onOpenChange, open }: AuthDialogProps) {
                 <Icon data-icon="inline-start" />
                 {`Continue with ${label}`}
               </Button>
-              {id === lastUsedMethod && <LastUsedBadge />}
+              {id === lastUsedMethod && <AuthMethodBadge variant="secondary">Last used</AuthMethodBadge>}
+              {id === "spotify" && lastUsedMethod === null && (
+                <AuthMethodBadge variant="default">Recommended</AuthMethodBadge>
+              )}
             </div>
           ))}
         </div>

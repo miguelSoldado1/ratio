@@ -127,21 +127,23 @@ export async function searchAlbumsService({ query }: SearchAlbumsInput) {
     const normalizedQuery = normalizeAlbumSearchText(query);
     const cacheKey = getSpotifySearchCacheKey(normalizedQuery);
 
+    async function fetchAlbumsFromSpotify() {
+      const accessToken = await getClientCredentialsToken();
+      const spotifyApi = createSpotifyApi(accessToken);
+      const { body } = await spotifyApi.searchAlbums(normalizedQuery, {
+        limit: ALBUM_SEARCH_LIMIT,
+        market: SPOTIFY_MARKET,
+      });
+
+      const albums = getAlbumSearchResults(body.albums?.items ?? []);
+      return albums.map(mapSpotifyAlbumSearch);
+    }
+
     return await getSpotifyCacheValueOrFetch({
       cacheKey,
       schema: spotifyAlbumSearchResultsSchema,
       ttlSeconds: SPOTIFY_SEARCH_CACHE_TTL_SECONDS,
-      fetcher: async () => {
-        const accessToken = await getClientCredentialsToken();
-        const spotifyApi = createSpotifyApi(accessToken);
-        const { body } = await spotifyApi.searchAlbums(normalizedQuery, {
-          limit: ALBUM_SEARCH_LIMIT,
-          market: SPOTIFY_MARKET,
-        });
-
-        const albums = getAlbumSearchResults(body.albums?.items ?? []);
-        return albums.map(mapSpotifyAlbumSearch);
-      },
+      fetcher: fetchAlbumsFromSpotify,
     });
   } catch (error) {
     const status = getSpotifyErrorStatus(error);
@@ -159,23 +161,33 @@ export async function searchAlbumsService({ query }: SearchAlbumsInput) {
 export async function getAlbumDetailsService({ albumId }: AlbumDetailsInput) {
   const cacheKey = getSpotifyAlbumDetailsCacheKey(albumId);
 
+  async function fetchAlbumDetailsFromSpotify() {
+    const { album, spotifyApi } = await getSpotifyAlbum(albumId);
+    assertAlbumType(album);
+
+    const tracks = await getAlbumTracks(spotifyApi, albumId, album.tracks);
+
+    return mapSpotifyAlbumDetails(album, tracks);
+  }
+
   return await getSpotifyCacheValueOrFetch({
     cacheKey,
     schema: spotifyAlbumDetailsResultSchema,
     ttlSeconds: SPOTIFY_ALBUM_DETAILS_CACHE_TTL_SECONDS,
-    fetcher: async () => {
-      const { album, spotifyApi } = await getSpotifyAlbum(albumId);
-      assertAlbumType(album);
-
-      const tracks = await getAlbumTracks(spotifyApi, albumId, album.tracks);
-
-      return mapSpotifyAlbumDetails(album, tracks);
-    },
+    fetcher: fetchAlbumDetailsFromSpotify,
   });
 }
 
 export async function getAlbumPersistenceMetadata(albumId: string): Promise<SpotifyAlbumPersistenceMetadata> {
   const cacheKey = getSpotifyAlbumPersistenceCacheKey(albumId);
+
+  async function fetchAlbumPersistenceMetadataFromSpotify() {
+    const { album } = await getSpotifyAlbum(albumId);
+    assertAlbumType(album);
+
+    return mapSpotifyAlbumPersistenceMetadata(album);
+  }
+
   const cachedAlbumDetails = await getParsedSpotifyCacheValue(
     getSpotifyAlbumDetailsCacheKey(albumId),
     spotifyAlbumDetailsResultSchema
@@ -189,28 +201,25 @@ export async function getAlbumPersistenceMetadata(albumId: string): Promise<Spot
     cacheKey,
     schema: spotifyAlbumPersistenceMetadataSchema,
     ttlSeconds: SPOTIFY_ALBUM_PERSISTENCE_CACHE_TTL_SECONDS,
-    fetcher: async () => {
-      const { album } = await getSpotifyAlbum(albumId);
-      assertAlbumType(album);
-
-      return mapSpotifyAlbumPersistenceMetadata(album);
-    },
+    fetcher: fetchAlbumPersistenceMetadataFromSpotify,
   });
 }
 
 // Helpers
 
-async function getSpotifyCacheValueOrFetch<T>({
-  cacheKey,
-  fetcher,
-  schema,
-  ttlSeconds,
-}: {
+interface GetSpotifyCacheValueOrFetchOptions<T> {
   cacheKey: string;
   fetcher: () => Promise<T>;
   schema: z.ZodType<T>;
   ttlSeconds: number;
-}) {
+}
+
+export async function getSpotifyCacheValueOrFetch<T>({
+  cacheKey,
+  fetcher,
+  schema,
+  ttlSeconds,
+}: GetSpotifyCacheValueOrFetchOptions<T>) {
   const cachedValue = await getParsedSpotifyCacheValue(cacheKey, schema);
   if (cachedValue) return cachedValue;
 
@@ -471,7 +480,7 @@ function getSmallestImageUrl(images: SpotifyApi.ImageObject[]) {
   return smallestImage.url;
 }
 
-function getLargestImageUrl(images: SpotifyApi.ImageObject[]) {
+export function getLargestImageUrl(images: SpotifyApi.ImageObject[]) {
   const [firstImage, ...remainingImages] = images;
   if (!firstImage) return null;
 
