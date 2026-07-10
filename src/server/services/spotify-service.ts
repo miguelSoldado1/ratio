@@ -39,11 +39,11 @@ export interface AlbumDetailsInput {
 
 const ALBUM_SEARCH_LIMIT = 10;
 const ALBUM_TRACKS_LIMIT = 50;
-const SPOTIFY_MARKET = "US";
 const ALBUM_TYPE = "album" satisfies SpotifyAlbum["album_type"];
 const ALBUMS_ONLY_ERROR_MESSAGE = "Only albums are supported";
 
 const SPOTIFY_CACHE_KEY_PREFIX = "spotify";
+const SPOTIFY_CATALOG_CACHE_SCOPE = "global-v1";
 
 const SPOTIFY_SEARCH_CACHE_KEY_PREFIX = `${SPOTIFY_CACHE_KEY_PREFIX}:search:album`;
 const SPOTIFY_SEARCH_CACHE_TTL_SECONDS = 10 * 60; // 10 minutes
@@ -132,7 +132,6 @@ export async function searchAlbumsService({ query }: SearchAlbumsInput) {
       const spotifyApi = createSpotifyApi(accessToken);
       const { body } = await spotifyApi.searchAlbums(normalizedQuery, {
         limit: ALBUM_SEARCH_LIMIT,
-        market: SPOTIFY_MARKET,
       });
 
       const albums = getAlbumSearchResults(body.albums?.items ?? []);
@@ -259,7 +258,7 @@ async function getSpotifyAlbum(albumId: string) {
   try {
     const accessToken = await getClientCredentialsToken();
     const spotifyApi = createSpotifyApi(accessToken);
-    const { body: album } = await spotifyApi.getAlbum(albumId, { market: SPOTIFY_MARKET });
+    const { body: album } = await spotifyApi.getAlbum(albumId);
 
     return { album, spotifyApi };
   } catch (error) {
@@ -394,7 +393,6 @@ async function getAlbumTracks(spotifyApi: SpotifyApiClient, albumId: string, tra
     try {
       ({ body } = await spotifyApi.getAlbumTracks(albumId, {
         limit: ALBUM_TRACKS_LIMIT,
-        market: SPOTIFY_MARKET,
         offset,
       }));
     } catch (error) {
@@ -445,19 +443,19 @@ function normalizeAlbumSearchText(value: string) {
 // Cache keys
 
 function getSpotifySearchCacheKey(normalizedQuery: string) {
-  return getSpotifyMarketCacheKey(SPOTIFY_SEARCH_CACHE_KEY_PREFIX, normalizedQuery);
+  return getSpotifyCatalogCacheKey(SPOTIFY_SEARCH_CACHE_KEY_PREFIX, normalizedQuery);
 }
 
 function getSpotifyAlbumDetailsCacheKey(albumId: string) {
-  return getSpotifyMarketCacheKey(SPOTIFY_ALBUM_DETAILS_CACHE_KEY_PREFIX, albumId);
+  return getSpotifyCatalogCacheKey(SPOTIFY_ALBUM_DETAILS_CACHE_KEY_PREFIX, albumId);
 }
 
 function getSpotifyAlbumPersistenceCacheKey(albumId: string) {
-  return getSpotifyMarketCacheKey(SPOTIFY_ALBUM_PERSISTENCE_CACHE_KEY_PREFIX, albumId);
+  return getSpotifyCatalogCacheKey(SPOTIFY_ALBUM_PERSISTENCE_CACHE_KEY_PREFIX, albumId);
 }
 
-function getSpotifyMarketCacheKey(prefix: string, value: string) {
-  return `${prefix}:${SPOTIFY_MARKET.toLowerCase()}:${encodeURIComponent(value)}`;
+function getSpotifyCatalogCacheKey(prefix: string, value: string) {
+  return `${prefix}:${SPOTIFY_CATALOG_CACHE_SCOPE}:${encodeURIComponent(value)}`;
 }
 
 // Images

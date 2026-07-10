@@ -9,7 +9,6 @@
     "deploy": "wrangler deploy",
     "cf-typegen": "wrangler types",
     "preview": "vite preview",
-    "auth:encrypt-oauth-tokens": "node scripts/encrypt-oauth-tokens.mjs",
     "seed:profile-reviews": "node scripts/seed-profile-reviews.mjs",
     "seed:feed": "node scripts/seed-feed.mjs",
     "seed:notifications": "node scripts/seed-notifications.mjs",

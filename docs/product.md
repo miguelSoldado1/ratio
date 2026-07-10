@@ -73,7 +73,7 @@ Search is a global command/dialog experience in v1, not a standalone route. Sepa
 - Notifications: someone liked your review, new follower
 - Private recent-listening shelf: up to 6 albums from the signed-in user's recently
   played Spotify tracks, above the home feed. Ordered by most recent play, full
-  albums only, cached for 2 hours, no listening history persisted, no manual
+  albums only, cached for 30 minutes, no listening history persisted, no manual
   refresh. Visible only to the user; a linked Spotify account that needs the
   permission granted or renewed shows a quiet inline reconnect card on the
   homepage. The intended loop: listen on Spotify → open Ratio → find the album →

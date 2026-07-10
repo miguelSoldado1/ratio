@@ -36,14 +36,11 @@ Server code retrieves user tokens through `getSpotifyUserAccessToken` (`src/serv
 
 Better Auth 1.6.23 sanitizes token-refresh failures into the same error, so Ratio cannot distinguish Spotify's permanent `invalid_grant` from a transient token-endpoint failure. The v1 policy intentionally maps any Better Auth token retrieval or refresh failure to reconnect-required. This keeps expiration recoverable without storing a separate authorization timestamp, at the accepted cost of an occasional unnecessary reconnect prompt during an outage. Ratio never adds a second token-refresh attempt. Spotify API responses that reject an otherwise retrieved token with `401` or `403` are also reconnect-required.
 
-OAuth access and refresh tokens are encrypted at rest with Better Auth's `account.encryptOAuthTokens` option and `BETTER_AUTH_SECRET`. Better Auth can still read legacy plaintext tokens during rollout. After deploying the encryption-aware code, migrate existing values without exposing token material:
-
-```sh
-pnpm auth:encrypt-oauth-tokens
-pnpm auth:encrypt-oauth-tokens -- --apply
-```
-
-The first command is a dry run and reports only the affected account count. The second updates access and refresh tokens transactionally. Each update verifies that its original token values are unchanged, so a concurrent OAuth login or refresh is skipped instead of overwritten; rerun the command to pick up any skipped accounts. Rollout order is: deploy the encryption-aware application, dry-run the token migration, then apply it. Keep the same `BETTER_AUTH_SECRET`; rotating it requires a separate decrypt-and-re-encrypt plan.
+OAuth access and refresh tokens are encrypted at rest with Better Auth's `account.encryptOAuthTokens` option and
+`BETTER_AUTH_SECRET`. The legacy plaintext production values were migrated after the encryption-aware application was
+deployed; the one-off migration utility was removed after completion. New sign-ins, links, and token refreshes are
+encrypted automatically. Keep the same `BETTER_AUTH_SECRET`; rotating it requires a separate decrypt-and-re-encrypt
+plan for stored OAuth tokens.
 
 Failures classify into conditions that drive different homepage UI:
 
@@ -67,7 +64,7 @@ Pipeline in `src/server/services/spotify-recent-rotation-service.ts`:
 
 ```text
 Validate Spotify account, scope, and token (before any cached data is returned)
-→ read per-user KV cache (spotify:recent-rotation:<ratio-user-id>, 2h TTL)
+→ read per-user KV cache (spotify:recent-rotation:<ratio-user-id>, 30m TTL)
 → on miss: GET /me/player/recently-played?limit=50 (one request, album metadata included)
 → keep album_type === "album", drop local/malformed tracks
 → dedupe by album ID, keeping the newest played_at
@@ -80,7 +77,7 @@ Rules:
 - Listening history is never persisted in Postgres, and no permanent Ratio album rows are created from this shelf.
 - Authorization failures are never cached as empty successful results; an empty album list is a valid successful result.
 - Spotify `429` responses are respected without a retry loop. Better Auth refreshes once; Ratio does not add a retry around token retrieval.
-- The client query uses a two-hour `staleTime` matching the KV TTL. Known, accepted tradeoff: the two layers can compound to roughly 4-hour-old data in the worst case. No manual refresh in v1.
+- The client query uses a 30-minute `staleTime` matching the KV TTL. Known, accepted tradeoff: the two layers can compound to roughly 1-hour-old data in the worst case. No manual refresh in v1.
 - The review feed loads independently; the shelf failing never breaks the feed.
 
 ## Client Credentials Token
@@ -131,3 +128,9 @@ Search is the most token-expensive endpoint.
 - Filter Spotify search results to albums only
 - Cache common or repeated queries server-side with a short TTL
 - Deduplicate in-flight requests
+- Catalog requests intentionally omit Spotify's `market` parameter. Ratio prioritizes broad, deterministic album
+  discovery over matching local playback availability, and one global result set lets anonymous and authenticated
+  users share the same cache. Keep client-credentials tokens for catalog requests; personal user tokens would make
+  results depend on the country associated with each Spotify account.
+- Search, album details, and album-track pagination must use the same marketless catalog behavior. Their cache keys use
+  an explicit versioned global scope so results from the former fixed-US behavior cannot be reused.

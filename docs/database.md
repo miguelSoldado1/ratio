@@ -50,6 +50,26 @@ Cloudflare Worker database access goes through the `HYPERDRIVE` binding in `wran
 
 Create the Hyperdrive config from Supabase's direct Postgres connection string on port `5432`, not the Supabase transaction pooler on port `6543`. Replace the placeholder Hyperdrive config id in `wrangler.jsonc`, then run `pnpm wrangler types`.
 
+### Database Credential Rotation
+
+The deployed Workers use the environment-specific `HYPERDRIVE` binding as their runtime database connection. Updating
+the `DATABASE_URL` Worker secret alone does not update that connection; `DATABASE_URL` is used directly by local
+development, Drizzle Kit, and the seed scripts.
+
+Whenever a Supabase database password, hostname, user, port, or database name changes:
+
+1. Update the local `DATABASE_URL` used by Drizzle Kit and scripts.
+2. Update every affected existing Hyperdrive configuration referenced in `wrangler.jsonc`, including production and
+   development when they share the rotated credential. Prefer updating the existing configuration so its binding id
+   stays unchanged and no Worker deployment is required.
+3. Run `pnpm wrangler hyperdrive get <hyperdrive-id>` and confirm `modified_on` reflects the update.
+4. Smoke-test the public feed, an album's ratings and reviews, and an OAuth callback.
+
+Cloudflare validates new connection details during an update, but updating a configuration does not tear down its
+existing connection pool. New connections use the new credentials, so update Hyperdrive immediately after rotating a
+database password. See Cloudflare's
+[credential-rotation guide](https://developers.cloudflare.com/hyperdrive/configuration/rotate-credentials/).
+
 Do not introduce a module-scoped Worker DB singleton. `src/lib/db/index.ts` exposes `getDb()`: local development reuses a singleton client, while Cloudflare Worker requests create a request-scoped `postgres`/Drizzle client from the `HYPERDRIVE` binding. Hyperdrive owns the underlying origin pool and Worker invocation cleanup, so server functions should not carry explicit `client.end()` boilerplate.
 
 Hyperdrive query caching is currently disabled on the main `HYPERDRIVE` config so fresh review and like reads stay visible as quickly as possible. Hyperdrive caching is configured per Hyperdrive config, not toggled inside individual Drizzle queries. If future public read endpoints need Hyperdrive query caching, add a separate cached Hyperdrive config/binding and route only those public reads through that binding, or use an app-level cache such as KV/Cache API. Avoid cached Hyperdrive reads for auth/session reads, viewer-specific booleans such as `likedByViewer` and `followedByViewer`, and mutation-adjacent checks where users expect immediate freshness.

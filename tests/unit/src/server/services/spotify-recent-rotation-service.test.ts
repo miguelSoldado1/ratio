@@ -36,6 +36,7 @@ const db = {} as Db;
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.spyOn(console, "error").mockImplementation(() => undefined);
   mockGetSpotifyUserAccessToken.mockResolvedValue("user-access-token");
   mockGetSpotifyCacheJson.mockResolvedValue(null);
   mockSetSpotifyCacheJson.mockResolvedValue(undefined);
@@ -78,7 +79,7 @@ describe("getMyRecentRotationService", () => {
     expect(mockSetSpotifyCacheJson).toHaveBeenCalledWith(
       "spotify:recent-rotation:user_1",
       expect.objectContaining({ albums: [expect.objectContaining({ id: "album_1" })] }),
-      7200
+      1800
     );
   });
 

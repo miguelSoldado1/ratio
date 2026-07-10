@@ -44,7 +44,7 @@ const RECENT_ROTATION_ALBUM_LIMIT = 6;
 const RECENTLY_PLAYED_TRACKS_LIMIT = 50;
 const ALBUM_TYPE = "album";
 
-const SPOTIFY_RECENT_ROTATION_CACHE_TTL_SECONDS = 2 * 60 * 60; // 2 hours
+const SPOTIFY_RECENT_ROTATION_CACHE_TTL_SECONDS = 30 * 60; // 30 minutes
 
 // Cache schemas
 
@@ -69,11 +69,9 @@ export async function getMyRecentRotationService({ db, user }: AuthenticatedCont
   const tokenResult = await getRotationUserAccessToken(db, user.id);
   if (tokenResult.status !== "ready") return tokenResult;
 
-  async function fetchRecentRotationFromSpotify(): Promise<RecentRotationResponse> {
+  async function fetchRecentRotationFromSpotify() {
     const spotifyApi = createSpotifyApi(tokenResult.accessToken);
-    const { body } = await spotifyApi.getMyRecentlyPlayedTracks({
-      limit: RECENTLY_PLAYED_TRACKS_LIMIT,
-    });
+    const { body } = await spotifyApi.getMyRecentlyPlayedTracks({ limit: RECENTLY_PLAYED_TRACKS_LIMIT });
 
     return {
       albums: mapRecentlyPlayedToRotationAlbums(body.items ?? []),

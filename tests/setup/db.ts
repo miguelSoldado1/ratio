@@ -8,6 +8,7 @@ import * as schema from "@/lib/db/schema";
 config({ path: ".env", quiet: true });
 
 const unsafeDatabaseNames = new Set(["postgres", "ratio", "template0", "template1"]);
+const expectedMigrationNoticeCodes = new Set(["42P06", "42P07"]);
 
 const testTables = [
   '"notification"',
@@ -23,7 +24,14 @@ const testTables = [
 ];
 
 const testDatabaseUrl = getSafeTestDatabaseUrl();
-const testClient = postgres(testDatabaseUrl, { max: 1, prepare: false });
+const testClient = postgres(testDatabaseUrl, {
+  max: 1,
+  onnotice(notice) {
+    if (expectedMigrationNoticeCodes.has(notice.code)) return;
+    console.log(notice);
+  },
+  prepare: false,
+});
 
 export const testDb = drizzle({ client: testClient, schema });
 

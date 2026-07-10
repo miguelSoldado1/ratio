@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { getMyRecentRotation } from "@/server/functions/spotify-recent-rotation-functions";
 import type { RecentRotationAlbum } from "@/server/services/spotify-recent-rotation-service";
 
-const RECENT_ROTATION_STALE_TIME_MS = 2 * 60 * 60 * 1000; // matches the server-side KV TTL
+const RECENT_ROTATION_STALE_TIME_MS = 30 * 60 * 1000; // matches the server-side KV TTL
 const className = "border-border border-b pt-5 pb-6";
 
 interface RecentRotationProps {
