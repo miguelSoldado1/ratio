@@ -2,7 +2,7 @@
 
 ## Current Priority
 
-Ratio now has a two-application monorepo scaffold. The public application retains the existing moderation route temporarily, while the separate admin application contains only existing-account authentication and server-side admin-role authorization.
+Ratio now has a two-application monorepo scaffold. Admin user management lives in the separate admin application, while inline moderation remains available in the public application through admin mode.
 
 ## Production Build Order
 
@@ -25,7 +25,7 @@ Use this as a directional order, not a locked feature spec.
 ## Notes
 
 - Keep username URLs first-class, but use stable IDs internally.
-- The separate admin v1 is intentionally empty beyond authentication and authorization. Do not add product queries during the scaffold milestone.
+- The separate admin app now includes a reusable server-driven table scaffold and its first resource table for users.
 - Future admin scope is bounded dashboard metrics, users, reviews, and reports. Prefer bounded indexed queries, no polling, and no new infrastructure by default so it remains viable on free hosting.
 - Build reusable user-list UI where possible for followers, following, and liked-by views.
 - Notifications should come before advanced feed work because they make the social loop feel alive.
@@ -61,7 +61,6 @@ Do not block the first production release on these unless the product direction 
 - **Additional OAuth providers**: Spotify, Google, and Discord are the v1 providers; decide later whether more providers belong in the product.
 - **Review editing**: deleting a review exists or is planned, but editing/updating remains out of scope for now.
 - **Username policy**: final limits, cooldowns, and redirect behavior can be decided when the identity pass starts.
-- **Admin migration**: leave the working public `/admin/users` route in place until equivalent moderation functionality is deliberately implemented and verified in the separate admin app.
 
 ## Admin Deployment Follow-ups
 

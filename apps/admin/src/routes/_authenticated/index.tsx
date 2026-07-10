@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,11 @@ function AdminHome() {
         </Button>
       </div>
       <p className="text-muted-foreground text-sm">Signed in as {user?.name}.</p>
+      <div>
+        <Link className="font-medium text-sm underline underline-offset-4" to="/users">
+          Manage users
+        </Link>
+      </div>
     </main>
   );
 }

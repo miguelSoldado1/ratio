@@ -30,11 +30,11 @@ Each app owns its routes, shadcn components, authentication UI and behavior, dep
 
 ## Admin Boundary
 
-Admin v1 is intentionally empty beyond authentication and authorization. It supports sign-in for existing Ratio accounts, rejects OAuth user creation, verifies sessions and comma-separated admin roles through server functions, and exposes a strict authorization middleware for future server functions. Admin UI routes disable SSR and fetch access state from the client through `useServerFn` and TanStack Query. Unauthenticated protected routes redirect through `/sign-in` with a validated internal return path; authenticated non-admin users go to `/access-denied`. It has no dashboard data, tables, analytics, reviews, reports, moderation queries, or polling.
+Admin v1 supports sign-in for existing Ratio accounts, rejects OAuth user creation, verifies sessions and comma-separated admin roles through server functions, and exposes strict authorization middleware for protected server functions. Admin UI routes disable SSR and fetch access state and table data from the client through `useServerFn` and TanStack Query. Unauthenticated protected routes redirect through `/sign-in` with a validated internal return path; authenticated non-admin users go to `/access-denied`. The users route provides a paginated, sortable, filterable table backed by bounded database queries, and its shared table scaffold is intended for future admin resources. The app has no analytics, reviews, reports, or polling yet.
 
 The admin cookie uses its own `ratio-admin` prefix, does not enable cross-subdomain cookies, and therefore remains host-only. The public and admin hosts do not share browser sessions or last-used-login history even though Better Auth uses the same database schema and relevant secret/provider configuration.
 
-Future admin scope may include bounded dashboard metrics, users, reviews, and reports. Under the free-hosting constraint, prefer bounded indexed queries, no polling, and no new infrastructure by default.
+Future admin scope may include bounded dashboard metrics, reviews, and reports. Under the free-hosting constraint, prefer bounded indexed queries, no polling, and no new infrastructure by default.
 
 ## Cloudflare Git Builds
 

@@ -54,11 +54,6 @@ export const spotifyQueryKeys = {
   recentRotation: (userId: string) => ["spotify", userId, "recent-rotation"] as const,
 };
 
-export const adminQueryKeys = {
-  all: () => ["admin"] as const,
-  users: (query?: string) => [...adminQueryKeys.all(), "users", query ?? ""] as const,
-};
-
 export const notificationQueryKeys = {
   all: (userId: string) => ["notification", userId] as const,
   list: (userId: string) => ["notification", userId, "list"] as const,

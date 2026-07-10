@@ -14,7 +14,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as UserUsernameRouteImport } from './routes/user/$username'
 import { Route as ApiUploadRouteImport } from './routes/api/upload'
 import { Route as AlbumAlbumIdRouteImport } from './routes/album/$albumId'
-import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
 import { Route as AlbumAlbumIdRReviewCodeRouteImport } from './routes/album/$albumId/r/$reviewCode'
 
@@ -43,11 +42,6 @@ const AlbumAlbumIdRoute = AlbumAlbumIdRouteImport.update({
   path: '/album/$albumId',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminUsersRoute = AdminUsersRouteImport.update({
-  id: '/admin/users',
-  path: '/admin/users',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -62,7 +56,6 @@ const AlbumAlbumIdRReviewCodeRoute = AlbumAlbumIdRReviewCodeRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/settings': typeof SettingsRoute
-  '/admin/users': typeof AdminUsersRoute
   '/album/$albumId': typeof AlbumAlbumIdRouteWithChildren
   '/api/upload': typeof ApiUploadRoute
   '/user/$username': typeof UserUsernameRoute
@@ -72,7 +65,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/settings': typeof SettingsRoute
-  '/admin/users': typeof AdminUsersRoute
   '/album/$albumId': typeof AlbumAlbumIdRouteWithChildren
   '/api/upload': typeof ApiUploadRoute
   '/user/$username': typeof UserUsernameRoute
@@ -83,7 +75,6 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/settings': typeof SettingsRoute
-  '/admin/users': typeof AdminUsersRoute
   '/album/$albumId': typeof AlbumAlbumIdRouteWithChildren
   '/api/upload': typeof ApiUploadRoute
   '/user/$username': typeof UserUsernameRoute
@@ -95,7 +86,6 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/settings'
-    | '/admin/users'
     | '/album/$albumId'
     | '/api/upload'
     | '/user/$username'
@@ -105,7 +95,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/settings'
-    | '/admin/users'
     | '/album/$albumId'
     | '/api/upload'
     | '/user/$username'
@@ -115,7 +104,6 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/settings'
-    | '/admin/users'
     | '/album/$albumId'
     | '/api/upload'
     | '/user/$username'
@@ -126,7 +114,6 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SettingsRoute: typeof SettingsRoute
-  AdminUsersRoute: typeof AdminUsersRoute
   AlbumAlbumIdRoute: typeof AlbumAlbumIdRouteWithChildren
   ApiUploadRoute: typeof ApiUploadRoute
   UserUsernameRoute: typeof UserUsernameRoute
@@ -170,13 +157,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AlbumAlbumIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/users': {
-      id: '/admin/users'
-      path: '/admin/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AdminUsersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -209,7 +189,6 @@ const AlbumAlbumIdRouteWithChildren = AlbumAlbumIdRoute._addFileChildren(
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SettingsRoute: SettingsRoute,
-  AdminUsersRoute: AdminUsersRoute,
   AlbumAlbumIdRoute: AlbumAlbumIdRouteWithChildren,
   ApiUploadRoute: ApiUploadRoute,
   UserUsernameRoute: UserUsernameRoute,
