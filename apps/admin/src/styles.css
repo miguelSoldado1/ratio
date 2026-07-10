@@ -1,0 +1,45 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color: #171717;
+  background: #fafafa;
+}
+
+body {
+  margin: 0;
+}
+
+main {
+  width: min(32rem, calc(100% - 2rem));
+  margin: 8rem auto;
+}
+
+h1 {
+  font-size: 1.5rem;
+}
+
+section {
+  display: grid;
+  gap: 1rem;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+button {
+  width: fit-content;
+  padding: 0.55rem 0.8rem;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  background: white;
+  border: 1px solid #b8b8b8;
+  border-radius: 0.35rem;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}

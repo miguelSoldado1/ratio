@@ -2,7 +2,7 @@
 
 ## Current Priority
 
-Ratio is moving from the core review loop toward a first production release. The next work should prioritize public identity, basic moderation, social behavior, retention, and sharing before deeper personalization.
+Ratio now has a two-application monorepo scaffold. The public application retains the existing moderation route temporarily, while the separate admin application contains only existing-account authentication and server-side admin-role authorization.
 
 ## Production Build Order
 
@@ -25,7 +25,8 @@ Use this as a directional order, not a locked feature spec.
 ## Notes
 
 - Keep username URLs first-class, but use stable IDs internally.
-- Admin v1 should stay small: enough to remove bad reviews/ratings, not a full dashboard.
+- The separate admin v1 is intentionally empty beyond authentication and authorization. Do not add product queries during the scaffold milestone.
+- Future admin scope is bounded dashboard metrics, users, reviews, and reports. Prefer bounded indexed queries, no polling, and no new infrastructure by default so it remains viable on free hosting.
 - Build reusable user-list UI where possible for followers, following, and liked-by views.
 - Notifications should come before advanced feed work because they make the social loop feel alive.
 - Home feed v1 is intentionally conservative: no feed-specific schema changes, bounded candidate queries, deterministic ranking, seen-ID cursor pagination, and no Spotify personalization. The cursor design is acceptable for v1 because the candidate windows are small; replace it with cached candidate IDs or a materialized feed/ranking store if feed scale grows.
@@ -47,13 +48,12 @@ Do not block the first production release on these unless the product direction 
 - Realtime notifications
 - Instagram image card generation
 - Notification grouping and settings
-- User reports and moderation queue
-- Admin analytics dashboard
+- User reports and moderation queue in the separate admin app
+- Bounded admin analytics dashboard
 - Full user suspension/deletion UI
 - Lists
 - Advanced user search ranking
 - Full profanity/slur filtering
-- Separate admin app or Worker
 ```
 
 ## Open Decisions
@@ -61,4 +61,16 @@ Do not block the first production release on these unless the product direction 
 - **Additional OAuth providers**: Spotify, Google, and Discord are the v1 providers; decide later whether more providers belong in the product.
 - **Review editing**: deleting a review exists or is planned, but editing/updating remains out of scope for now.
 - **Username policy**: final limits, cooldowns, and redirect behavior can be decided when the identity pass starts.
-- **Admin host routing**: admin routes can live in this app first; later decide how `admin.ratio.music` maps to them.
+- **Admin migration**: leave the working public `/admin/users` route in place until equivalent moderation functionality is deliberately implemented and verified in the separate admin app.
+
+## Admin Deployment Follow-ups
+
+- Create or connect `ratio-admin` and `ratio-admin-dev` in Cloudflare.
+- Connect the same GitHub repository independently to the public and admin Workers. Configure per-app root directories, production/development branches, build and deploy commands, and watch paths that include `packages/database` plus root workspace/lockfile changes.
+- Configure the shared Better Auth secret and OAuth client secrets separately in both admin Worker environments.
+- Add the exact admin callback URLs in each provider dashboard:
+  - Spotify: `https://admin.ratiomusic.live/api/auth/callback/spotify` and `https://admin-dev.ratiomusic.live/api/auth/callback/spotify`
+  - Google: `https://admin.ratiomusic.live/api/auth/callback/google` and `https://admin-dev.ratiomusic.live/api/auth/callback/google`
+  - Discord: `https://admin.ratiomusic.live/api/auth/callback/discord` and `https://admin-dev.ratiomusic.live/api/auth/callback/discord`
+- Configure DNS/custom domains for `admin.ratiomusic.live` and `admin-dev.ratiomusic.live`.
+- Smoke-test all admin OAuth callbacks after deployment. Do not assume `admin-dev.ratiomusic.live` DNS or provider callbacks already exist.

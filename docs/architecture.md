@@ -1,15 +1,53 @@
 # Architecture
 
+## Workspace
+
+Ratio is a pnpm monorepo with two independently built TanStack Start applications and one shared database package:
+
+```text
+apps/web              Public Ratio application (`@ratio/web`)
+apps/admin            Authentication-only admin application (`@ratio/admin`)
+packages/database     Shared Drizzle schema, types, and Worker-compatible client factory
+drizzle               Authoritative migration history
+```
+
+The public application remains the `ratio` Cloudflare Worker at `ratiomusic.live`; its `development` Wrangler environment remains at `dev.ratiomusic.live`. The admin application is a separate `ratio-admin` Worker intended for `admin.ratiomusic.live`, with the explicit development Worker `ratio-admin-dev` intended for `admin-dev.ratiomusic.live`.
+
+Each app owns its routes, dependencies, Vite build, generated route tree, tests, Wrangler configuration, and deployment output. No UI package is shared. `packages/database` is deliberately narrow and contains no Spotify, cache, upload, R2, rate-limit, or product-service code.
+
 ## Stack
 
 | Layer | Choice | Notes |
 |---|---|---|
-| Framework | TanStack Start | Currently wired through the TanStack Start Vite plugin |
-| Deployment | Cloudflare Workers | Target deployment; Cloudflare adapter/config is not wired yet |
-| Database | Supabase (Postgres) | No Supabase SDK needed; validate Worker-compatible Postgres connectivity before feature work |
-| ORM | Drizzle | Postgres dialect |
-| Auth | Better Auth (self-hosted) | Username + last-login-method plugins already wired |
-| Music data | Spotify Web API | Client Credentials for catalog calls (search, album details); personal user tokens power the private recent-listening shelf, retrieved server-side via Better Auth's `getAccessToken` and never exposed to the browser (see `spotify.md`) |
+| Framework | TanStack Start | Separate Vite builds in `apps/web` and `apps/admin` |
+| Deployment | Cloudflare Workers | Independent public/admin Workers and development environments |
+| Database | Supabase (Postgres) | Both apps reuse the existing databases through environment-specific Hyperdrive bindings |
+| ORM | Drizzle 0.45.x | Shared schema; Drizzle remains the only migration owner |
+| Auth | Better Auth 1.6.23 | Shared auth tables and secret, but separate host-only application sessions |
+| Music data | Spotify Web API | Public app only; see `spotify.md` |
+
+## Admin Boundary
+
+Admin v1 is intentionally empty beyond authentication and authorization. It supports sign-in for existing Ratio accounts, rejects OAuth user creation, verifies sessions and comma-separated admin roles on the server, and exposes a strict authorization middleware for future server functions. It has no dashboard, tables, analytics, reviews, reports, moderation queries, or polling.
+
+The admin cookie uses its own `ratio-admin` prefix, does not enable cross-subdomain cookies, and therefore remains host-only. The public and admin hosts do not share browser sessions even though Better Auth uses the same database schema and relevant secret/provider configuration.
+
+Future admin scope may include bounded dashboard metrics, users, reviews, and reports. Under the free-hosting constraint, prefer bounded indexed queries, no polling, and no new infrastructure by default.
+
+## Cloudflare Git Builds
+
+Connect the same GitHub repository independently to each Worker. Use `apps/web` and `apps/admin` as their respective root directories so each Wrangler file and build output stays app-local. Configure watch paths to include the app directory plus `packages/database`, the root lockfile/workspace manifests, and relevant shared configuration or migrations. Changes that affect only one app should not build the other unless a shared path changed.
+
+Suggested build wiring:
+
+| Worker | Root | Build command | Environment selection |
+|---|---|---|---|
+| `ratio` | `apps/web` | `pnpm build` | top-level production config |
+| existing public development Worker | `apps/web` | `pnpm build:development` | `CLOUDFLARE_ENV=development`; deploy with `--env development` |
+| `ratio-admin` | `apps/admin` | `pnpm build` | top-level production config |
+| `ratio-admin-dev` | `apps/admin` | `pnpm build:development` | `CLOUDFLARE_ENV=development`; deploy with `--env development` |
+
+At minimum, web watch paths should include `apps/web/*`, `packages/database/*`, `package.json`, `pnpm-workspace.yaml`, and `pnpm-lock.yaml`; admin watch paths should replace `apps/web/*` with `apps/admin/*`. Include root database configuration and `drizzle/*` when schema/migration changes should trigger deployment verification.
 
 ## Coding Conventions
 

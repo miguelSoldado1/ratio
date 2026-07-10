@@ -1,0 +1,41 @@
+{
+  "name": "@ratio/admin",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev --port 3001 --host",
+    "dev:cf": "CLOUDFLARE_ENV=development vite dev --mode cloudflare --port 3001 --host",
+    "build": "vite build",
+    "build:development": "CLOUDFLARE_ENV=development vite build",
+    "deploy": "wrangler deploy",
+    "cf-typegen": "wrangler types",
+    "preview": "vite preview --port 3001",
+    "test": "vitest run",
+    "check": "ultracite check .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@better-auth/drizzle-adapter": "1.6.23",
+    "@ratio/database": "workspace:*",
+    "@t3-oss/env-core": "^0.13.11",
+    "@tanstack/react-router": "latest",
+    "@tanstack/react-start": "latest",
+    "better-auth": "1.6.23",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.16",
+    "@cloudflare/vite-plugin": "^1.40.2",
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^6",
+    "typescript": "^6",
+    "ultracite": "7.8.3",
+    "vite": "^8",
+    "vitest": "^4",
+    "wrangler": "^4.100.0"
+  }
+}

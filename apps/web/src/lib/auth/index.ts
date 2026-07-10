@@ -1,4 +1,5 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
+import * as schema from "@ratio/database/schema";
 import { APIError, betterAuth } from "better-auth";
 import { admin, lastLoginMethod, username } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
@@ -10,7 +11,6 @@ import { deleteAvatarObject } from "@/server/avatar-storage";
 import { createBetterAuthRateLimitStorage } from "@/server/rate-limit";
 import { clearSpotifyRecentRotationCacheForDeletedAccount } from "@/server/spotify-recent-rotation-cache";
 import { getDb } from "../db";
-import * as schema from "../db/schema";
 import { limitDisplayUsername, trimDisplayUsername } from "./profile-identity";
 import { getAllowedDisplayUsername, isDisplayUsernameAllowed } from "./profile-identity.server";
 import { SPOTIFY_RECENTLY_PLAYED_SCOPE } from "./spotify-scopes";

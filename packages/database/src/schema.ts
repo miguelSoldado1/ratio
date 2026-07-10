@@ -13,10 +13,10 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
-import { user } from "../auth/auth-schema";
+import { user } from "./auth-schema";
 
 // biome-ignore lint/performance/noBarrelFile: Keep a single Drizzle schema entrypoint for config and adapters.
-export * from "../auth/auth-schema";
+export * from "./auth-schema";
 
 export const albums = pgTable("album", {
   id: text("id").primaryKey(),

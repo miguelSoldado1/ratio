@@ -5,7 +5,7 @@ import { migrate } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
 import * as schema from "@/lib/db/schema";
 
-config({ path: ".env", quiet: true });
+config({ path: "../../.env", quiet: true });
 
 const unsafeDatabaseNames = new Set(["postgres", "ratio", "template0", "template1"]);
 const expectedMigrationNoticeCodes = new Set(["42P06", "42P07"]);
@@ -36,7 +36,7 @@ const testClient = postgres(testDatabaseUrl, {
 export const testDb = drizzle({ client: testClient, schema });
 
 export async function migrateTestDatabase() {
-  await migrate(testDb, { migrationsFolder: "drizzle" });
+  await migrate(testDb, { migrationsFolder: "../../drizzle" });
 }
 
 export async function cleanTestDatabase() {

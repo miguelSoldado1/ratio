@@ -3,6 +3,7 @@ import viteReact from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  envDir: "../..",
   plugins: [viteReact()],
   resolve: {
     alias: {
@@ -18,5 +19,8 @@ export default defineConfig({
     include: ["tests/**/*.test.{ts,tsx}"],
     restoreMocks: true,
     setupFiles: ["./tests/setup/vitest.setup.ts"],
+    env: {
+      DOTENV_CONFIG_PATH: "../../.env",
+    },
   },
 });

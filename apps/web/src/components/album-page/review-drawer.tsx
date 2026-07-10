@@ -124,7 +124,7 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
           ) : null}
         </div>
         <DrawerContent
-          onOpenAutoFocus={(event) => {
+          onOpenAutoFocus={(event: Event) => {
             event.preventDefault();
             ratingInputRef.current?.focus();
           }}
