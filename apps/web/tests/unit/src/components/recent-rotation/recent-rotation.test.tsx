@@ -71,7 +71,7 @@ describe("RecentRotation", () => {
     expect(shelfHeading.closest("section")?.classList.contains("recent-rotation-enter")).toBe(true);
     expect(screen.getByText("First Album").closest("a")?.getAttribute("href")).toBe("/album/album_1");
     expect(screen.getByText("Second Album").closest("a")?.getAttribute("href")).toBe("/album/album_2");
-    expect(screen.getAllByText("Artist One · 2024")).toHaveLength(2);
+    expect(screen.getAllByText("Artist One")).toHaveLength(2);
     expect(screen.getByLabelText("Open First Album on Spotify").getAttribute("href")).toBe(
       "https://open.spotify.com/album/album_1"
     );
@@ -106,7 +106,6 @@ function createRotationAlbum({ id, title }: { id: string; title: string }) {
     coverUrl: "https://img.large",
     id,
     lastPlayedAt: "2026-07-10T09:00:00.000Z",
-    releaseYear: "2024",
     spotifyUrl: `https://open.spotify.com/album/${id}`,
     title,
   };

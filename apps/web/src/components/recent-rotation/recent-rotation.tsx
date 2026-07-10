@@ -65,7 +65,6 @@ interface RecentRotationTileProps {
 
 function RecentRotationTile({ album }: RecentRotationTileProps) {
   const artistNames = album.artistNames.join(", ");
-  const metadata = [artistNames, album.releaseYear].filter(Boolean).join(" · ");
 
   return (
     <li className="flex min-w-0 items-center overflow-hidden rounded-lg bg-muted/40 transition-colors hover:bg-muted/70">
@@ -86,7 +85,7 @@ function RecentRotationTile({ album }: RecentRotationTileProps) {
         />
         <span className="min-w-0 flex-1 px-3">
           <span className="block truncate font-medium text-foreground text-sm leading-snug">{album.title}</span>
-          {metadata && <span className="mt-0.5 block truncate text-muted-foreground text-xs">{metadata}</span>}
+          {artistNames && <span className="mt-0.5 block truncate text-muted-foreground text-xs">{artistNames}</span>}
         </span>
       </Link>
       <SpotifyAttribution

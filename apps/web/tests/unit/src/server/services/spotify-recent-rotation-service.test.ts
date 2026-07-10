@@ -111,7 +111,6 @@ describe("mapRecentlyPlayedToRotationAlbums", () => {
     expect(albums).toEqual([
       expect.objectContaining({
         id: "newest",
-        releaseYear: "2024",
         spotifyUrl: "https://open.spotify.com/album/newest",
       }),
       expect.objectContaining({ id: "older", lastPlayedAt: "2026-07-10T10:00:00.000Z" }),
@@ -165,7 +164,6 @@ function createPlayHistoryItem({
         id: albumId,
         images: [{ height: 640, url: "https://img.large", width: 640 }],
         name: "Album Name",
-        release_date: "2024-03-01",
       },
     },
   };
@@ -177,7 +175,6 @@ function createRotationAlbum(overrides: Partial<Record<string, unknown>> = {}) {
     coverUrl: "https://img.large",
     id: "album_1",
     lastPlayedAt: "2026-07-10T10:00:00.000Z",
-    releaseYear: "2024",
     spotifyUrl: "https://open.spotify.com/album/album_1",
     title: "Album Name",
     ...overrides,

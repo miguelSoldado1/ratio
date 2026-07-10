@@ -22,7 +22,6 @@ export interface RecentRotationAlbum {
   coverUrl: string | null;
   id: string;
   lastPlayedAt: string;
-  releaseYear: string | null;
   spotifyUrl: string;
   title: string;
 }
@@ -53,7 +52,6 @@ const recentRotationAlbumSchema = z.object({
   title: z.string(),
   artistNames: z.array(z.string()),
   coverUrl: z.string().nullable(),
-  releaseYear: z.string().nullable(),
   spotifyUrl: z.string(),
   lastPlayedAt: z.string(),
 });
@@ -142,7 +140,6 @@ export function mapRecentlyPlayedToRotationAlbums(items: SpotifyPlayHistoryItem[
       title: album.name,
       artistNames: (album.artists ?? []).map((artist) => artist.name),
       coverUrl: getLargestImageUrl(album.images ?? []),
-      releaseYear: getReleaseYear(album.release_date),
       spotifyUrl: `https://open.spotify.com/album/${album.id}`,
       lastPlayedAt: playedAt,
     });
@@ -157,12 +154,4 @@ function getValidPlayedAt(playedAt: string | undefined) {
   if (!playedAt || Number.isNaN(Date.parse(playedAt))) return null;
 
   return playedAt;
-}
-
-const RELEASE_YEAR_PATTERN = /^\d{4}/;
-
-function getReleaseYear(releaseDate: string | undefined) {
-  if (!(releaseDate && RELEASE_YEAR_PATTERN.test(releaseDate))) return null;
-
-  return releaseDate.slice(0, 4);
 }
