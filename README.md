@@ -2,6 +2,14 @@
 
 Letterboxd for albums, built with TanStack Start, Cloudflare Workers, Supabase Postgres, Drizzle, Better Auth, and the Spotify Web API.
 
+This repository is a pnpm monorepo:
+
+```text
+apps/web           Public Ratio app
+apps/admin         Authentication-only admin app
+packages/database  Shared Drizzle schema and database client primitives
+```
+
 ## Planning Docs
 
 - [Product](docs/product.md): core concept, auth tiers, routes, features, product design rules, and edge cases.
@@ -19,17 +27,19 @@ pnpm install
 pnpm run dev
 ```
 
-Use `pnpm run dev:cf` when you want to exercise the Cloudflare runtime locally.
+Use `pnpm run dev:admin` for the separate admin app on port 3001. Set `ADMIN_BETTER_AUTH_URL=http://127.0.0.1:3001` in the shared root `.env`. Use `pnpm run dev:cf` or `pnpm run dev:admin:cf` when you want to exercise the corresponding Cloudflare development environment locally.
 
 ## Testing
 
-Tests run under Vitest from the centralized `tests/` directory.
+Public tests live under `apps/web/tests`; admin tests live under `apps/admin/tests`.
 
 | Command | What it runs | Requires Postgres |
 | --- | --- | --- |
-| `pnpm run test:unit` | Unit, component, and hook tests under `tests/unit` | No |
-| `pnpm run test:db` | DB-backed integration tests under `tests/integration` | Yes, via `DATABASE_TEST_URL` |
+| `pnpm run test:unit` | Unit, component, and hook tests under `apps/web/tests/unit` | No |
+| `pnpm run test:db` | DB-backed integration tests under `apps/web/tests/integration` | Yes, via `DATABASE_TEST_URL` |
 | `pnpm test` | Full suite: unit/component/hook tests plus DB integration tests | Yes, because DB tests are included |
+| `pnpm run test:admin` | Admin authorization decision tests | No |
+| `pnpm run test:all` | Public and admin suites | Yes, because public DB tests are included |
 | `pnpm run test:watch` | Unit/component/hook tests in watch mode | No |
 
 DB-backed integration tests require a disposable Postgres database. The database name must include `test`; the harness refuses to run against names such as `ratio` or `postgres`.
@@ -87,23 +97,33 @@ Deferred future smoke flows, if the project adds e2e or route-level tests later:
 
 ```sh
 pnpm run dev
+pnpm run dev:admin
+pnpm run dev:all
 pnpm run dev:cf
+pnpm run dev:admin:cf
 pnpm run build
+pnpm run build:admin
+pnpm run build:all
 pnpm run typecheck
+pnpm run typecheck:admin
+pnpm run typecheck:all
 pnpm run check
+pnpm run check:admin
+pnpm run check:all
 pnpm run test:unit
+pnpm run test:admin
 DATABASE_TEST_URL="postgres://$(whoami)@localhost:5432/ratio_test" pnpm run test:db
 DATABASE_TEST_URL="postgres://$(whoami)@localhost:5432/ratio_test" pnpm test
 ```
 
 ## Cloudflare deployment
 
-This app is configured for Cloudflare Workers through the Cloudflare Vite plugin and Wrangler.
+Both apps are configured for Cloudflare Workers through the Cloudflare Vite plugin and app-local Wrangler files. The public app remains `ratio`; the admin app is `ratio-admin`. See `docs/architecture.md` and `docs/roadmap.md` for the separate Git Builds and manual admin-domain setup.
 
 1. Log in with `pnpm wrangler login`.
-2. Confirm the `CACHE` KV namespace binding in `wrangler.jsonc`. If you need to recreate it, run `pnpm wrangler kv namespace create CACHE` and replace the binding `id` with the generated value.
+2. Confirm the public `CACHE` KV namespace binding in `apps/web/wrangler.jsonc`. If you need to recreate it, run the public Wrangler command from `apps/web` and replace the binding `id` with the generated value.
 3. Optionally create a preview namespace with `pnpm wrangler kv namespace create CACHE --preview` and add its `preview_id` to the same binding.
-4. Create a Hyperdrive config from Supabase's direct Postgres connection string on port `5432`, then replace the `HYPERDRIVE` binding `id` in `wrangler.jsonc` with the generated config id. Do not use Supabase's transaction pooler on port `6543` for Hyperdrive.
+4. Both apps reuse the existing environment-specific Hyperdrive configs backed by Supabase's direct Postgres connection on port `5432`. Do not use the transaction pooler on port `6543` and do not create a separate admin database.
 5. Regenerate Worker types with `pnpm wrangler types`.
 6. Keep `DATABASE_URL` in `.env` for local development, Drizzle Kit, migrations, and seed scripts. Worker runtime DB access uses the `HYPERDRIVE` binding instead.
 7. Set production secrets with `pnpm wrangler secret put BETTER_AUTH_SECRET`, and repeat for each OAuth secret.

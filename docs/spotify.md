@@ -32,7 +32,7 @@ Spotify user refresh tokens expire 6 months after the original authorization. Re
 - Users who sign in to Ratio with Spotify renew the grant automatically on every sign-in, because sign-in requests the scope.
 - Never revoke or expire a Ratio session because a Spotify token died. Sessions are identity; the Spotify link is an accessory to one feature.
 
-Server code retrieves user tokens through `getSpotifyUserAccessToken` (`src/server/spotify-user-token.ts`), which verifies the stored scope, then calls Better Auth's server `getAccessToken` API. Better Auth silently refreshes an expired access token exactly once. Token material never reaches the browser, and the database/auth work stays request-scoped.
+Server code retrieves user tokens through `getSpotifyUserAccessToken` (`apps/web/src/server/spotify-user-token.ts`), which verifies the stored scope, then calls Better Auth's server `getAccessToken` API. Better Auth silently refreshes an expired access token exactly once. Token material never reaches the browser, and the database/auth work stays request-scoped.
 
 Better Auth 1.6.23 sanitizes token-refresh failures into the same error, so Ratio cannot distinguish Spotify's permanent `invalid_grant` from a transient token-endpoint failure. The v1 policy intentionally maps any Better Auth token retrieval or refresh failure to reconnect-required. This keeps expiration recoverable without storing a separate authorization timestamp, at the accepted cost of an occasional unnecessary reconnect prompt during an outage. Ratio never adds a second token-refresh attempt. Spotify API responses that reject an otherwise retrieved token with `401` or `403` are also reconnect-required.
 
@@ -60,7 +60,7 @@ The responsibility split between surfaces is deliberate:
 
 A private homepage section, "Albums from your recent listening", visible only to the signed-in user — never on profiles, public feeds, notifications, or admin pages.
 
-Pipeline in `src/server/services/spotify-recent-rotation-service.ts`:
+Pipeline in `apps/web/src/server/services/spotify-recent-rotation-service.ts`:
 
 ```text
 Validate Spotify account, scope, and token (before any cached data is returned)
