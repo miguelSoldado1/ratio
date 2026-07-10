@@ -8,43 +8,84 @@ Use an official Spotify logo asset as the minimum visible attribution for that s
 
 For item-level content such as search results, album pages, tracks, and feed cards, keep the mapped `spotifyUrl` available so users can open the applicable album, artist, track, or search result on Spotify.
 
-## Spotify Login and Future Linking
+## Spotify Login and Linking
 
-Spotify is registered as a full social provider in Better Auth for v1 sign-in. Account linking and personal Spotify API token usage are deferred until a product feature needs them, such as Spotify-personalized recommendations or listening-history-based feed sources.
+Spotify is registered as a full social provider in Better Auth for sign-in. Every new Spotify sign-in and link additionally requests the `user-read-recently-played` scope, which powers the private recent-listening shelf on the homepage.
 
-If Spotify linking becomes product scope later, Better Auth stores sign-in and linked-account provider tokens on the `account` table. The retrieval call is expected to look like:
+The scope stays in the default sign-in request on purpose:
 
-```ts
-const { data } = await authClient.getAccessToken({ providerId: "spotify" })
-const accessToken = data?.accessToken
+- The consent cost of one mild scope on a music app is negligible.
+- Opt-in-only would make the recent-listening shelf undiscoverable, because the homepage shows nothing to users who never granted it.
+- A Spotify re-login that requests fewer scopes than previously granted produces a fresh refresh token that lacks the recently-played capability even though Better Auth's stored scope list still shows it granted. Keeping the scope in the default request keeps token capability and stored scopes in sync.
+
+Existing Spotify accounts that predate the scope reauthorize from the homepage via `authClient.linkSocial({ provider: "spotify", scopes: [...] })`. Spotify returns the complete granted scope set on that OAuth pass and Better Auth stores it on the existing account; no unlink or additional sign-in provider is required.
+
+Ratio pins Better Auth 1.6.23. The v1 compatibility invariant is that every Spotify scope the application relies on is included in the provider's default scope request. On 1.6.23, ordinary sign-in and `linkSocial` store the scope set returned by Spotify, while the standard `getAccessToken` refresh path preserves the stored value. Do not add an incremental scope that is omitted from later ordinary sign-ins. Upgrade to Better Auth 1.7 stable before introducing that pattern, because 1.7 unions previously granted scopes across later sign-ins and refreshes.
+
+Future scopes stay out of the request until a shipped feature needs them: `user-top-read` (top tracks/artists) and `user-library-read` (Liked Songs).
+
+## Personal Token Handling
+
+Spotify user refresh tokens expire 6 months after the original authorization. Refreshing an access token does not extend this; only a full OAuth pass restarts the clock. Expired tokens return `400 invalid_grant` and must not be retried. Consequences:
+
+- Every user-token grant dies at most 6 months after consent, so reconnection is a recurring mainline flow, not an edge case.
+- Users who sign in to Ratio with Spotify renew the grant automatically on every sign-in, because sign-in requests the scope.
+- Never revoke or expire a Ratio session because a Spotify token died. Sessions are identity; the Spotify link is an accessory to one feature.
+
+Server code retrieves user tokens through `getSpotifyUserAccessToken` (`src/server/spotify-user-token.ts`), which verifies the stored scope, then calls Better Auth's server `getAccessToken` API. Better Auth silently refreshes an expired access token exactly once. Token material never reaches the browser, and the database/auth work stays request-scoped.
+
+Better Auth 1.6.23 sanitizes token-refresh failures into the same error, so Ratio cannot distinguish Spotify's permanent `invalid_grant` from a transient token-endpoint failure. The v1 policy intentionally maps any Better Auth token retrieval or refresh failure to reconnect-required. This keeps expiration recoverable without storing a separate authorization timestamp, at the accepted cost of an occasional unnecessary reconnect prompt during an outage. Ratio never adds a second token-refresh attempt. Spotify API responses that reject an otherwise retrieved token with `401` or `403` are also reconnect-required.
+
+OAuth access and refresh tokens are encrypted at rest with Better Auth's `account.encryptOAuthTokens` option and `BETTER_AUTH_SECRET`. Better Auth can still read legacy plaintext tokens during rollout. After deploying the encryption-aware code, migrate existing values without exposing token material:
+
+```sh
+pnpm auth:encrypt-oauth-tokens
+pnpm auth:encrypt-oauth-tokens -- --apply
 ```
 
-That future flow should treat tokens as user-record data, not session- or device-local data.
+The first command is a dry run and reports only the affected account count. The second updates access and refresh tokens transactionally. Each update verifies that its original token values are unchanged, so a concurrent OAuth login or refresh is skipped instead of overwritten; rerun the command to pick up any skipped accounts. Rollout order is: deploy the encryption-aware application, dry-run the token migration, then apply it. Keep the same `BETTER_AUTH_SECRET`; rotating it requires a separate decrypt-and-re-encrypt plan.
 
-## Personal Token Refresh
+Failures classify into conditions that drive different homepage UI:
 
-Deferred until personal Spotify tokens are used by the product. When this becomes scope, configure the Spotify provider with refresh enabled, let Better Auth handle silent refresh, and guard token retrieval in case the refresh token has been invalidated, such as when a user revokes access in Spotify settings.
-
-```ts
-async function getSpotifyToken(userId?: string): Promise<string> {
-  if (userId) {
-    try {
-      const { data } = await authClient.getAccessToken({ providerId: "spotify" })
-      if (data?.accessToken) return data.accessToken
-    } catch {
-      // Token revoked or expired beyond refresh; fall through.
-      // Optionally flag user to reconnect Spotify in settings.
-    }
-  }
-  return getClientCredentialsToken()
-}
+```text
+No Spotify account                                      → authorization-required
+Missing scope, token retrieval/refresh failure, 401/403 → reconnect-required
+Spotify rate limit                                      → rate-limited
+Other upstream failure                                  → unavailable
 ```
 
-In server code, retrieve linked-provider tokens through Better Auth's server API using the current session/user context. Do not depend on browser-only auth client state for Worker-side Spotify calls.
+The responsibility split between surfaces is deliberate:
+
+- **Settings** owns linking and unlinking sign-in methods. It has no permission- or connection-health-specific Spotify UI.
+- **The homepage** owns reauthorization. It derives its UI purely from the rotation endpoint's typed result status and never inspects accounts or scopes. A linked account with a missing permission, failed token retrieval or refresh, missing token material, or a token rejected by Spotify replaces the shelf with a single quiet inline "Reconnect Spotify" card. The action reauthorizes the existing account in place, and users without a linked Spotify account see nothing there.
+
+## Recent Rotation (Recent-Listening Shelf)
+
+A private homepage section, "Albums from your recent listening", visible only to the signed-in user — never on profiles, public feeds, notifications, or admin pages.
+
+Pipeline in `src/server/services/spotify-recent-rotation-service.ts`:
+
+```text
+Validate Spotify account, scope, and token (before any cached data is returned)
+→ read per-user KV cache (spotify:recent-rotation:<ratio-user-id>, 2h TTL)
+→ on miss: GET /me/player/recently-played?limit=50 (one request, album metadata included)
+→ keep album_type === "album", drop local/malformed tracks
+→ dedupe by album ID, keeping the newest played_at
+→ order by most recent play, take 6
+→ cache the normalized six-album response only
+```
+
+Rules:
+
+- Listening history is never persisted in Postgres, and no permanent Ratio album rows are created from this shelf.
+- Authorization failures are never cached as empty successful results; an empty album list is a valid successful result.
+- Spotify `429` responses are respected without a retry loop. Better Auth refreshes once; Ratio does not add a retry around token retrieval.
+- The client query uses a two-hour `staleTime` matching the KV TTL. Known, accepted tradeoff: the two layers can compound to roughly 4-hour-old data in the worst case. No manual refresh in v1.
+- The review feed loads independently; the shelf failing never breaks the feed.
 
 ## Client Credentials Token
 
-Used for all v1 Spotify Web API requests, including anonymous traffic and authenticated users.
+Used for all catalog Spotify Web API requests (search, album details), for anonymous traffic and authenticated users alike. Only the recent-rotation shelf uses personal user tokens.
 
 - Cache the token in Cloudflare KV with its expiry timestamp; optionally keep a module-scope in-memory copy as a fast per-isolate layer
 - Refresh proactively before expiry; Spotify tokens last about 1 hour, so refresh around 55 minutes
@@ -57,11 +98,11 @@ KV is the simplest durable shared cache for this token because the token is smal
 
 ## User Token
 
-Deferred until account linking or Spotify-personalized features are in scope.
+In use for the recent-rotation shelf (see Personal Token Handling above).
 
-- Retrieved via Better Auth `getAccessToken`
+- Retrieved server-side via Better Auth `getAccessToken`
 - Offloads rate limit from the server token significantly
-- Enables personalised endpoints: `top-artists`, `recently-played`, `saved-albums`
+- Currently used only for `recently-played`; `top-artists` and `saved-albums` remain out of scope
 
 ## Album Data Caching
 

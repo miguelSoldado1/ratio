@@ -8,16 +8,19 @@ import { isUsernameAllowed } from "@/lib/users/username-policy.server";
 import { normalizeUsername } from "@/lib/users/username-policy.shared";
 import { deleteAvatarObject } from "@/server/avatar-storage";
 import { createBetterAuthRateLimitStorage } from "@/server/rate-limit";
+import { clearSpotifyRecentRotationCacheForDeletedAccount } from "@/server/spotify-recent-rotation-cache";
 import { getDb } from "../db";
 import * as schema from "../db/schema";
 import { limitDisplayUsername, trimDisplayUsername } from "./profile-identity";
 import { getAllowedDisplayUsername, isDisplayUsernameAllowed } from "./profile-identity.server";
+import { SPOTIFY_RECENTLY_PLAYED_SCOPE } from "./spotify-scopes";
 import type { Db } from "../db";
 
 export function createAuth(db: Db) {
   return betterAuth({
     baseURL: env.BETTER_AUTH_URL,
     database: drizzleAdapter(db, { provider: "pg", schema }),
+    secret: env.BETTER_AUTH_SECRET,
     emailAndPassword: { enabled: false },
     session: {
       expiresIn: 60 * 60 * 24 * 30,
@@ -71,6 +74,11 @@ export function createAuth(db: Db) {
       },
     },
     databaseHooks: {
+      account: {
+        delete: {
+          after: clearSpotifyRecentRotationCacheForDeletedAccount,
+        },
+      },
       user: {
         update: {
           before: (data, context) => {
@@ -92,6 +100,7 @@ export function createAuth(db: Db) {
         trustedProviders: ["spotify", "google", "discord"],
         disableImplicitLinking: true,
       },
+      encryptOAuthTokens: true,
     },
     socialProviders: {
       google: {
@@ -129,6 +138,7 @@ export function createAuth(db: Db) {
       spotify: {
         clientId: env.SPOTIFY_CLIENT_ID,
         clientSecret: env.SPOTIFY_CLIENT_SECRET,
+        scope: [SPOTIFY_RECENTLY_PLAYED_SCOPE],
         mapProfileToUser: async (profile) => {
           const baseUsername = profile.display_name.toLowerCase().replace(/\s+/g, "_") || "user";
           const finalUsername = await generateUniqueUsername(db, baseUsername);

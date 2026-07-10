@@ -39,8 +39,11 @@ Do not block the first production release on these unless the product direction 
 - Advanced feed algorithm
 - Anonymous feed caching through a separate cached Hyperdrive binding or app-level cache
 - Feed indexes and denormalized counters once usage data justifies them
-- Spotify account linking and personal Spotify API token usage
 - Spotify-personalized feed
+- Further personal-Spotify-token features beyond the shipped recent-listening shelf
+  (top tracks/artists via user-top-read, Liked Songs via user-library-read)
+- Recent-listening shelf follow-ups if usage justifies them: manual refresh,
+  "hide this section" preference
 - Realtime notifications
 - Instagram image card generation
 - Notification grouping and settings
@@ -57,6 +60,5 @@ Do not block the first production release on these unless the product direction 
 
 - **Additional OAuth providers**: Spotify, Google, and Discord are the v1 providers; decide later whether more providers belong in the product.
 - **Review editing**: deleting a review exists or is planned, but editing/updating remains out of scope for now.
-- **Spotify reconnect UX**: decide only when Spotify account linking or personalized features become product scope.
 - **Username policy**: final limits, cooldowns, and redirect behavior can be decided when the identity pass starts.
 - **Admin host routing**: admin routes can live in this app first; later decide how `admin.ratio.music` maps to them.

@@ -4,7 +4,7 @@
 
 ## Core Concept
 
-Ratio lets anyone browse and discover albums without an account. Authenticated users can rate, review, like, and follow others. Spotify is one of several login providers, not a requirement. Spotify account linking, personal Spotify API tokens, and Spotify-linked personalization are post-launch directions, not v1 release requirements.
+Ratio lets anyone browse and discover albums without an account. Authenticated users can rate, review, like, and follow others. Spotify is one of several login providers, not a requirement. Users who grant the recently-played permission additionally get a private homepage shelf of albums from their recent Spotify listening (see `spotify.md`); broader Spotify-linked personalization remains a post-launch direction.
 
 ## Authentication
 
@@ -20,6 +20,10 @@ No email/password. OAuth only; removing the email flow eliminates forgotten pass
 
 Additional OAuth providers beyond these are not part of v1.
 
+When there is no last-used login method, the authentication dialog recommends Spotify so new users can access the
+recent-listening shelf without linking another account later. Returning users see their last-used method instead and
+are not shown a recommendation.
+
 ### Auth Tiers
 
 ```text
@@ -29,8 +33,9 @@ Anonymous
 
 Authenticated (any provider)
   - Can rate, review, like, follow, and manage profile/account settings
-  - Spotify API still uses the server Client Credentials token in v1
-  - Future Spotify-linked features can use personal access tokens if account linking becomes product scope
+  - Catalog Spotify API calls (search, album details) use the server Client Credentials token
+  - With the recently-played permission granted: a private recent-listening shelf
+    on the homepage, powered by the user's own Spotify token (server-side only)
 ```
 
 ## Routes
@@ -66,11 +71,17 @@ Search is a global command/dialog experience in v1, not a standalone route. Sepa
 - Album-scoped review permalinks and basic review sharing
 - Basic admin moderation: remove bad reviews/ratings and ban abusive accounts
 - Notifications: someone liked your review, new follower
+- Private recent-listening shelf: up to 6 albums from the signed-in user's recently
+  played Spotify tracks, above the home feed. Ordered by most recent play, full
+  albums only, cached for 2 hours, no listening history persisted, no manual
+  refresh. Visible only to the user; a linked Spotify account that needs the
+  permission granted or renewed shows a quiet inline reconnect card on the
+  homepage. The intended loop: listen on Spotify → open Ratio → find the album →
+  rate/review it. It does not change feed ranking.
 
 ### Deferred
 
-- Spotify-personalized feed sources from listening history, top artists, recently played, or saved albums
-- Spotify account linking and personal Spotify API token usage beyond normal Spotify OAuth sign-in
+- Spotify-personalized feed sources from top artists or saved albums; feed ranking from listening history
 - Lists: curated ranked or unranked album collections
 - Dedicated `/search` route
 - Dedicated `/feed` route
@@ -168,6 +179,8 @@ Set `min_votes` to something like 5. Tune `global_mean` from actual data over ti
 | Duplicate review attempt | Enforced at DB level via unique constraint on `(userId, albumId)`; block duplicate creates; delete may come later, no edit/update flow planned |
 | Low vote count rating display | Bayesian average until threshold is met, show raw score + count after |
 | Empty social feed (new user) | Fall back to the global feed blend until they follow someone |
-| Spotify personalization unavailable | Keep serving the v1 home feed; Spotify-personalized sources are deferred |
+| Spotify recent-listening unavailable | Omit the shelf unless reauthorization is actionable; the feed loads independently and stays fully usable |
+| Spotify permission missing or token rejected | Show the inline reconnect card for a linked account; reauthorize in place without requiring another sign-in provider |
+| Spotify refresh token expired, revoked, or unavailable | Show the inline reconnect card when Better Auth cannot retrieve a valid token. A transient token-endpoint outage may cause an unnecessary reconnect prompt in v1; never revoke the Ratio session |
 | Compilation / single vs album | Filter search and product surfaces to albums only; reject non-`album` Spotify IDs before creating local album rows |
 | Self-follow attempt | Guard in the follow/unfollow endpoint |

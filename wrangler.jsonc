@@ -49,6 +49,14 @@
         "limit": 20,
         "period": 60
       }
+    },
+    {
+      "name": "SPOTIFY_RECENT_ROTATION_RATE_LIMITER",
+      "namespace_id": "1007",
+      "simple": {
+        "limit": 30,
+        "period": 60
+      }
     }
   ],
   "hyperdrive": [
@@ -109,6 +117,14 @@
           "namespace_id": "2006",
           "simple": {
             "limit": 20,
+            "period": 60
+          }
+        },
+        {
+          "name": "SPOTIFY_RECENT_ROTATION_RATE_LIMITER",
+          "namespace_id": "2007",
+          "simple": {
+            "limit": 30,
             "period": 60
           }
         }

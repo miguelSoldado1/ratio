@@ -9,7 +9,7 @@
 | Database | Supabase (Postgres) | No Supabase SDK needed; validate Worker-compatible Postgres connectivity before feature work |
 | ORM | Drizzle | Postgres dialect |
 | Auth | Better Auth (self-hosted) | Username + last-login-method plugins already wired |
-| Music data | Spotify Web API | Client Credentials for all v1 Spotify API calls; personal user tokens deferred |
+| Music data | Spotify Web API | Client Credentials for catalog calls (search, album details); personal user tokens power the private recent-listening shelf, retrieved server-side via Better Auth's `getAccessToken` and never exposed to the browser (see `spotify.md`) |
 
 ## Coding Conventions
 

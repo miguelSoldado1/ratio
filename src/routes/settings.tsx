@@ -11,7 +11,7 @@ import { SignInMethodsTable } from "@/components/settings/sign-in-methods-table"
 import { authClient } from "@/lib/auth/auth-client";
 import { getAuthErrorMessage } from "@/lib/auth/auth-errors";
 import { authProviders } from "@/lib/auth/providers";
-import { accountQueryKeys } from "@/lib/tanstack-query/query-keys";
+import { accountQueryKeys, spotifyQueryKeys } from "@/lib/tanstack-query/query-keys";
 import type { LinkedAccount } from "@/components/settings/sign-in-methods-table";
 import type { AuthProviderId } from "@/lib/auth/providers";
 
@@ -93,6 +93,11 @@ function SettingsPage() {
       });
 
       return setUnlinkingProvider(null);
+    }
+
+    const userId = session.data?.user.id;
+    if (providerId === "spotify" && userId) {
+      queryClient.removeQueries({ queryKey: spotifyQueryKeys.recentRotation(userId) });
     }
 
     await queryClient.invalidateQueries({ queryKey: accountQueryKeys.providers() });

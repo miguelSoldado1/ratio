@@ -49,6 +49,11 @@ export const accountQueryKeys = {
   providers: () => ["account", "providers"] as const,
 };
 
+export const spotifyQueryKeys = {
+  all: () => ["spotify"] as const,
+  recentRotation: (userId: string) => ["spotify", userId, "recent-rotation"] as const,
+};
+
 export const adminQueryKeys = {
   all: () => ["admin"] as const,
   users: (query?: string) => [...adminQueryKeys.all(), "users", query ?? ""] as const,
