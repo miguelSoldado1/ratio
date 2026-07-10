@@ -1,4 +1,4 @@
-import { authProviders } from "@ratio/auth-providers";
+import { authProviders } from "@ratio/auth-providers/icons";
 import { KeyRound } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

@@ -1,4 +1,4 @@
-import { authProviders } from "@ratio/auth-providers";
+import { authProviders } from "@ratio/auth-providers/icons";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";

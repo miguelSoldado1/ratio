@@ -1,4 +1,4 @@
-import { authProviders } from "@ratio/auth-providers";
+import { authProviders } from "@ratio/auth-providers/icons";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AuthMethodBadge } from "@/components/auth/auth-method-badge";

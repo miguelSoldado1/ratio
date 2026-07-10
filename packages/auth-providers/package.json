@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.tsx"
+    ".": "./src/index.ts",
+    "./icons": "./src/icons.tsx"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
