@@ -1,8 +1,14 @@
-export const adminQueryKeys = {
-  access: () => ["admin", "access"] as const,
-  users: {
-    all: () => ["admin", "users"] as const,
-    table: (params: unknown) => [...adminQueryKeys.users.all(), params] as const,
-    stats: () => [...adminQueryKeys.users.all(), "stats"] as const,
-  },
+export const adminAccessQueryKeys = {
+  all: () => ["admin", "access"] as const,
+};
+
+export const adminReviewQueryKeys = {
+  all: () => ["admin", "review"] as const,
+  table: (params: unknown) => [...adminReviewQueryKeys.all(), "table", params] as const,
+};
+
+export const adminUserQueryKeys = {
+  all: () => ["admin", "user"] as const,
+  stats: () => [...adminUserQueryKeys.all(), "stats"] as const,
+  table: (params: unknown) => [...adminUserQueryKeys.all(), "table", params] as const,
 };

@@ -4,8 +4,8 @@ import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton";
 import { DataTableSortList } from "@/components/data-table/data-table-sort-list";
 import { DataTableToolbar } from "@/components/data-table/data-table-toolbar";
 import { useQueryTable } from "@/hooks/use-query-table";
-import { adminQueryKeys } from "@/lib/tanstack-query/query-keys";
-import { getTableUsers } from "@/server/functions/users-functions";
+import { adminUserQueryKeys } from "@/lib/tanstack-query/query-keys";
+import { getTableUsers } from "@/server/functions/user-functions";
 import { usersColumns } from "./users-columns";
 
 export function UsersTable() {
@@ -19,7 +19,7 @@ export function UsersTable() {
       columnVisibility: { role: false },
     },
     queryOptions: (params) => ({
-      queryKey: adminQueryKeys.users.table(params),
+      queryKey: adminUserQueryKeys.table(params),
       queryFn: () => getTableFn({ data: params }),
     }),
   });

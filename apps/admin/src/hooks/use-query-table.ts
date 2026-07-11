@@ -78,19 +78,10 @@ function computeFilters(filterValues: Record<string, string | string[] | null>) 
   return result;
 }
 
-const NON_ALPHANUMERIC_REGEX = /[^a-zA-Z0-9]/;
-const NON_ALPHANUMERIC_SPLIT_REGEX = /[^a-zA-Z0-9]+/;
-
-function toColumnFilterValue(value: string | string[]) {
-  if (Array.isArray(value)) return value;
-  if (NON_ALPHANUMERIC_REGEX.test(value)) return value.split(NON_ALPHANUMERIC_SPLIT_REGEX).filter(Boolean);
-  return [value];
-}
-
-function computeInitialColumnFilters(filterValues: Record<string, string | string[] | null>) {
+export function computeInitialColumnFilters(filterValues: Record<string, string | string[] | null>) {
   return Object.entries(filterValues).reduce<ColumnFiltersState>((filters, [key, value]) => {
     if (value !== null) {
-      filters.push({ id: key, value: toColumnFilterValue(value) });
+      filters.push({ id: key, value });
     }
     return filters;
   }, []);
@@ -124,11 +115,15 @@ export function useQueryTable<
   // Sorting parser based on column IDs
   const columnIds = useMemo(() => computeColumnIds(columns), [columns]);
 
-  const [sorting, setSorting] = useQueryState(
+  const [, setUrlSorting] = useQueryState(
     SORT_KEY,
     getSortingStateParser<TData>(columnIds)
       .withOptions({ shallow: true })
       .withDefault((initialState?.sorting ?? []) as ExtendedColumnSort<TData>[])
+  );
+
+  const [sorting, setSorting] = useState<ExtendedColumnSort<TData>[]>(
+    (initialState?.sorting ?? []) as ExtendedColumnSort<TData>[]
   );
 
   // Filters
@@ -183,14 +178,14 @@ export function useQueryTable<
 
   const onSortingChange = useCallback(
     (updaterOrValue: Updater<SortingState>) => {
-      if (typeof updaterOrValue === "function") {
-        const newSorting = updaterOrValue(sorting);
-        setSorting(newSorting as ExtendedColumnSort<TData>[]);
-      } else {
-        setSorting(updaterOrValue as ExtendedColumnSort<TData>[]);
-      }
+      const nextSorting = (
+        typeof updaterOrValue === "function" ? updaterOrValue(sorting) : updaterOrValue
+      ) as ExtendedColumnSort<TData>[];
+
+      setSorting(nextSorting);
+      setUrlSorting(nextSorting);
     },
-    [sorting, setSorting]
+    [sorting, setUrlSorting]
   );
 
   const onColumnFiltersChange = useCallback(

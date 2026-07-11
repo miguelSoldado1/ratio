@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { adminQueryKeys } from "@/lib/tanstack-query/query-keys";
+import { adminAccessQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { getAdminAccessState } from "@/server/functions/admin-functions";
 
 export function useAdminAccess() {
@@ -8,6 +8,6 @@ export function useAdminAccess() {
 
   return useQuery({
     queryFn: () => getAdminAccessStateFn(),
-    queryKey: adminQueryKeys.access(),
+    queryKey: adminAccessQueryKeys.all(),
   });
 }

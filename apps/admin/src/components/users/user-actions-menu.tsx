@@ -23,10 +23,10 @@ import { Spinner } from "@/components/ui/spinner";
 import { useAdminAccess } from "@/hooks/use-admin-access";
 import { authClient } from "@/lib/auth-client";
 import { hasAdminRole, withAdminRole, withoutAdminRole } from "@/lib/roles";
-import { adminQueryKeys } from "@/lib/tanstack-query/query-keys";
+import { adminUserQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { tryCatch } from "@/lib/try-catch";
 import { cn } from "@/lib/utils";
-import type { AdminUserRow } from "@/server/services/users-service";
+import type { AdminUserRow } from "@/server/services/user-service";
 
 type UserAction = "ban" | "delete" | "demote" | "promote" | "unban";
 
@@ -131,7 +131,7 @@ export function UserActionsMenu({ user }: { user: AdminUserRow }) {
       return;
     }
 
-    await queryClient.invalidateQueries({ queryKey: adminQueryKeys.users.all() });
+    await queryClient.invalidateQueries({ queryKey: adminUserQueryKeys.all() });
     setConfirmAction(null);
     toast.success(action === "unban" ? "User unbanned" : actionCopy[action].successTitle);
   }

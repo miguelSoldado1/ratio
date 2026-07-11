@@ -11,6 +11,9 @@ export function AdminBrand() {
       <Link className={cn(buttonVariants({ size: "sm", variant: "link" }), "text-foreground")} to="/users">
         Users
       </Link>
+      <Link className={cn(buttonVariants({ size: "sm", variant: "link" }), "text-foreground")} to="/reviews">
+        Reviews
+      </Link>
     </div>
   );
 }

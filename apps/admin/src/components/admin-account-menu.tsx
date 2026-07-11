@@ -1,7 +1,6 @@
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { UserAvatar } from "@/components/user-avatar";
 import { authClient } from "@/lib/auth-client";
 import type { AdminUser } from "@/server/admin-access";
 
@@ -19,7 +19,6 @@ interface AdminAccountMenuProps {
 
 export function AdminAccountMenu({ user }: AdminAccountMenuProps) {
   const [isSigningOut, setIsSigningOut] = useState(false);
-  const initial = user.name.trim().charAt(0) || "R";
 
   async function handleSignOut() {
     setIsSigningOut(true);
@@ -45,10 +44,7 @@ export function AdminAccountMenu({ user }: AdminAccountMenuProps) {
           />
         }
       >
-        <Avatar aria-label={user.name} className="size-7" role="img">
-          <AvatarImage alt="" referrerPolicy="no-referrer" src={user.image ?? undefined} />
-          <AvatarFallback className="text-2xs">{initial}</AvatarFallback>
-        </Avatar>
+        <UserAvatar className="size-7 text-2xs" name={user.name} src={user.image} />
         <span className="hidden min-w-0 truncate text-sm sm:inline">{user.name}</span>
         <ChevronDown aria-hidden="true" data-icon="inline-end" />
       </DropdownMenuTrigger>

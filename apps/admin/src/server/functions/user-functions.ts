@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireAdminMiddleware } from "../admin-middleware";
-import * as usersService from "../services/users-service";
+import * as usersService from "../services/user-service";
 import { getTableDataInput } from "../table-query";
 
 // Server functions

@@ -30,6 +30,11 @@ export function DataTableColumnHeader<TData, TValue>({
     return <div className={cn(className)}>{title}</div>;
   }
 
+  const setSortDirection = (desc: boolean) => {
+    const direction = desc ? "desc" : "asc";
+    if (column.getIsSorted() !== direction) column.toggleSorting(desc);
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger
@@ -48,7 +53,7 @@ export function DataTableColumnHeader<TData, TValue>({
             <DropdownMenuCheckboxItem
               checked={column.getIsSorted() === "asc"}
               className="relative pr-8 pl-2 [&>span:first-child]:right-2 [&>span:first-child]:left-auto [&_svg]:text-muted-foreground"
-              onClick={() => column.toggleSorting(false)}
+              onClick={() => setSortDirection(false)}
             >
               <ChevronUp />
               Asc
@@ -56,7 +61,7 @@ export function DataTableColumnHeader<TData, TValue>({
             <DropdownMenuCheckboxItem
               checked={column.getIsSorted() === "desc"}
               className="relative pr-8 pl-2 [&>span:first-child]:right-2 [&>span:first-child]:left-auto [&_svg]:text-muted-foreground"
-              onClick={() => column.toggleSorting(true)}
+              onClick={() => setSortDirection(true)}
             >
               <ChevronDown />
               Desc

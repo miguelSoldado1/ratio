@@ -8,6 +8,8 @@ import type * as React from "react";
 
 interface DataTableProps<TData> extends React.ComponentProps<"div"> {
   actionBar?: React.ReactNode;
+  getRowLabel?: (row: TData) => string;
+  onRowActivate?: (row: TData) => void;
   pageSizeOptions?: number[];
   showPagination?: boolean;
   table: TanstackTable<TData>;
@@ -16,6 +18,8 @@ interface DataTableProps<TData> extends React.ComponentProps<"div"> {
 export function DataTable<TData>({
   table,
   actionBar,
+  getRowLabel,
+  onRowActivate,
   pageSizeOptions,
   showPagination = true,
   children,
@@ -47,7 +51,29 @@ export function DataTable<TData>({
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow data-state={row.getIsSelected() && "selected"} key={row.id}>
+                <TableRow
+                  aria-haspopup={onRowActivate ? "dialog" : undefined}
+                  aria-label={getRowLabel?.(row.original)}
+                  className={cn(
+                    onRowActivate &&
+                      "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                  )}
+                  data-state={row.getIsSelected() && "selected"}
+                  key={row.id}
+                  onClick={(event) => {
+                    if (onRowActivate && !isInteractiveTarget(event.target)) {
+                      onRowActivate(row.original);
+                    }
+                  }}
+                  onKeyDown={(event) => {
+                    if (!(onRowActivate && (event.key === "Enter" || event.key === " "))) return;
+                    if (isInteractiveTarget(event.target)) return;
+
+                    event.preventDefault();
+                    onRowActivate(row.original);
+                  }}
+                  tabIndex={onRowActivate ? 0 : undefined}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell
                       key={cell.id}
@@ -76,4 +102,11 @@ export function DataTable<TData>({
       </div>
     </div>
   );
+}
+
+const INTERACTIVE_ELEMENT_SELECTOR =
+  'a, button, input, select, textarea, [role="button"], [role="menuitem"], [data-no-row-activate]';
+
+function isInteractiveTarget(target: EventTarget | null) {
+  return target instanceof Element && target.closest(INTERACTIVE_ELEMENT_SELECTOR) !== null;
 }

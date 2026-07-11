@@ -5,8 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardAction, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatCompactNumber } from "@/lib/format";
-import { adminQueryKeys } from "@/lib/tanstack-query/query-keys";
-import { getUserStats } from "@/server/functions/users-functions";
+import { adminUserQueryKeys } from "@/lib/tanstack-query/query-keys";
+import { getUserStats } from "@/server/functions/user-functions";
 
 // These dashboard metrics do not need to refetch on every focus/navigation.
 const STATS_STALE_TIME_MS = 5 * 60 * 1000;
@@ -79,7 +79,7 @@ export function UsersStatsCards() {
   const getStatsFn = useServerFn(getUserStats);
 
   const { data: stats, isLoading } = useQuery({
-    queryKey: adminQueryKeys.users.stats(),
+    queryKey: adminUserQueryKeys.stats(),
     queryFn: () => getStatsFn(),
     staleTime: STATS_STALE_TIME_MS,
   });

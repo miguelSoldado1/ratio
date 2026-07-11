@@ -10,7 +10,8 @@ export default defineConfig({
   test: {
     clearMocks: true,
     environment: "node",
-    include: ["tests/*.test.ts"],
+    fileParallelism: false,
+    include: ["tests/integration/**/*.test.ts"],
     restoreMocks: true,
   },
 });

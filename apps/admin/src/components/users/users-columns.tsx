@@ -4,7 +4,7 @@ import { formatDate } from "@/lib/format";
 import { parseRoles } from "@/lib/roles";
 import { UserActionsMenu } from "./user-actions-menu";
 import type { ColumnDef } from "@tanstack/react-table";
-import type { AdminUserRow } from "@/server/services/users-service";
+import type { AdminUserRow } from "@/server/services/user-service";
 
 export const usersColumns: ColumnDef<AdminUserRow>[] = [
   {

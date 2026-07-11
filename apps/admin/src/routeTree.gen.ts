@@ -13,6 +13,7 @@ import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as AccessDeniedRouteImport } from './routes/access-denied'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as AuthenticatedUsersRouteImport } from './routes/_authenticated/users'
+import { Route as AuthenticatedReviewsRouteImport } from './routes/_authenticated/reviews'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
 
 const SignInRoute = SignInRouteImport.update({
@@ -34,6 +35,11 @@ const AuthenticatedUsersRoute = AuthenticatedUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedReviewsRoute = AuthenticatedReviewsRouteImport.update({
+  id: '/reviews',
+  path: '/reviews',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -44,6 +50,7 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedRouteRouteWithChildren
   '/access-denied': typeof AccessDeniedRoute
   '/sign-in': typeof SignInRoute
+  '/reviews': typeof AuthenticatedReviewsRoute
   '/users': typeof AuthenticatedUsersRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -51,6 +58,7 @@ export interface FileRoutesByTo {
   '/': typeof AuthenticatedRouteRouteWithChildren
   '/access-denied': typeof AccessDeniedRoute
   '/sign-in': typeof SignInRoute
+  '/reviews': typeof AuthenticatedReviewsRoute
   '/users': typeof AuthenticatedUsersRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
@@ -59,19 +67,33 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/access-denied': typeof AccessDeniedRoute
   '/sign-in': typeof SignInRoute
+  '/_authenticated/reviews': typeof AuthenticatedReviewsRoute
   '/_authenticated/users': typeof AuthenticatedUsersRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/access-denied' | '/sign-in' | '/users' | '/api/auth/$'
+  fullPaths:
+    | '/'
+    | '/access-denied'
+    | '/sign-in'
+    | '/reviews'
+    | '/users'
+    | '/api/auth/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/access-denied' | '/sign-in' | '/users' | '/api/auth/$'
+  to:
+    | '/'
+    | '/access-denied'
+    | '/sign-in'
+    | '/reviews'
+    | '/users'
+    | '/api/auth/$'
   id:
     | '__root__'
     | '/_authenticated'
     | '/access-denied'
     | '/sign-in'
+    | '/_authenticated/reviews'
     | '/_authenticated/users'
     | '/api/auth/$'
   fileRoutesById: FileRoutesById
@@ -113,6 +135,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUsersRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/reviews': {
+      id: '/_authenticated/reviews'
+      path: '/reviews'
+      fullPath: '/reviews'
+      preLoaderRoute: typeof AuthenticatedReviewsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -124,10 +153,12 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedReviewsRoute: typeof AuthenticatedReviewsRoute
   AuthenticatedUsersRoute: typeof AuthenticatedUsersRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedReviewsRoute: AuthenticatedReviewsRoute,
   AuthenticatedUsersRoute: AuthenticatedUsersRoute,
 }
 
