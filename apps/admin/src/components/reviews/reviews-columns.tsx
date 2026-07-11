@@ -1,7 +1,9 @@
+import { ExternalLinkIcon } from "lucide-react";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { Badge } from "@/components/ui/badge";
 import { UserAvatar } from "@/components/user-avatar";
 import { formatCompactNumber, formatDate } from "@/lib/format";
+import { getWebAppHref } from "@/lib/web-app";
 import { ReviewActionsMenu } from "./review-actions-menu";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { AdminReviewRow } from "@/server/services/review-service";
@@ -16,14 +18,34 @@ export const reviewsColumns: ColumnDef<AdminReviewRow>[] = [
       const displayName = review.userDisplayUsername ?? review.username ?? review.userName;
       const username = review.username ? `@${review.username}` : review.userName;
 
-      return (
-        <div className="flex min-w-44 items-center gap-2.5">
+      const userContent = (
+        <>
           <UserAvatar className="size-8" name={displayName} src={review.userImage} />
           <div className="min-w-0">
             <div className="max-w-44 truncate font-medium">{displayName}</div>
             <div className="max-w-44 truncate text-muted-foreground text-xs">{username}</div>
           </div>
-        </div>
+          {review.username ? (
+            <ExternalLinkIcon
+              aria-hidden
+              className="size-3.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+            />
+          ) : null}
+        </>
+      );
+
+      return review.username ? (
+        <a
+          aria-label={`Open ${displayName}'s profile on Ratio`}
+          className="group flex min-w-44 items-center gap-2.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          href={getWebAppHref(`/user/${encodeURIComponent(review.username)}`)}
+          rel="noreferrer"
+          target="_blank"
+        >
+          {userContent}
+        </a>
+      ) : (
+        <div className="flex min-w-44 items-center gap-2.5">{userContent}</div>
       );
     },
     meta: { label: "User", variant: "text", placeholder: "Search user..." },
@@ -37,18 +59,36 @@ export const reviewsColumns: ColumnDef<AdminReviewRow>[] = [
     cell: ({ row }) => {
       const review = row.original;
 
-      return (
-        <div className="flex min-w-48 items-center gap-2.5">
+      const albumContent = (
+        <>
           {review.albumCoverUrl ? (
             <img alt="" className="size-9 rounded object-cover" height={36} src={review.albumCoverUrl} width={36} />
           ) : (
             <div aria-hidden className="size-9 rounded bg-muted" />
           )}
           <div className="min-w-0">
-            <div className="max-w-56 truncate font-medium">{review.albumTitle}</div>
+            <div className="flex max-w-56 items-center gap-1.5 truncate font-medium">
+              <span className="truncate">{review.albumTitle}</span>
+              <ExternalLinkIcon
+                aria-hidden
+                className="size-3.5 shrink-0 opacity-0 transition-opacity group-hover/album:opacity-100 group-focus-visible/album:opacity-100"
+              />
+            </div>
             <div className="max-w-56 truncate text-muted-foreground text-xs">{review.albumArtistNames.join(", ")}</div>
           </div>
-        </div>
+        </>
+      );
+
+      return (
+        <a
+          aria-label={`Open ${review.albumTitle} review on Ratio`}
+          className="group/album flex min-w-48 items-center gap-2.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          href={getWebAppHref(`/album/${encodeURIComponent(review.albumId)}/r/${encodeURIComponent(review.shareCode)}`)}
+          rel="noreferrer"
+          target="_blank"
+        >
+          {albumContent}
+        </a>
       );
     },
     meta: { label: "Album", variant: "text", placeholder: "Search album..." },

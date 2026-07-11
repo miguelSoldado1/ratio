@@ -1,4 +1,4 @@
-import { HeartIcon } from "lucide-react";
+import { ExternalLinkIcon, HeartIcon } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -13,6 +13,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { UserAvatar } from "@/components/user-avatar";
 import { formatCompactNumber, formatDate } from "@/lib/format";
+import { getWebAppHref } from "@/lib/web-app";
 import { ReviewActionsMenu } from "./review-actions-menu";
 import type { AdminReviewRow } from "@/server/services/review-service";
 
@@ -57,7 +58,20 @@ export function ReviewDetailsDialog({ review, open, onOpenChange }: ReviewDetail
               <div aria-hidden className="size-16 shrink-0 rounded-md bg-muted" />
             )}
             <div className="min-w-0 flex-1">
-              <p className="truncate font-semibold">{review.albumTitle}</p>
+              <a
+                className="group inline-flex max-w-full items-center gap-1.5 rounded-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                href={getWebAppHref(
+                  `/album/${encodeURIComponent(review.albumId)}/r/${encodeURIComponent(review.shareCode)}`
+                )}
+                rel="noreferrer"
+                target="_blank"
+              >
+                <span className="truncate">{review.albumTitle}</span>
+                <ExternalLinkIcon
+                  aria-hidden
+                  className="size-3.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+                />
+              </a>
               <p className="truncate text-muted-foreground text-sm">{review.albumArtistNames.join(", ")}</p>
               <div className="mt-2 flex items-center gap-2">
                 <Badge variant="secondary">{review.rating / 2} / 5</Badge>

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, ilike, lte, or } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, isNull, lte, or } from "drizzle-orm";
 import z from "zod";
 import type { SQL } from "drizzle-orm";
 import type { PgColumn } from "drizzle-orm/pg-core";
@@ -7,6 +7,7 @@ export interface TableQueryConfig<
   TSortColumns extends Record<string, PgColumn>,
   TFilterColumns extends Record<string, PgColumn> = TSortColumns,
 > {
+  booleanColumns?: Set<string>;
   dateColumns?: Set<string>;
   dateRangeColumns?: Set<string>;
   enumColumns?: Set<string>;
@@ -143,6 +144,20 @@ function buildEnumCondition(column: PgColumn, value: FilterValue): SQL<unknown> 
   return eq(column, value);
 }
 
+function buildBooleanCondition(column: PgColumn, value: FilterValue): SQL<unknown> | null {
+  const values = (Array.isArray(value) ? value : [value]).flatMap((item) => {
+    const normalized = String(item).trim().toLowerCase();
+    if (normalized === "true") return [true];
+    if (normalized === "false") return [false];
+    return [];
+  });
+
+  if (values.length === 0) return null;
+
+  const conditions = values.map((item) => (item ? eq(column, true) : or(eq(column, false), isNull(column))));
+  return or(...conditions) ?? null;
+}
+
 function buildExactCondition(column: PgColumn, value: FilterValue): SQL<unknown> | null {
   if (Array.isArray(value)) {
     if (value.length === 0) return null;
@@ -166,6 +181,7 @@ function buildTextCondition(column: PgColumn, value: FilterValue): SQL<unknown> 
 type FilterConfig = Pick<
   TableQueryConfig<Record<string, PgColumn>>,
   | "filterColumns"
+  | "booleanColumns"
   | "dateColumns"
   | "dateRangeColumns"
   | "textColumns"
@@ -176,6 +192,7 @@ type FilterConfig = Pick<
 >;
 
 function buildCondition(config: FilterConfig, key: string, column: PgColumn, value: FilterValue): SQL<unknown> | null {
+  if (config.booleanColumns?.has(key)) return buildBooleanCondition(column, value);
   if (config.numberColumns?.has(key)) return buildNumberCondition(column, value);
   if (config.dateColumns?.has(key)) return buildDateCondition(column, value);
   if (config.dateRangeColumns?.has(key)) return buildDateRangeCondition(column, value);
@@ -190,6 +207,7 @@ export function buildFilterConditions<T extends Record<string, PgColumn>>(
   config: Pick<
     TableQueryConfig<Record<string, PgColumn>, T>,
     | "filterColumns"
+    | "booleanColumns"
     | "dateColumns"
     | "dateRangeColumns"
     | "textColumns"

@@ -25,7 +25,7 @@ export function UsersTable() {
   });
 
   if (query.isLoading) {
-    return <DataTableSkeleton columnCount={6} filterCount={2} rowCount={10} />;
+    return <DataTableSkeleton columnCount={7} filterCount={3} rowCount={10} />;
   }
 
   return (

@@ -63,6 +63,7 @@ export interface AdminReviewRow {
   id: string;
   likeCount: number;
   rating: number;
+  shareCode: string;
   userDisplayUsername: string | null;
   userId: string;
   userImage: string | null;
@@ -97,6 +98,7 @@ export async function getTableReviewsService(data: GetTableReviewsInput, context
       id: reviews.id,
       likeCount: count(reviewLikes.userId),
       rating: reviews.rating,
+      shareCode: reviews.shareCode,
       userDisplayUsername: user.displayUsername,
       userId: user.id,
       userImage: user.image,

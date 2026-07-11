@@ -12,7 +12,8 @@
     }
   ],
   "vars": {
-    "BETTER_AUTH_URL": "https://admin.ratiomusic.live"
+    "BETTER_AUTH_URL": "https://admin.ratiomusic.live",
+    "VITE_SITE_URL": "https://ratiomusic.live"
   },
   "hyperdrive": [
     {
@@ -31,7 +32,8 @@
         }
       ],
       "vars": {
-        "BETTER_AUTH_URL": "https://admin-dev.ratiomusic.live"
+        "BETTER_AUTH_URL": "https://admin-dev.ratiomusic.live",
+        "VITE_SITE_URL": "https://dev.ratiomusic.live"
       },
       "hyperdrive": [
         {

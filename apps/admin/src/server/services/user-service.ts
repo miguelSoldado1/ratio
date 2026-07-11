@@ -14,6 +14,7 @@ const sortColumns = {
 } as const;
 
 const filterColumns = {
+  banned: user.banned,
   id: user.id,
   name: user.name,
   email: user.email,
@@ -24,6 +25,7 @@ const filterColumns = {
 const userTableConfig: TableQueryConfig<typeof sortColumns, typeof filterColumns> = {
   sortColumns,
   filterColumns,
+  booleanColumns: new Set(["banned"]),
   dateColumns: new Set(["createdAt"]),
   // role is a comma-separated list ("user,admin"), so it filters via ilike too
   textColumns: new Set(["id", "name", "email", "role"]),
@@ -32,6 +34,7 @@ const userTableConfig: TableQueryConfig<typeof sortColumns, typeof filterColumns
 const userTableColumns = {
   id: user.id,
   name: user.name,
+  username: user.username,
   email: user.email,
   image: user.image,
   role: user.role,

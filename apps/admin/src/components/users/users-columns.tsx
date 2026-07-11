@@ -1,7 +1,9 @@
+import { ExternalLinkIcon } from "lucide-react";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/format";
 import { parseRoles } from "@/lib/roles";
+import { getWebAppHref } from "@/lib/web-app";
 import { UserActionsMenu } from "./user-actions-menu";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { AdminUserRow } from "@/server/services/user-service";
@@ -20,6 +22,27 @@ export const usersColumns: ColumnDef<AdminUserRow>[] = [
     id: "name",
     accessorKey: "name",
     header: ({ column }) => <DataTableColumnHeader column={column} title="Name" />,
+    cell: ({ row }) => {
+      const account = row.original;
+
+      if (!account.username) return <span className="truncate">{account.name}</span>;
+
+      return (
+        <a
+          aria-label={`Open ${account.name}'s profile on Ratio`}
+          className="group inline-flex max-w-full items-center gap-1.5 truncate font-medium transition-colors hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          href={getWebAppHref(`/user/${encodeURIComponent(account.username)}`)}
+          rel="noreferrer"
+          target="_blank"
+        >
+          <span className="truncate">{account.name}</span>
+          <ExternalLinkIcon
+            aria-hidden
+            className="size-3.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+          />
+        </a>
+      );
+    },
     meta: { label: "Name", variant: "text", placeholder: "Search name..." },
     enableSorting: true,
     enableColumnFilter: true,
@@ -43,7 +66,6 @@ export const usersColumns: ColumnDef<AdminUserRow>[] = [
             {role}
           </Badge>
         ))}
-        {row.original.banned ? <Badge variant="destructive">banned</Badge> : null}
       </div>
     ),
     meta: {
@@ -51,6 +73,26 @@ export const usersColumns: ColumnDef<AdminUserRow>[] = [
     },
     enableSorting: false,
     enableColumnFilter: false,
+  },
+  {
+    id: "banned",
+    accessorKey: "banned",
+    header: ({ column }) => <DataTableColumnHeader column={column} title="Status" />,
+    cell: ({ getValue }) => {
+      const isBanned = getValue<boolean | null>();
+
+      return <Badge variant={isBanned ? "destructive" : "secondary"}>{isBanned ? "Banned" : "Unbanned"}</Badge>;
+    },
+    meta: {
+      label: "Status",
+      options: [
+        { label: "Banned", value: "true" },
+        { label: "Unbanned", value: "false" },
+      ],
+      variant: "select",
+    },
+    enableSorting: false,
+    enableColumnFilter: true,
   },
   {
     id: "createdAt",

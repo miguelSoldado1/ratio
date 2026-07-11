@@ -55,6 +55,29 @@ describe("table query", () => {
     expect(dialect.sqlToQuery(sorting[0]).sql).toContain('"user"."name" asc');
   });
 
+  it("builds nullable boolean filters", () => {
+    const bannedConditions = buildFilterConditions(
+      { banned: ["true"] },
+      {
+        booleanColumns: new Set(["banned"]),
+        filterColumns: { banned: user.banned },
+      }
+    );
+    const unbannedConditions = buildFilterConditions(
+      { banned: ["false"] },
+      {
+        booleanColumns: new Set(["banned"]),
+        filterColumns: { banned: user.banned },
+      }
+    );
+
+    const bannedQuery = dialect.sqlToQuery(bannedConditions[0]);
+    const unbannedQuery = dialect.sqlToQuery(unbannedConditions[0]);
+    expect(bannedQuery.params).toEqual([true]);
+    expect(unbannedQuery.params).toEqual([false]);
+    expect(unbannedQuery.sql).toContain('"user"."banned" is null');
+  });
+
   it("validates table input bounds and applies defaults", () => {
     expect(getTableDataInput.parse({})).toEqual({ filters: {}, limit: 10, page: 1, sorting: [] });
     expect(getTableDataInput.safeParse({ limit: 101, page: 1 }).success).toBe(false);
