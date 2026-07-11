@@ -16,9 +16,10 @@ export function UsersTable() {
     initialState: {
       sorting: [{ id: "createdAt", desc: true }],
       columnPinning: { right: ["actions"] },
+      columnVisibility: { role: false },
     },
     queryOptions: (params) => ({
-      queryKey: adminQueryKeys.users(params),
+      queryKey: adminQueryKeys.users.table(params),
       queryFn: () => getTableFn({ data: params }),
     }),
   });

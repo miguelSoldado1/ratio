@@ -1,15 +1,7 @@
-import { CopyIcon, MoreHorizontalIcon } from "lucide-react";
-import { toast } from "sonner";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { formatDate } from "@/lib/format";
+import { UserActionsMenu } from "./user-actions-menu";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { AdminUserRow } from "@/server/services/users-service";
 
@@ -81,24 +73,3 @@ export const usersColumns: ColumnDef<AdminUserRow>[] = [
     size: 20,
   },
 ];
-
-function UserActionsMenu({ user }: { user: AdminUserRow }) {
-  return (
-    <DropdownMenu>
-      <DropdownMenuTrigger render={<Button aria-label={`Actions for ${user.name}`} size="icon" variant="ghost" />}>
-        <MoreHorizontalIcon />
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuItem
-          onClick={async () => {
-            await navigator.clipboard.writeText(user.id);
-            toast.success("User id copied to clipboard");
-          }}
-        >
-          <CopyIcon />
-          Copy user id
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
-  );
-}
