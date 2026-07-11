@@ -1,0 +1,80 @@
+import { ChevronDown, ChevronsUpDown, ChevronUp, X } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
+import type { Column, SortDirection } from "@tanstack/react-table";
+
+function SortDirectionIcon({ direction }: { direction: SortDirection | false }) {
+  if (direction === "desc") return <ChevronDown />;
+  if (direction === "asc") return <ChevronUp />;
+  return <ChevronsUpDown />;
+}
+
+interface DataTableColumnHeaderProps<TData, TValue> extends React.ComponentProps<typeof DropdownMenuTrigger> {
+  column: Column<TData, TValue>;
+  title: string;
+}
+
+export function DataTableColumnHeader<TData, TValue>({
+  column,
+  title,
+  className,
+  ...props
+}: DataTableColumnHeaderProps<TData, TValue>) {
+  if (!(column.getCanSort() || column.getCanHide())) {
+    return <div className={cn(className)}>{title}</div>;
+  }
+
+  const setSortDirection = (desc: boolean) => {
+    const direction = desc ? "desc" : "asc";
+    if (column.getIsSorted() !== direction) column.toggleSorting(desc);
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className={cn(
+          "-ml-1.5 flex h-8 items-center gap-1.5 rounded-md px-2 py-1.5 hover:bg-accent focus:outline-none focus:ring-1 focus:ring-ring data-popup-open:bg-accent [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground",
+          className
+        )}
+        {...props}
+      >
+        {title}
+        {column.getCanSort() && <SortDirectionIcon direction={column.getIsSorted()} />}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-28">
+        {column.getCanSort() && (
+          <>
+            <DropdownMenuCheckboxItem
+              checked={column.getIsSorted() === "asc"}
+              className="relative pr-8 pl-2 [&>span:first-child]:right-2 [&>span:first-child]:left-auto [&_svg]:text-muted-foreground"
+              onClick={() => setSortDirection(false)}
+            >
+              <ChevronUp />
+              Asc
+            </DropdownMenuCheckboxItem>
+            <DropdownMenuCheckboxItem
+              checked={column.getIsSorted() === "desc"}
+              className="relative pr-8 pl-2 [&>span:first-child]:right-2 [&>span:first-child]:left-auto [&_svg]:text-muted-foreground"
+              onClick={() => setSortDirection(true)}
+            >
+              <ChevronDown />
+              Desc
+            </DropdownMenuCheckboxItem>
+            {column.getIsSorted() && (
+              <DropdownMenuItem className="pl-2 [&_svg]:text-muted-foreground" onClick={() => column.clearSorting()}>
+                <X />
+                Reset
+              </DropdownMenuItem>
+            )}
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}

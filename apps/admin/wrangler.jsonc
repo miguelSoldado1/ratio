@@ -1,0 +1,53 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "ratio-admin",
+  "main": "@tanstack/react-start/server-entry",
+  "compatibility_date": "2026-06-12",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": false,
+  "routes": [
+    {
+      "pattern": "admin.ratiomusic.live",
+      "custom_domain": true
+    }
+  ],
+  "vars": {
+    "BETTER_AUTH_URL": "https://admin.ratiomusic.live",
+    "VITE_SITE_URL": "https://ratiomusic.live"
+  },
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "818e83343b7f4ec4a1c9808e30075445"
+    }
+  ],
+  "env": {
+    "development": {
+      "name": "ratio-admin-dev",
+      "workers_dev": false,
+      "routes": [
+        {
+          "pattern": "admin-dev.ratiomusic.live",
+          "custom_domain": true
+        }
+      ],
+      "vars": {
+        "BETTER_AUTH_URL": "https://admin-dev.ratiomusic.live",
+        "VITE_SITE_URL": "https://dev.ratiomusic.live"
+      },
+      "hyperdrive": [
+        {
+          "binding": "HYPERDRIVE",
+          "id": "8c63fba1acc94cc0a7ec4a9274eccdef"
+        }
+      ]
+    }
+  },
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "invocation_logs": true,
+      "head_sampling_rate": 1
+    }
+  }
+}

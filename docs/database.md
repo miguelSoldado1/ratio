@@ -2,9 +2,9 @@
 
 ## Schema Ownership
 
-The current repo defines the Better Auth tables directly in `src/lib/auth/auth-schema.ts`, and `src/lib/db/schema.ts` re-exports that file as the Drizzle schema entrypoint.
+The shared schema entrypoint is `packages/database/src/schema.ts`. Better Auth tables live in `packages/database/src/auth-schema.ts` and are re-exported from the same schema entrypoint.
 
-Add app-level tables to the exported schema entrypoint so `drizzle-kit` can generate one coherent migration set.
+Both applications consume `@ratio/database`, but Drizzle remains the sole migration owner. Add app-level tables to the shared schema entrypoint so `drizzle-kit` generates one coherent migration set. The existing root `drizzle/` history remains authoritative, and root `drizzle.config.ts` points at the shared schema.
 
 ## Drizzle Migration Workflow
 
@@ -37,7 +37,7 @@ When a Better Auth plugin requires schema changes, such as an admin plugin:
 
 1. Add or configure the Better Auth plugin.
 2. Run Better Auth's generate command as a reference for the schema it expects.
-3. Translate those changes into `src/lib/auth/auth-schema.ts`.
+3. Translate those changes into `packages/database/src/auth-schema.ts`.
 4. Run `pnpm db:generate`.
 5. Inspect the Drizzle SQL.
 6. Run `pnpm db:migrate`.
@@ -46,9 +46,9 @@ Avoid Better Auth's migrate command for this project because it mutates the data
 
 ## Worker Compatibility
 
-Cloudflare Worker database access goes through the `HYPERDRIVE` binding in `wrangler.jsonc`. Local development, Drizzle Kit migrations, and seed scripts continue to use `DATABASE_URL` directly.
+Cloudflare Worker database access goes through each app's `HYPERDRIVE` binding in `apps/web/wrangler.jsonc` and `apps/admin/wrangler.jsonc`. Local development, Drizzle Kit migrations, and seed scripts continue to use `DATABASE_URL` directly.
 
-Create the Hyperdrive config from Supabase's direct Postgres connection string on port `5432`, not the Supabase transaction pooler on port `6543`. Replace the placeholder Hyperdrive config id in `wrangler.jsonc`, then run `pnpm wrangler types`.
+Create Hyperdrive configs from Supabase's direct Postgres connection string on port `5432`, not the Supabase transaction pooler on port `6543`. Both Workers reuse the existing production and development Hyperdrive configurations; do not create separate Supabase projects for admin.
 
 ### Database Credential Rotation
 
@@ -59,7 +59,7 @@ development, Drizzle Kit, and the seed scripts.
 Whenever a Supabase database password, hostname, user, port, or database name changes:
 
 1. Update the local `DATABASE_URL` used by Drizzle Kit and scripts.
-2. Update every affected existing Hyperdrive configuration referenced in `wrangler.jsonc`, including production and
+2. Update every affected existing Hyperdrive configuration referenced in either app's `wrangler.jsonc`, including production and
    development when they share the rotated credential. Prefer updating the existing configuration so its binding id
    stays unchanged and no Worker deployment is required.
 3. Run `pnpm wrangler hyperdrive get <hyperdrive-id>` and confirm `modified_on` reflects the update.
@@ -70,7 +70,9 @@ existing connection pool. New connections use the new credentials, so update Hyp
 database password. See Cloudflare's
 [credential-rotation guide](https://developers.cloudflare.com/hyperdrive/configuration/rotate-credentials/).
 
-Do not introduce a module-scoped Worker DB singleton. `src/lib/db/index.ts` exposes `getDb()`: local development reuses a singleton client, while Cloudflare Worker requests create a request-scoped `postgres`/Drizzle client from the `HYPERDRIVE` binding. Hyperdrive owns the underlying origin pool and Worker invocation cleanup, so server functions should not carry explicit `client.end()` boilerplate.
+Do not introduce a module-scoped Worker DB singleton. `packages/database/src/index.ts` exposes a database accessor factory: local development can reuse a singleton client inside the accessor, while every Cloudflare Worker request creates a request-scoped `postgres`/Drizzle client from that app's `HYPERDRIVE` binding. Hyperdrive owns the underlying origin pool and Worker invocation cleanup, so server functions should not carry explicit `client.end()` boilerplate.
+
+The admin app performs no product/admin queries in this milestone. Better Auth still performs the session, user, account, and OAuth reads/writes necessary to authenticate and authorize requests.
 
 Hyperdrive query caching is currently disabled on the main `HYPERDRIVE` config so fresh review and like reads stay visible as quickly as possible. Hyperdrive caching is configured per Hyperdrive config, not toggled inside individual Drizzle queries. If future public read endpoints need Hyperdrive query caching, add a separate cached Hyperdrive config/binding and route only those public reads through that binding, or use an app-level cache such as KV/Cache API. Avoid cached Hyperdrive reads for auth/session reads, viewer-specific booleans such as `likedByViewer` and `followedByViewer`, and mutation-adjacent checks where users expect immediate freshness.
 
