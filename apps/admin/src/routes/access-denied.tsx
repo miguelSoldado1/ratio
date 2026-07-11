@@ -1,10 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { ShieldAlert } from "lucide-react";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AdminAuthShell } from "@/components/admin-auth-shell";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Spinner } from "@/components/ui/spinner";
 import { useAdminAccess } from "@/hooks/use-admin-access";
 import { authClient } from "@/lib/auth-client";
 import { authRedirectSearchSchema, getSafeAuthRedirect, getSignInHref } from "@/lib/auth-redirect";
@@ -43,18 +43,29 @@ function AccessDeniedPage() {
     window.location.assign(getSignInHref(redirectTarget));
   }
 
-  if (accessQuery.data?.status !== "forbidden") return null;
+  if (accessQuery.data?.status !== "forbidden") {
+    return null;
+  }
 
   return (
     <AdminAuthShell>
-      <Card>
-        <CardHeader>
+      <Card className="border-t-2 border-t-destructive/60">
+        <CardHeader className="items-center gap-1 pb-2 text-center">
+          <ShieldAlert className="mx-auto mb-2 size-9 text-destructive/80" />
           <CardTitle>Access denied</CardTitle>
-          <CardDescription>This account cannot access Ratio Admin.</CardDescription>
+          <CardDescription className="text-balance">
+            This account doesn&apos;t have admin access. Contact an admin if you think this is a mistake.
+          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <Button className="w-full" disabled={isSigningOut} onClick={signOutAndRetry} size="lg" type="button">
-            {isSigningOut ? <Spinner data-icon="inline-start" /> : null}
+        <CardContent className="pt-2">
+          <Button
+            className="w-full"
+            disabled={isSigningOut}
+            onClick={signOutAndRetry}
+            size="lg"
+            type="button"
+            variant="destructive"
+          >
             Sign out and try another account
           </Button>
         </CardContent>

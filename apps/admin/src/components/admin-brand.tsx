@@ -1,19 +1,31 @@
 import { Link } from "@tanstack/react-router";
-import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
+const NAV_LINKS = [
+  { label: "Users", to: "/users" },
+  { label: "Reviews", to: "/reviews" },
+] as const;
 
 export function AdminBrand() {
   return (
-    <div className="flex min-w-0 items-end gap-2">
-      <Link aria-label="Ratio Admin home" className={buttonVariants({ size: "icon", variant: "link" })} to="/users">
+    <div className="flex min-w-0 items-center gap-1">
+      <Link aria-label="Ratio Admin" className="mr-1 flex shrink-0 items-center" to="/users">
         <img alt="" className="size-8" height={32} src="/favicon.svg" width={32} />
       </Link>
-      <Link className={cn(buttonVariants({ size: "sm", variant: "link" }), "text-foreground")} to="/users">
-        Users
-      </Link>
-      <Link className={cn(buttonVariants({ size: "sm", variant: "link" }), "text-foreground")} to="/reviews">
-        Reviews
-      </Link>
+      <nav className="flex items-center gap-0.5">
+        {NAV_LINKS.map((link) => (
+          <Link
+            className={cn(
+              "rounded-full px-3 py-1.5 font-medium text-muted-foreground text-sm transition-colors hover:text-foreground",
+              "data-[status=active]:bg-muted data-[status=active]:text-foreground"
+            )}
+            key={link.to}
+            to={link.to}
+          >
+            {link.label}
+          </Link>
+        ))}
+      </nav>
     </div>
   );
 }

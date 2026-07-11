@@ -1,4 +1,4 @@
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, LogOut } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -51,6 +51,7 @@ export function AdminAccountMenu({ user }: AdminAccountMenuProps) {
       <DropdownMenuContent className="min-w-52">
         <DropdownMenuGroup>
           <DropdownMenuItem disabled={isSigningOut} onClick={handleSignOut}>
+            <LogOut />
             Sign out
           </DropdownMenuItem>
         </DropdownMenuGroup>
