@@ -1,3 +1,5 @@
+import { hasAdminRole } from "@/lib/roles";
+
 export interface AdminUser {
   id: string;
   image: string | null;
@@ -17,15 +19,6 @@ export type AdminAccessState =
   | { status: "unauthenticated" }
   | { status: "forbidden"; user: AdminUser }
   | { status: "authorized"; user: AdminUser };
-
-export function hasAdminRole(role: string | null | undefined) {
-  return (
-    role
-      ?.split(",")
-      .map((value) => value.trim())
-      .includes("admin") ?? false
-  );
-}
 
 export function decideAdminAccess(session: AdminSession): AdminAccessState {
   if (!session?.user) return { status: "unauthenticated" };

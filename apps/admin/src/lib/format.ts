@@ -17,6 +17,10 @@ export function formatDate(date: Date | string | number | undefined, opts: Intl.
   }
 }
 
+export function formatCompactNumber(value: number) {
+  return new Intl.NumberFormat("en-US", { notation: value >= 10_000 ? "compact" : "standard" }).format(value);
+}
+
 export function toUTCMidnight(date: Date): number {
   return new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())).getTime();
 }

@@ -1,16 +1,10 @@
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/format";
+import { parseRoles } from "@/lib/roles";
 import { UserActionsMenu } from "./user-actions-menu";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { AdminUserRow } from "@/server/services/users-service";
-
-function parseRoles(role: string | null) {
-  return (role ?? "user")
-    .split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
-}
 
 export const usersColumns: ColumnDef<AdminUserRow>[] = [
   {

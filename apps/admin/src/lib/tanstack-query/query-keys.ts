@@ -3,5 +3,6 @@ export const adminQueryKeys = {
   users: {
     all: () => ["admin", "users"] as const,
     table: (params: unknown) => [...adminQueryKeys.users.all(), params] as const,
+    stats: () => [...adminQueryKeys.users.all(), "stats"] as const,
   },
 };

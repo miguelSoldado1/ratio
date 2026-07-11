@@ -9,3 +9,7 @@ export const getTableUsers = createServerFn()
   .middleware([requireAdminMiddleware])
   .validator(getTableDataInput)
   .handler(({ context, data }) => usersService.getTableUsersService(data, context));
+
+export const getUserStats = createServerFn()
+  .middleware([requireAdminMiddleware])
+  .handler(({ context }) => usersService.getUserStatsService(context));

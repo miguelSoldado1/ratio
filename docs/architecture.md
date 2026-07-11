@@ -34,6 +34,8 @@ Admin v1 supports sign-in for existing Ratio accounts, rejects OAuth user creati
 
 The admin cookie uses its own `ratio-admin` prefix, does not enable cross-subdomain cookies, and therefore remains host-only. The public and admin hosts do not share browser sessions or last-used-login history even though Better Auth uses the same database schema and relevant secret/provider configuration.
 
+Admin user deletion intentionally does not give the admin Worker R2 bindings or S3-compatible avatar credentials. Better Auth and the database cascades remove the account data, while a custom avatar may remain orphaned in R2. Self-service account deletion in the public app still removes its avatar. If admin-deletion orphans become material, prefer a bounded reconciliation script run with the public app's existing storage credentials instead of duplicating R2 secrets across admin environments.
+
 Future admin scope may include bounded dashboard metrics, reviews, and reports. Under the free-hosting constraint, prefer bounded indexed queries, no polling, and no new infrastructure by default.
 
 ## Cloudflare Git Builds
