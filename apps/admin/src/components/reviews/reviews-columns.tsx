@@ -26,7 +26,7 @@ export const reviewsColumns: ColumnDef<AdminReviewRow>[] = [
         </div>
       );
     },
-    meta: { label: "User", variant: "text", placeholder: "Search user name..." },
+    meta: { label: "User", variant: "text", placeholder: "Search user..." },
     enableSorting: true,
     enableColumnFilter: true,
   },

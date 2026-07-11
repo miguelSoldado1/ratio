@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { ReviewsStatsCards } from "@/components/reviews/reviews-stats-cards";
 import { ReviewsTable } from "@/components/reviews/reviews-table";
 
 export const Route = createFileRoute("/_authenticated/reviews")({
@@ -14,6 +15,7 @@ function ReviewsPage() {
           Browse and moderate album reviews. Deleting a review also removes its likes and cannot be undone.
         </p>
       </div>
+      <ReviewsStatsCards />
       <ReviewsTable />
     </main>
   );

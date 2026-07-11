@@ -18,7 +18,13 @@ export function formatDate(date: Date | string | number | undefined, opts: Intl.
 }
 
 export function formatCompactNumber(value: number) {
-  return new Intl.NumberFormat("en-US", { notation: value >= 10_000 ? "compact" : "standard" }).format(value);
+  const safeValue = toFiniteNumber(value);
+  return new Intl.NumberFormat("en-US", { notation: safeValue >= 10_000 ? "compact" : "standard" }).format(safeValue);
+}
+
+export function toFiniteNumber(value: unknown) {
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) ? numericValue : 0;
 }
 
 export function toUTCMidnight(date: Date): number {

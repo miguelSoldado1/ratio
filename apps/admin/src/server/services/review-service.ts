@@ -1,5 +1,6 @@
 import { albums, reviewLikes, reviews, user } from "@ratio/database/schema";
-import { and, asc, count, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, ilike, lt, or, sql } from "drizzle-orm";
+import { toFiniteNumber } from "@/lib/format";
 import {
   buildQueryParams,
   buildSortingClause,
@@ -42,6 +43,15 @@ export interface AdminReviewContext {
 export interface GetTableReviewsInput extends TableQueryInput {}
 
 export interface AdminReviewTablePage extends TableQueryResult<AdminReviewRow> {}
+
+export interface AdminReviewStats {
+  newLast7Days: number;
+  newLast30Days: number;
+  newPrev7Days: number;
+  newPrev30Days: number;
+  totalReviews: number;
+  writtenReviews: number;
+}
 
 export interface AdminReviewRow {
   albumArtistNames: string[];
@@ -116,6 +126,41 @@ export async function getTableReviewsService(data: GetTableReviewsInput, context
   return {
     data: rows,
     pageCount: Math.ceil(totalCount[0].count / queryParams.limit),
+  };
+}
+
+export async function getReviewStatsService(context: AdminReviewContext): Promise<AdminReviewStats> {
+  const dayMs = 24 * 60 * 60 * 1000;
+  const now = Date.now();
+  const last7Start = new Date(now - 7 * dayMs);
+  const prev7Start = new Date(now - 14 * dayMs);
+  const last30Start = new Date(now - 30 * dayMs);
+  const prev30Start = new Date(now - 60 * dayMs);
+
+  const [stats] = await context.db
+    .select({
+      newLast7Days: count(sql`case when ${gte(reviews.createdAt, last7Start)} then 1 end`),
+      newLast30Days: count(sql`case when ${gte(reviews.createdAt, last30Start)} then 1 end`),
+      newPrev7Days: count(
+        sql`case when ${and(gte(reviews.createdAt, prev7Start), lt(reviews.createdAt, last7Start))} then 1 end`
+      ),
+      newPrev30Days: count(
+        sql`case when ${and(gte(reviews.createdAt, prev30Start), lt(reviews.createdAt, last30Start))} then 1 end`
+      ),
+      totalReviews: count(),
+      writtenReviews: count(
+        sql`case when ${reviews.body} is not null and length(trim(${reviews.body})) > 0 then 1 end`
+      ),
+    })
+    .from(reviews);
+
+  return {
+    newLast7Days: toFiniteNumber(stats.newLast7Days),
+    newLast30Days: toFiniteNumber(stats.newLast30Days),
+    newPrev7Days: toFiniteNumber(stats.newPrev7Days),
+    newPrev30Days: toFiniteNumber(stats.newPrev30Days),
+    totalReviews: toFiniteNumber(stats.totalReviews),
+    writtenReviews: toFiniteNumber(stats.writtenReviews),
   };
 }
 

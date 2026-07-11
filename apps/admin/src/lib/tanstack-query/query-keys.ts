@@ -4,6 +4,7 @@ export const adminAccessQueryKeys = {
 
 export const adminReviewQueryKeys = {
   all: () => ["admin", "review"] as const,
+  stats: () => [...adminReviewQueryKeys.all(), "stats"] as const,
   table: (params: unknown) => [...adminReviewQueryKeys.all(), "table", params] as const,
 };
 

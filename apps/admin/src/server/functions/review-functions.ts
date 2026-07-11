@@ -17,6 +17,10 @@ export const getTableReviews = createServerFn()
   .validator(getTableDataInput)
   .handler(({ context, data }) => reviewsService.getTableReviewsService(data, context));
 
+export const getReviewStats = createServerFn()
+  .middleware([requireAdminMiddleware])
+  .handler(({ context }) => reviewsService.getReviewStatsService(context));
+
 export const deleteReview = createServerFn({ method: "POST" })
   .middleware([requireAdminMiddleware])
   .validator(deleteReviewInput)

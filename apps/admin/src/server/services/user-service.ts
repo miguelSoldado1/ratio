@@ -1,5 +1,6 @@
 import { user } from "@ratio/database/schema";
 import { and, count, gte, lt, sql } from "drizzle-orm";
+import { toFiniteNumber } from "@/lib/format";
 import { buildQueryParams, type TableQueryConfig, type TableQueryInput, type TableQueryResult } from "../table-query";
 import type { getDb } from "@/lib/db";
 
@@ -102,5 +103,12 @@ export async function getUserStatsService(context: AdminUserContext): Promise<Ad
     })
     .from(user);
 
-  return stats;
+  return {
+    bannedUsers: toFiniteNumber(stats.bannedUsers),
+    newLast7Days: toFiniteNumber(stats.newLast7Days),
+    newLast30Days: toFiniteNumber(stats.newLast30Days),
+    newPrev7Days: toFiniteNumber(stats.newPrev7Days),
+    newPrev30Days: toFiniteNumber(stats.newPrev30Days),
+    totalUsers: toFiniteNumber(stats.totalUsers),
+  };
 }
