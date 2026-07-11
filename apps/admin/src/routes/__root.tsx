@@ -1,3 +1,5 @@
+import { TanStackDevtools } from "@tanstack/react-devtools";
+import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { NuqsAdapter } from "nuqs/adapters/tanstack-router";
 import { Toaster } from "@/components/ui/sonner";
@@ -30,6 +32,7 @@ function RootComponent() {
         <NuqsAdapter>
           <Outlet />
         </NuqsAdapter>
+        <TanStackDevtools plugins={[{ name: "TanStack Query", render: <ReactQueryDevtoolsPanel /> }]} />
         <Scripts />
       </body>
     </html>
