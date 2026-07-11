@@ -1,6 +1,13 @@
+export interface AdminUser {
+  id: string;
+  image: string | null;
+  name: string;
+}
+
 export type AdminSession = {
   user: {
     id: string;
+    image?: string | null;
     name: string;
     role?: string | null;
   };
@@ -8,8 +15,8 @@ export type AdminSession = {
 
 export type AdminAccessState =
   | { status: "unauthenticated" }
-  | { status: "forbidden"; user: { id: string; name: string } }
-  | { status: "authorized"; user: { id: string; name: string } };
+  | { status: "forbidden"; user: AdminUser }
+  | { status: "authorized"; user: AdminUser };
 
 export function hasAdminRole(role: string | null | undefined) {
   return (
@@ -23,6 +30,6 @@ export function hasAdminRole(role: string | null | undefined) {
 export function decideAdminAccess(session: AdminSession): AdminAccessState {
   if (!session?.user) return { status: "unauthenticated" };
 
-  const user = { id: session.user.id, name: session.user.name };
+  const user = { id: session.user.id, image: session.user.image ?? null, name: session.user.name };
   return hasAdminRole(session.user.role) ? { status: "authorized", user } : { status: "forbidden", user };
 }

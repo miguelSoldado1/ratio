@@ -6,20 +6,20 @@ describe("getSafeAuthRedirect", () => {
     expect(getSafeAuthRedirect("/users?status=banned#details")).toBe("/users?status=banned#details");
   });
 
-  it("falls back to the dashboard for external URLs", () => {
-    expect(getSafeAuthRedirect("https://example.com/users")).toBe("/");
-    expect(getSafeAuthRedirect("//example.com/users")).toBe("/");
+  it("falls back to the users page for external URLs", () => {
+    expect(getSafeAuthRedirect("https://example.com/users")).toBe("/users");
+    expect(getSafeAuthRedirect("//example.com/users")).toBe("/users");
   });
 
   it("does not redirect back into public auth or API routes", () => {
-    expect(getSafeAuthRedirect("/sign-in")).toBe("/");
-    expect(getSafeAuthRedirect("/access-denied?redirect=/users")).toBe("/");
-    expect(getSafeAuthRedirect("/api/auth/sign-in/social")).toBe("/");
+    expect(getSafeAuthRedirect("/sign-in")).toBe("/users");
+    expect(getSafeAuthRedirect("/access-denied?redirect=/users")).toBe("/users");
+    expect(getSafeAuthRedirect("/api/auth/sign-in/social")).toBe("/users");
   });
 
-  it("falls back to the dashboard for missing and malformed values", () => {
-    expect(getSafeAuthRedirect(undefined)).toBe("/");
-    expect(getSafeAuthRedirect("https://%zz")).toBe("/");
+  it("falls back to the users page for missing and malformed values", () => {
+    expect(getSafeAuthRedirect(undefined)).toBe("/users");
+    expect(getSafeAuthRedirect("https://%zz")).toBe("/users");
   });
 });
 

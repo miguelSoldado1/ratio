@@ -9,17 +9,17 @@ export const authRedirectSearchSchema = z.object({
 });
 
 export function getSafeAuthRedirect(value: string | undefined): string {
-  if (!value) return "/";
+  if (!value) return "/users";
 
   try {
     const url = new URL(value, internalUrlBase);
 
-    if (url.origin !== internalUrlBase) return "/";
-    if (publicAuthPaths.has(url.pathname) || url.pathname.startsWith("/api/")) return "/";
+    if (url.origin !== internalUrlBase) return "/users";
+    if (publicAuthPaths.has(url.pathname) || url.pathname.startsWith("/api/")) return "/users";
 
     return `${url.pathname}${url.search}${url.hash}`;
   } catch {
-    return "/";
+    return "/users";
   }
 }
 

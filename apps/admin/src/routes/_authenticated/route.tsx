@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, useLocation, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { TopBar } from "@/components/top-bar";
 import { useAdminAccess } from "@/hooks/use-admin-access";
 import { getSafeAuthRedirect } from "@/lib/auth-redirect";
 
@@ -8,22 +9,28 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 function AuthenticatedRoute() {
-  const accessQuery = useAdminAccess();
+  const { data } = useAdminAccess();
   const location = useLocation();
   const navigate = useNavigate();
-  const accessStatus = accessQuery.data?.status;
 
   useEffect(() => {
     const redirectTarget = getSafeAuthRedirect(location.href);
 
-    if (accessStatus === "unauthenticated") {
+    if (data?.status === "unauthenticated") {
       navigate({ replace: true, search: { redirect: redirectTarget }, to: "/sign-in" });
     }
 
-    if (accessStatus === "forbidden") {
+    if (data?.status === "forbidden") {
       navigate({ replace: true, search: { redirect: redirectTarget }, to: "/access-denied" });
     }
-  }, [accessStatus, location.href, navigate]);
+  }, [data?.status, location.href, navigate]);
 
-  return accessStatus === "authorized" ? <Outlet /> : null;
+  if (data?.status !== "authorized") return null;
+
+  return (
+    <>
+      <TopBar user={data.user} />
+      <Outlet />
+    </>
+  );
 }
