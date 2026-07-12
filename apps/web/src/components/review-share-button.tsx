@@ -74,7 +74,7 @@ function createReviewShareText({ album, permalink, rating, reviewBody, userDispl
   const intro = `${userDisplayName} reviewed ${album.title} by ${album.artist}`;
   const ratingLine = `${formatReviewStars(rating)} ${formatReviewRating(rating)}`;
   const excerpt = formatReviewExcerpt(reviewBody, getAvailableExcerptLength({ intro, permalink, ratingLine }));
-  const textWithoutUrl = [intro, ratingLine, excerpt ? `"${excerpt}"` : null]
+  const textWithoutUrl = [intro, ratingLine, excerpt || null]
     .filter((line): line is string => Boolean(line))
     .join("\n");
 
@@ -119,9 +119,9 @@ interface GetAvailableExcerptLengthParams {
 
 function getAvailableExcerptLength({ intro, permalink, ratingLine }: GetAvailableExcerptLengthParams) {
   const textWithoutExcerpt = `${intro}\n${ratingLine}\n${permalink}`;
-  const excerptWrapperLength = '"'.length * 2 + "\n".length + "...".length;
+  const excerptOverheadLength = "\n".length + "...".length;
 
-  return Math.min(excerptMaxLength, maxShareTextLength - textWithoutExcerpt.length - excerptWrapperLength);
+  return Math.min(excerptMaxLength, maxShareTextLength - textWithoutExcerpt.length - excerptOverheadLength);
 }
 
 async function shareReview(shareText: string) {
