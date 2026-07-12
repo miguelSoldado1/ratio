@@ -70,6 +70,26 @@ describe("ReviewShareButton", () => {
     expect(sharedText).toContain("...");
     expect(sharedText.length).toBeLessThanOrEqual(280);
   });
+
+  it("does not wrap review text containing dialogue in extra quotation marks", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    setNavigatorShare(undefined);
+    setClipboard(writeText);
+
+    renderShareButton({ reviewBody: 'He shouted, "There is a bomb!"' });
+    fireEvent.click(screen.getByRole("button", { name: "Share review" }));
+
+    await waitFor(() =>
+      expect(writeText).toHaveBeenCalledWith(
+        [
+          "Alice reviewed Album by Artist",
+          "★★★★½ 4.5/5",
+          'He shouted, "There is a bomb!"',
+          "https://ratio.test/album/album_1/r/code_1",
+        ].join("\n")
+      )
+    );
+  });
 });
 
 function renderShareButton(overrides: Partial<Parameters<typeof ReviewShareButton>[0]> = {}) {
