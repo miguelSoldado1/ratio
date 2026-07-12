@@ -1,7 +1,8 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
+import { albumQueryKeys, feedQueryKeys, userQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { deleteReview as deleteReviewServerFn } from "@/server/functions/review-functions";
 import { tryCatch } from "@/try-catch";
 
@@ -15,9 +16,18 @@ interface UseReviewDeleteParams {
 }
 
 export function useReviewDelete({ onDeleted }: UseReviewDeleteParams = {}) {
+  const queryClient = useQueryClient();
   const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
   const deleteReviewFn = useServerFn(deleteReviewServerFn);
-  const deleteReviewMutation = useMutation({ mutationFn: deleteReviewFn });
+  const deleteReviewMutation = useMutation({
+    mutationFn: deleteReviewFn,
+    onSuccess: () =>
+      Promise.all(
+        [albumQueryKeys.all(), feedQueryKeys.all(), userQueryKeys.all()].map((queryKey) =>
+          queryClient.invalidateQueries({ queryKey })
+        )
+      ),
+  });
 
   const deleteReview = useCallback(
     async (reviewId: string) => {

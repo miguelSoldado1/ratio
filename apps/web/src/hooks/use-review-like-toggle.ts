@@ -25,7 +25,16 @@ interface UseReviewLikeToggleParams {
 export function useReviewLikeToggle<TPage extends ReviewLikePage>({ enabled, queryKeys }: UseReviewLikeToggleParams) {
   const queryClient = useQueryClient();
   const setReviewLikeFn = useServerFn(setReviewLike);
-  const setReviewLikeMutation = useMutation({ mutationFn: setReviewLikeFn });
+  const setReviewLikeMutation = useMutation({
+    mutationFn: setReviewLikeFn,
+    onSuccess: async (updatedReview) => {
+      for (const targetQueryKey of queryKeys) {
+        queryClient.setQueryData(targetQueryKey, (data) => updateReviewLikeData<TPage>(data, updatedReview));
+      }
+
+      await queryClient.invalidateQueries({ queryKey: reviewQueryKeys.likes(updatedReview.reviewId) });
+    },
+  });
 
   return useCallback(
     async (reviewId: string, liked: boolean) => {
@@ -33,23 +42,15 @@ export function useReviewLikeToggle<TPage extends ReviewLikePage>({ enabled, que
         return false;
       }
 
-      const { data: updatedReview, error } = await tryCatch(
-        setReviewLikeMutation.mutateAsync({ data: { liked, reviewId } })
-      );
+      const { error } = await tryCatch(setReviewLikeMutation.mutateAsync({ data: { liked, reviewId } }));
       if (error) {
         toast.error("Couldn't update like", {
           description: error instanceof Error ? error.message : "Something went wrong while updating the like.",
         });
         return false;
       }
-
-      for (const targetQueryKey of queryKeys) {
-        queryClient.setQueryData(targetQueryKey, (data) => updateReviewLikeData<TPage>(data, updatedReview));
-      }
-
-      await queryClient.invalidateQueries({ queryKey: reviewQueryKeys.likes(updatedReview.reviewId) });
     },
-    [enabled, queryClient, queryKeys, setReviewLikeMutation]
+    [enabled, setReviewLikeMutation]
   );
 }
 

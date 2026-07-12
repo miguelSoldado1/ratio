@@ -90,7 +90,7 @@ export function ProfilePhotoEditor({
     if (!file) return;
 
     const { data: uploadResult, error: uploadError } = await tryCatch(avatarUpload.uploadAsync(file));
-    if (uploadError) return;
+    if (uploadError || !uploadResult.file) return;
 
     const nextAvatarObjectKey = uploadResult.file.objectInfo.key;
 

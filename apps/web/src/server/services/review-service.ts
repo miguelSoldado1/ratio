@@ -422,24 +422,25 @@ export async function getAlbumRatingSummaryService({ albumId }: AlbumIdInput) {
   const db = await getDb();
   const ratingBucket = sql<number>`least(5, greatest(1, ceil(${reviews.rating}::numeric / 2)))::integer`;
 
-  const [summary] = await db
-    .select({
-      average: sql<number | null>`(avg(${reviews.rating}) / 2)::float`,
-      total: count(reviews.id),
-    })
-    .from(reviews)
-    .innerJoin(user, eq(reviews.userId, user.id))
-    .where(and(eq(reviews.albumId, albumId), getVisibleUserFilter(user)));
-
-  const distribution = await db
-    .select({
-      count: count(reviews.id),
-      rating: ratingBucket,
-    })
-    .from(reviews)
-    .innerJoin(user, eq(reviews.userId, user.id))
-    .where(and(eq(reviews.albumId, albumId), getVisibleUserFilter(user)))
-    .groupBy(ratingBucket);
+  const [[summary], distribution] = await Promise.all([
+    db
+      .select({
+        average: sql<number | null>`(avg(${reviews.rating}) / 2)::float`,
+        total: count(reviews.id),
+      })
+      .from(reviews)
+      .innerJoin(user, eq(reviews.userId, user.id))
+      .where(and(eq(reviews.albumId, albumId), getVisibleUserFilter(user))),
+    db
+      .select({
+        count: count(reviews.id),
+        rating: ratingBucket,
+      })
+      .from(reviews)
+      .innerJoin(user, eq(reviews.userId, user.id))
+      .where(and(eq(reviews.albumId, albumId), getVisibleUserFilter(user)))
+      .groupBy(ratingBucket),
+  ]);
 
   return mapAlbumRatingSummary(summary, distribution);
 }

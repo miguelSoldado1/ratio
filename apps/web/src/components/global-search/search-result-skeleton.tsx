@@ -21,7 +21,7 @@ interface SearchResultSkeletonRowProps {
   index: number;
 }
 
-export function SearchResultSkeletonRow({ index }: SearchResultSkeletonRowProps) {
+function SearchResultSkeletonRow({ index }: SearchResultSkeletonRowProps) {
   const titleWidth = index % 3 === 1 ? "w-56" : "w-44";
   const metaWidth = index % 2 === 0 ? "w-32" : "w-24";
 
