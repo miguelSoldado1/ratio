@@ -2,7 +2,16 @@ import { describe, expect, it } from "vitest";
 import { decideAdminAccess } from "@/server/admin-access";
 
 function session(role: string | null) {
-  return { user: { id: "user_1", name: "Ratio User", role } };
+  return {
+    user: {
+      displayUsername: "Ratio Display Name",
+      id: "user_1",
+      image: "https://cdn.example.com/avatar.webp",
+      name: "Provider Name",
+      role,
+      username: "ratio_user",
+    },
+  };
 }
 
 describe("decideAdminAccess", () => {
@@ -15,7 +24,28 @@ describe("decideAdminAccess", () => {
   });
 
   it("authorizes the admin role", () => {
-    expect(decideAdminAccess(session("admin"))).toMatchObject({ status: "authorized" });
+    expect(decideAdminAccess(session("admin"))).toEqual({
+      status: "authorized",
+      user: {
+        avatarUrl: "https://cdn.example.com/avatar.webp",
+        displayName: "Ratio Display Name",
+        id: "user_1",
+      },
+    });
+  });
+
+  it("falls back through the same display-name fields as the web app", () => {
+    expect(
+      decideAdminAccess({
+        user: { displayUsername: null, id: "user_1", name: "Provider Name", role: "admin", username: "ratio_user" },
+      })
+    ).toMatchObject({ user: { displayName: "ratio_user" } });
+
+    expect(
+      decideAdminAccess({
+        user: { displayUsername: null, id: "user_1", name: "Provider Name", role: "admin", username: null },
+      })
+    ).toMatchObject({ user: { displayName: "Provider Name" } });
   });
 
   it("authorizes admin inside a comma-separated role string", () => {

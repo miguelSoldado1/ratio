@@ -5,7 +5,7 @@ const contentSecurityPolicy = [
   "font-src 'self'",
   "form-action 'self' https://accounts.spotify.com https://accounts.google.com https://discord.com",
   "frame-ancestors 'none'",
-  "img-src 'self' data: blob: https://assets.ratiomusic.live https://i.scdn.co https://mosaic.scdn.co https://image-cdn-ak.spotifycdn.com https://*.googleusercontent.com https://cdn.discordapp.com https://media.discordapp.net https://*.fbcdn.net",
+  "img-src 'self' data: blob: https://assets.ratiomusic.live https://assets-dev.ratiomusic.live https://i.scdn.co https://mosaic.scdn.co https://image-cdn-ak.spotifycdn.com https://*.googleusercontent.com https://cdn.discordapp.com https://media.discordapp.net https://*.fbcdn.net",
   "manifest-src 'self'",
   "object-src 'none'",
   "script-src 'self' 'unsafe-inline'",
