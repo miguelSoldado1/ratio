@@ -1,9 +1,10 @@
 import { cleanTestDatabase, closeTestDatabase, migrateTestDatabase, testDb } from "@test/db";
-import { createTestAlbum, createTestReview, createTestUser } from "@test/fixtures";
+import { createTestAlbum, createTestReview, createTestReviewLike, createTestUser } from "@test/fixtures";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getAlbumReviewsService,
   getReviewByShareCodeService,
+  getUserLikedReviewsService,
   getUserProfileService,
   getUserReviewsService,
 } from "@/server/services/review-service";
@@ -95,6 +96,55 @@ describe("public banned-user visibility", () => {
     await expect(getUserReviewsService({ userId: bannedUser.id })).resolves.toEqual({
       nextCursor: null,
       reviews: [],
+    });
+  });
+
+  it("hides liked reviews written by banned users", async () => {
+    const profileUser = await createTestUser(testDb);
+    const bannedAuthor = await createTestUser(testDb, { banned: true });
+    const review = await createTestReview(testDb, { userId: bannedAuthor.id });
+    await createTestReviewLike(testDb, { reviewId: review.id, userId: profileUser.id });
+
+    await expect(getUserLikedReviewsService({ userId: profileUser.id })).resolves.toEqual({
+      nextCursor: null,
+      reviews: [],
+    });
+  });
+});
+
+describe("user liked reviews", () => {
+  it("returns reviews in newest-like-first order with their authors and albums", async () => {
+    const profileUser = await createTestUser(testDb);
+    const firstAuthor = await createTestUser(testDb, { displayUsername: "First Author" });
+    const secondAuthor = await createTestUser(testDb, { displayUsername: "Second Author" });
+    const firstReview = await createTestReview(testDb, { userId: firstAuthor.id });
+    const secondReview = await createTestReview(testDb, { userId: secondAuthor.id });
+
+    await createTestReviewLike(testDb, {
+      createdAt: new Date("2026-01-01T00:00:00.000Z"),
+      reviewId: firstReview.id,
+      userId: profileUser.id,
+    });
+    await createTestReviewLike(testDb, {
+      createdAt: new Date("2026-01-02T00:00:00.000Z"),
+      reviewId: secondReview.id,
+      userId: profileUser.id,
+    });
+
+    await expect(getUserLikedReviewsService({ userId: profileUser.id })).resolves.toMatchObject({
+      nextCursor: null,
+      reviews: [
+        {
+          id: secondReview.id,
+          liked: false,
+          user: { displayUsername: "Second Author" },
+        },
+        {
+          id: firstReview.id,
+          liked: false,
+          user: { displayUsername: "First Author" },
+        },
+      ],
     });
   });
 });
