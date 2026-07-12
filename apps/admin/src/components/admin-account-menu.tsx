@@ -44,8 +44,8 @@ export function AdminAccountMenu({ user }: AdminAccountMenuProps) {
           />
         }
       >
-        <UserAvatar className="size-7 text-2xs" name={user.name} src={user.image} />
-        <span className="hidden min-w-0 truncate text-sm sm:inline">{user.name}</span>
+        <UserAvatar className="size-7 text-2xs" name={user.displayName} src={user.avatarUrl} />
+        <span className="hidden min-w-0 truncate text-sm sm:inline">{user.displayName}</span>
         <ChevronDown aria-hidden="true" data-icon="inline-end" />
       </DropdownMenuTrigger>
       <DropdownMenuContent className="min-w-52">

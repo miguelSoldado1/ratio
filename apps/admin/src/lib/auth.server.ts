@@ -1,7 +1,7 @@
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import * as schema from "@ratio/database/schema";
 import { betterAuth } from "better-auth";
-import { admin, lastLoginMethod } from "better-auth/plugins";
+import { admin, lastLoginMethod, username } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { adminAuthUrl, env } from "@/env";
 import { getDb } from "./db";
@@ -52,7 +52,7 @@ export function createAdminAuth(db: Db) {
         scope: [spotifyRecentlyPlayedScope],
       },
     },
-    plugins: [lastLoginMethod(), admin(), tanstackStartCookies()],
+    plugins: [username(), lastLoginMethod(), admin(), tanstackStartCookies()],
   });
 }
 

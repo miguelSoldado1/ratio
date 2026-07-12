@@ -1,17 +1,19 @@
 import { hasAdminRole } from "@/lib/roles";
 
 export interface AdminUser {
+  avatarUrl: string | null;
+  displayName: string;
   id: string;
-  image: string | null;
-  name: string;
 }
 
 export type AdminSession = {
   user: {
     id: string;
+    displayUsername?: string | null;
     image?: string | null;
     name: string;
     role?: string | null;
+    username?: string | null;
   };
 } | null;
 
@@ -23,6 +25,10 @@ export type AdminAccessState =
 export function decideAdminAccess(session: AdminSession): AdminAccessState {
   if (!session?.user) return { status: "unauthenticated" };
 
-  const user = { id: session.user.id, image: session.user.image ?? null, name: session.user.name };
+  const user = {
+    avatarUrl: session.user.image ?? null,
+    displayName: session.user.displayUsername ?? session.user.username ?? session.user.name,
+    id: session.user.id,
+  };
   return hasAdminRole(session.user.role) ? { status: "authorized", user } : { status: "forbidden", user };
 }
