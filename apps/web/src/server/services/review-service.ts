@@ -39,6 +39,11 @@ const reviewLikesCursorPayloadSchema = z.object({
   id: z.string().trim().min(1).max(128),
 });
 
+const userLikedReviewsCursorPayloadSchema = z.object({
+  createdAt: z.iso.datetime(),
+  id: z.uuid(),
+});
+
 // Types
 
 interface AlbumReviewsCursorPayload {
@@ -47,6 +52,11 @@ interface AlbumReviewsCursorPayload {
 }
 
 interface ReviewLikesCursorPayload {
+  createdAt: string;
+  id: string;
+}
+
+interface UserLikedReviewsCursorPayload {
   createdAt: string;
   id: string;
 }
@@ -64,6 +74,11 @@ export interface ReviewLikesPage {
 export interface UserReviewsPage {
   nextCursor: string | null;
   reviews: ReturnType<typeof mapUserReview>[];
+}
+
+export interface UserLikedReviewsPage {
+  nextCursor: string | null;
+  reviews: ReturnType<typeof mapReviewDetail>[];
 }
 
 export interface UserProfile {
@@ -103,6 +118,8 @@ export interface UserReviewsInput {
   cursor?: string;
   userId: string;
 }
+
+export type UserLikedReviewsInput = UserReviewsInput;
 
 export interface CreateReviewInput extends AlbumIdInput {
   body?: string;
@@ -347,6 +364,62 @@ export async function getUserReviewsService(data: UserReviewsInput): Promise<Use
       ...pinnedRows.map((row) => mapUserReview(row, canDelete)),
       ...pageRows.map((row) => mapUserReview(row, canDelete)),
     ],
+  };
+}
+
+export async function getUserLikedReviewsService(data: UserLikedReviewsInput): Promise<UserLikedReviewsPage> {
+  const db = await getDb();
+  const currentUser = await getOptionalCurrentUser(db);
+  const viewerUserId = currentUser?.id;
+  const cursor = data.cursor ? decodeUserLikedReviewsCursor(data.cursor) : undefined;
+  const cursorFilter = cursor ? getUserLikedReviewsCursorFilter(cursor) : undefined;
+  const reviewAuthor = alias(user, "liked_review_author");
+  const profileUser = alias(user, "liked_review_profile_user");
+  const likedByViewer = viewerUserId
+    ? sql<boolean>`exists(select 1 from ${reviewLikes} where ${reviewLikes.reviewId} = ${reviews.id} and ${reviewLikes.userId} = ${viewerUserId})`
+    : sql<boolean>`false`;
+  const canDelete = viewerUserId ? sql<boolean>`${reviews.userId} = ${viewerUserId}` : sql<boolean>`false`;
+  const visibilityFilter = currentUser?.isAdmin
+    ? undefined
+    : and(sql`${reviewAuthor.banned} is not true`, sql`${profileUser.banned} is not true`);
+
+  const likedReviews = await db
+    .select({
+      album: getTableColumns(albums),
+      canDelete,
+      liked: likedByViewer,
+      likes: getVisibleReviewLikeCountSql(reviews.id),
+      likeCreatedAt: reviewLikes.createdAt,
+      review: getTableColumns(reviews),
+      user: {
+        avatarUrl: reviewAuthor.image,
+        displayUsername: reviewAuthor.displayUsername,
+        id: reviewAuthor.id,
+        username: reviewAuthor.username,
+      },
+    })
+    .from(reviewLikes)
+    .innerJoin(reviews, eq(reviewLikes.reviewId, reviews.id))
+    .innerJoin(albums, eq(reviews.albumId, albums.id))
+    .innerJoin(reviewAuthor, eq(reviews.userId, reviewAuthor.id))
+    .innerJoin(profileUser, eq(reviewLikes.userId, profileUser.id))
+    .where(and(eq(reviewLikes.userId, data.userId), visibilityFilter, cursorFilter))
+    .orderBy(desc(reviewLikes.createdAt), desc(reviewLikes.reviewId))
+    .limit(reviewsPageSize + 1);
+
+  const hasNextPage = likedReviews.length > reviewsPageSize;
+  const pageRows = hasNextPage ? likedReviews.slice(0, reviewsPageSize) : likedReviews;
+  const lastRow = pageRows.at(-1);
+
+  return {
+    nextCursor:
+      hasNextPage && lastRow
+        ? encodeCursor({
+            createdAt: lastRow.likeCreatedAt.toISOString(),
+            id: lastRow.review.id,
+          })
+        : null,
+    reviews: pageRows.map(mapReviewDetail),
   };
 }
 
@@ -922,4 +995,12 @@ function getReviewLikesCursorFilter(cursor: ReviewLikesCursorPayload) {
 
 function decodeReviewLikesCursor(cursor: string): ReviewLikesCursorPayload {
   return decodeCursor(cursor, reviewLikesCursorPayloadSchema, "Invalid review likes cursor");
+}
+
+function getUserLikedReviewsCursorFilter(cursor: UserLikedReviewsCursorPayload) {
+  return getCreatedAtIdCursorFilter(cursor, { createdAt: reviewLikes.createdAt, id: reviewLikes.reviewId });
+}
+
+function decodeUserLikedReviewsCursor(cursor: string): UserLikedReviewsCursorPayload {
+  return decodeCursor(cursor, userLikedReviewsCursorPayloadSchema, "Invalid liked reviews cursor");
 }

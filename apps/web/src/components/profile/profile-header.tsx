@@ -27,7 +27,7 @@ export function ProfileHeader({ className, onAuthRequired, profile, stats, viewe
     "min-w-0 flex-col items-center gap-0.5 text-center sm:flex-row sm:items-baseline sm:gap-1.5 sm:text-left";
 
   return (
-    <header className={cn("border-border/80 border-b pb-6 sm:pb-7 lg:pb-9", className)}>
+    <header className={cn("pb-2 sm:pb-3", className)}>
       <div className="flex w-full min-w-0 flex-col items-center text-center sm:grid sm:grid-cols-[5.5rem_minmax(0,1fr)] sm:items-center sm:gap-x-5 sm:text-left md:grid-cols-[7rem_minmax(0,1fr)] lg:gap-x-6">
         <UserAvatar
           className="size-18 text-xl sm:size-22 sm:text-2xl md:size-28 md:text-4xl"
@@ -150,7 +150,7 @@ interface ProfileHeaderSkeletonProps {
 
 export function ProfileHeaderSkeleton({ className }: ProfileHeaderSkeletonProps) {
   return (
-    <div className={cn("border-border/80 border-b pb-6 sm:pb-7 lg:pb-9", className)}>
+    <div className={cn("pb-2 sm:pb-3", className)}>
       <div className="flex flex-col items-center sm:grid sm:grid-cols-[5.5rem_minmax(0,1fr)] sm:items-center sm:gap-x-5 md:grid-cols-[7rem_minmax(0,1fr)] lg:gap-x-6">
         <div className="size-18 rounded-full bg-muted sm:size-22 md:size-28" />
         <div className="mt-2 flex min-w-0 flex-1 flex-col items-center gap-2 sm:mt-0 sm:items-start">

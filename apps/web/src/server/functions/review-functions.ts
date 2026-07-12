@@ -98,6 +98,10 @@ export const getUserReviews = createServerFn()
   .validator(userReviewsSchema)
   .handler(({ data }) => reviewService.getUserReviewsService(data));
 
+export const getUserLikedReviews = createServerFn()
+  .validator(userReviewsSchema)
+  .handler(({ data }) => reviewService.getUserLikedReviewsService(data));
+
 export const getReviewLikes = createServerFn()
   .validator(reviewLikesSchema)
   .handler(({ data }) => reviewService.getReviewLikesService(data));

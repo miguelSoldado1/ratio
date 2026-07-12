@@ -33,6 +33,10 @@ export const userQueryKeys = {
     viewerUserId
       ? (["user", profileUserId, "following", viewerUserId] as const)
       : (["user", profileUserId, "following"] as const),
+  likedReviews: (profileUserId: string, viewerUserId?: string) =>
+    viewerUserId
+      ? (["user", profileUserId, "liked-reviews", viewerUserId] as const)
+      : (["user", profileUserId, "liked-reviews"] as const),
   profile: (username: string, userId?: string) =>
     userId ? (["user", username, "profile", userId] as const) : (["user", username, "profile"] as const),
   reviews: (reviewedUserId: string, viewerUserId?: string) =>
