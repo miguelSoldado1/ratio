@@ -7,6 +7,12 @@ import { cn } from "@/lib/utils";
 import { SectionIntro } from "./section-intro";
 import type { AuthProviderId } from "@ratio/auth-providers";
 
+const linkedDateFormatter = new Intl.DateTimeFormat(undefined, {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+});
+
 export interface LinkedAccount {
   accountId: string;
   createdAt: Date | string;
@@ -187,9 +193,5 @@ function formatLinkedDate(value: Date | string) {
 
   if (Number.isNaN(date.getTime())) return "Linked";
 
-  return new Intl.DateTimeFormat(undefined, {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  }).format(date);
+  return linkedDateFormatter.format(date);
 }

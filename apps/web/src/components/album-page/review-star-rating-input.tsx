@@ -32,8 +32,10 @@ export function ReviewStarRatingInput({
   const latestOnChangeRef = useRef(onChange);
   const latestValueRef = useRef(value);
 
-  latestOnChangeRef.current = onChange;
-  latestValueRef.current = value;
+  useEffect(() => {
+    latestOnChangeRef.current = onChange;
+    latestValueRef.current = value;
+  }, [onChange, value]);
 
   useEffect(
     () => () => {

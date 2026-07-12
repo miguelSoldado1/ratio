@@ -413,15 +413,16 @@ function mergeCandidateRows(rows: FeedCandidateRow[]): MergedFeedCandidate[] {
   const candidatesById = new Map<string, MergedFeedCandidate>();
 
   for (const row of rows) {
-    const existing = candidatesById.get(row.review.id);
+    const reviewId = row.review.id;
+    const existing = candidatesById.get(reviewId);
     const sourceRank = getSourceRank(row.source);
 
     if (!existing) {
-      candidatesById.set(row.review.id, { ...row, sourceRank });
+      candidatesById.set(reviewId, { ...row, sourceRank });
       continue;
     }
 
-    candidatesById.set(row.review.id, {
+    candidatesById.set(reviewId, {
       ...existing,
       activityAt: row.activityAt > existing.activityAt ? row.activityAt : existing.activityAt,
       canDelete: existing.canDelete || row.canDelete,
