@@ -7,8 +7,8 @@ import { InlineError } from "@/components/inline-error";
 import { PageContainer } from "@/components/page-container";
 import { ProfileHeader, ProfileHeaderSkeleton } from "@/components/profile/profile-header";
 import { ProfileLikedReviewsTab } from "@/components/profile/profile-liked-reviews-tab";
-import { ProfileReviewsSectionSkeleton } from "@/components/profile/profile-reviews-section";
 import { ProfileReviewsTab } from "@/components/profile/profile-reviews-tab";
+import { ProfileTabsSkeleton } from "@/components/profile/profile-tabs-skeleton";
 import {
   SwipeableTabs,
   SwipeableTabsContent,
@@ -113,9 +113,9 @@ function UserPage() {
   if (userProfileQuery.isPending) {
     return (
       <main className="min-h-screen bg-background text-foreground">
-        <PageContainer className="flex flex-col gap-8 lg:py-12">
+        <PageContainer className="flex flex-col lg:py-12">
           <ProfileHeaderSkeleton />
-          <ProfileReviewsSectionSkeleton className="mt-0" />
+          <ProfileTabsSkeleton />
         </PageContainer>
       </main>
     );
