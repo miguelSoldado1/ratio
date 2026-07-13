@@ -149,7 +149,7 @@ function UserPage() {
           <SwipeableTabs className="mt-7" defaultValue="reviews" onValueChange={handleTabChange}>
             <SwipeableTabsList
               aria-label={`${profile.displayName}'s profile sections`}
-              className="sticky top-16 z-30 bg-background p-0 group-data-horizontal/tabs:h-12"
+              className="sticky top-16 z-30 -mx-5 w-[calc(100%+2.5rem)] bg-background p-0 group-data-horizontal/tabs:h-12 lg:-mx-10 lg:w-[calc(100%+5rem)]"
             >
               <SwipeableTabsTrigger value="reviews">Reviews</SwipeableTabsTrigger>
               <SwipeableTabsTrigger value="likes">Likes</SwipeableTabsTrigger>
