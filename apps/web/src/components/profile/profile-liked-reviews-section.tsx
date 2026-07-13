@@ -33,7 +33,7 @@ export function ProfileLikedReviewsSection({
   const { adminModeEnabled, isAdmin } = useAdminMode();
 
   return (
-    <section className="mt-7 min-h-screen">
+    <section className="mt-7">
       <ReviewList
         emptyState={<EmptyLikedReviews displayName={displayName} />}
         isFetchingNextPage={isFetchingNextPage}
@@ -65,15 +65,9 @@ export function ProfileLikedReviewsSection({
 }
 
 export function ProfileLikedReviewsSectionSkeleton({ count = 3 }: { count?: number }) {
-  return <ReviewListSkeleton aria-label="Loading liked reviews" className="min-h-screen" count={count} />;
+  return <ReviewListSkeleton aria-label="Loading liked reviews" count={count} />;
 }
 
 function EmptyLikedReviews({ displayName }: { displayName: string }) {
-  return (
-    <EmptyState
-      className="min-h-screen"
-      description={`${displayName} has not liked any reviews yet.`}
-      title="No liked reviews yet"
-    />
-  );
+  return <EmptyState description={`${displayName} has not liked any reviews yet.`} title="No liked reviews yet" />;
 }

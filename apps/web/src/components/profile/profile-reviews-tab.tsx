@@ -9,6 +9,7 @@ import type { ReviewListViewer } from "@/components/review-list";
 import type { UserProfile } from "@/server/services/review-service";
 
 interface ProfileReviewsTabProps {
+  active: boolean;
   deletingReviewId: string | null;
   onReviewDelete: (reviewId: string) => Promise<boolean>;
   onReviewLikeToggle: (reviewId: string, liked: boolean) => boolean | Promise<boolean | undefined> | undefined;
@@ -17,6 +18,7 @@ interface ProfileReviewsTabProps {
 }
 
 export function ProfileReviewsTab({
+  active,
   deletingReviewId,
   onReviewDelete,
   onReviewLikeToggle,
@@ -44,7 +46,7 @@ export function ProfileReviewsTab({
   const reviews = userReviewsQuery.data?.pages.flatMap((page) => page.reviews) ?? [];
   const { fetchNextPage, hasNextPage, isFetchNextPageError, isFetchingNextPage } = userReviewsQuery;
   const loadMoreRef = useLoadMoreOnIntersect({
-    enabled: hasNextPage && !isFetchNextPageError,
+    enabled: active && hasNextPage && !isFetchNextPageError,
     isLoading: isFetchingNextPage,
     onLoadMore: fetchNextPage,
   });

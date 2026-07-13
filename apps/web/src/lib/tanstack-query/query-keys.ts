@@ -20,6 +20,7 @@ export const reviewQueryKeys = {
 
 export const feedQueryKeys = {
   all: () => ["feed"] as const,
+  following: (viewerUserId: string) => [...feedQueryKeys.root(viewerUserId), "following"] as const,
   root: (viewerUserId?: string) => (viewerUserId ? (["feed", viewerUserId] as const) : (["feed"] as const)),
 };
 

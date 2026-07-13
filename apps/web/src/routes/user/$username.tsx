@@ -134,8 +134,8 @@ function UserPage() {
   return (
     <>
       <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} />
-      <main className="min-h-screen bg-background text-foreground">
-        <PageContainer className="flex flex-col lg:py-12">
+      <main className="h-[calc(100dvh-4.0625rem)] overflow-hidden bg-background text-foreground">
+        <PageContainer className="flex h-full min-h-0 flex-col pt-5 pb-0 lg:pt-8 lg:pb-0">
           <ProfileHeader
             onAuthRequired={() => setAuthDialogOpen(true)}
             profile={profile}
@@ -146,17 +146,18 @@ function UserPage() {
             }}
             viewer={viewer}
           />
-          <SwipeableTabs className="mt-7" defaultValue="reviews" onValueChange={handleTabChange}>
+          <SwipeableTabs className="mt-7 min-h-0 flex-1" defaultValue="reviews" onValueChange={handleTabChange}>
             <SwipeableTabsList
               aria-label={`${profile.displayName}'s profile sections`}
-              className="sticky top-16 z-30 -mx-5 w-[calc(100%+2.5rem)] bg-background p-0 group-data-horizontal/tabs:h-12 lg:-mx-10 lg:w-[calc(100%+5rem)]"
+              className="z-30 -mx-5 w-[calc(100%+2.5rem)] shrink-0 bg-background p-0 group-data-horizontal/tabs:h-12 lg:-mx-10 lg:w-[calc(100%+5rem)]"
             >
               <SwipeableTabsTrigger value="reviews">Reviews</SwipeableTabsTrigger>
               <SwipeableTabsTrigger value="likes">Likes</SwipeableTabsTrigger>
             </SwipeableTabsList>
             <SwipeableTabsViewport>
-              <SwipeableTabsContent value="reviews">
+              <SwipeableTabsContent className="pb-8 lg:pb-12" value="reviews">
                 <ProfileReviewsTab
+                  active={activeTab === "reviews"}
                   deletingReviewId={deletingReviewId}
                   onReviewDelete={handleReviewDelete}
                   onReviewLikeToggle={handleReviewLikeToggle}
@@ -164,7 +165,7 @@ function UserPage() {
                   viewer={viewer}
                 />
               </SwipeableTabsContent>
-              <SwipeableTabsContent className="min-h-screen" value="likes">
+              <SwipeableTabsContent className="pb-8 lg:pb-12" value="likes">
                 <ProfileLikedReviewsTab
                   active={activeTab === "likes"}
                   deletingReviewId={deletingReviewId}

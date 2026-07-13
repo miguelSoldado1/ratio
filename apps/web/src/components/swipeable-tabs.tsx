@@ -5,13 +5,13 @@ import type { ComponentProps, KeyboardEvent as ReactKeyboardEvent, RefObject } f
 
 const INSTANT_SCROLL_UNLOCK_MS = 50;
 const PROGRAMMATIC_SCROLL_UNLOCK_MS = 500;
+const SCROLL_SETTLE_FALLBACK_MS = 120;
 
 interface SwipeableTabsContextValue {
   cancelProgrammaticScroll: () => void;
   count: number;
   idBase: string;
   indicatorRef: RefObject<HTMLSpanElement | null>;
-  programmaticRef: RefObject<boolean>;
   scrollerRef: RefObject<HTMLDivElement | null>;
   setActiveFromScroll: (value: string) => void;
   setCount: (count: number) => void;
@@ -36,7 +36,10 @@ type SwipeableTabsContentProps = Omit<
 > & {
   value: string;
 };
-type SwipeableTabsViewportProps = Omit<ComponentProps<"div">, "onPointerDown" | "onScroll" | "onWheel" | "ref">;
+type SwipeableTabsViewportProps = Omit<
+  ComponentProps<"div">,
+  "onPointerDown" | "onScroll" | "onScrollEnd" | "onWheel" | "ref"
+>;
 
 function useSwipeableTabs() {
   const context = useContext(SwipeableTabsContext);
@@ -59,7 +62,6 @@ function SwipeableTabs({
   const idBase = useId();
   const indicatorRef = useRef<HTMLSpanElement>(null);
   const keyboardNavigationRef = useRef(false);
-  const programmaticRef = useRef(false);
   const programmaticTargetRef = useRef<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const scrollerRef = useRef<HTMLDivElement>(null);
@@ -68,7 +70,6 @@ function SwipeableTabs({
   const unlockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const cancelProgrammaticScroll = useCallback(() => {
-    programmaticRef.current = false;
     programmaticTargetRef.current = null;
     if (unlockTimerRef.current !== null) {
       clearTimeout(unlockTimerRef.current);
@@ -88,7 +89,6 @@ function SwipeableTabs({
       const nextLeft = panelIndex * scroller.clientWidth;
       if (Math.abs(scroller.scrollLeft - nextLeft) < 1) return;
 
-      programmaticRef.current = true;
       programmaticTargetRef.current = nextValue;
       if (unlockTimerRef.current !== null) clearTimeout(unlockTimerRef.current);
 
@@ -165,7 +165,6 @@ function SwipeableTabs({
       count,
       idBase,
       indicatorRef,
-      programmaticRef,
       scrollerRef,
       setActiveFromScroll,
       setCount,
@@ -177,7 +176,7 @@ function SwipeableTabs({
   return (
     <SwipeableTabsContext.Provider value={context}>
       <Tabs
-        className={cn("gap-4", className)}
+        className={cn("min-h-0 gap-0", className)}
         data-swipeable-tabs-root=""
         defaultValue={defaultValue}
         onKeyDownCapture={handleKeyDownCapture}
@@ -234,11 +233,29 @@ function SwipeableTabsTrigger({ className, value, ...props }: SwipeableTabsTrigg
 }
 
 function SwipeableTabsViewport({ children, className, ...props }: SwipeableTabsViewportProps) {
-  const { cancelProgrammaticScroll, indicatorRef, programmaticRef, scrollerRef, setActiveFromScroll, setCount, value } =
+  const { cancelProgrammaticScroll, indicatorRef, scrollerRef, setActiveFromScroll, setCount, value } =
     useSwipeableTabs();
   const count = Children.count(children);
+  const scrollSettleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const valueRef = useRef(value);
   valueRef.current = value;
+
+  const settleScroll = useCallback(() => {
+    const scroller = scrollerRef.current;
+    if (scrollSettleTimerRef.current !== null) {
+      clearTimeout(scrollSettleTimerRef.current);
+      scrollSettleTimerRef.current = null;
+    }
+    if (!(scroller && count > 0 && scroller.clientWidth > 0)) return;
+
+    const panelIndex = Math.round(scroller.scrollLeft / scroller.clientWidth);
+    const nearestPanel = scroller.children[panelIndex] as HTMLElement | undefined;
+    const nextValue = nearestPanel?.dataset.value;
+    if (!nextValue) return;
+
+    cancelProgrammaticScroll();
+    if (nextValue !== valueRef.current) setActiveFromScroll(nextValue);
+  }, [cancelProgrammaticScroll, count, scrollerRef, setActiveFromScroll]);
 
   const handleScroll = useCallback(() => {
     const scroller = scrollerRef.current;
@@ -250,14 +267,9 @@ function SwipeableTabsViewport({ children, className, ...props }: SwipeableTabsV
       indicatorRef.current.style.transform = `translate3d(${progress * 100}%, 0, 0)`;
     }
 
-    if (programmaticRef.current) return;
-
-    const nearestPanel = scroller.children[Math.round(progress)] as HTMLElement | undefined;
-    const nextValue = nearestPanel?.dataset.value;
-    if (nextValue && nextValue !== valueRef.current) {
-      setActiveFromScroll(nextValue);
-    }
-  }, [count, indicatorRef, programmaticRef, scrollerRef, setActiveFromScroll]);
+    if (scrollSettleTimerRef.current !== null) clearTimeout(scrollSettleTimerRef.current);
+    scrollSettleTimerRef.current = setTimeout(settleScroll, SCROLL_SETTLE_FALLBACK_MS);
+  }, [count, indicatorRef, scrollerRef, settleScroll]);
 
   const handleScrollRef = useRef(handleScroll);
   handleScrollRef.current = handleScroll;
@@ -276,18 +288,22 @@ function SwipeableTabsViewport({ children, className, ...props }: SwipeableTabsV
     const resizeObserver = new ResizeObserver(() => handleScrollRef.current());
     resizeObserver.observe(scroller);
 
-    return () => resizeObserver.disconnect();
+    return () => {
+      resizeObserver.disconnect();
+      if (scrollSettleTimerRef.current !== null) clearTimeout(scrollSettleTimerRef.current);
+    };
   }, [count, scrollerRef, setCount]);
 
   return (
     <div
       className={cn(
-        "scrollbar-none -mx-0.5 flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-smooth [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
+        "scrollbar-none -mx-0.5 flex min-h-0 flex-1 snap-x snap-mandatory items-stretch overflow-x-auto overflow-y-hidden overscroll-x-contain [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
         className
       )}
       data-swipeable-tabs-viewport=""
       onPointerDown={cancelProgrammaticScroll}
       onScroll={handleScroll}
+      onScrollEnd={settleScroll}
       onWheel={cancelProgrammaticScroll}
       ref={scrollerRef}
       {...props}
@@ -305,9 +321,11 @@ function SwipeableTabsContent({ className, value, ...props }: SwipeableTabsConte
     <div
       aria-hidden={!active}
       aria-labelledby={`${idBase}-tab-${value}`}
-      className={cn("min-w-0 flex-[0_0_100%] snap-start px-0.5", className)}
+      className={cn("h-full min-w-0 flex-[0_0_100%] snap-start overflow-y-auto overscroll-y-contain px-0.5", className)}
+      data-swipeable-tabs-scroll-panel=""
       data-value={value}
       id={`${idBase}-panel-${value}`}
+      inert={!active}
       role="tabpanel"
       tabIndex={active ? 0 : -1}
       {...props}

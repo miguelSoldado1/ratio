@@ -19,7 +19,14 @@ function LogoHomeLink() {
 
     event.preventDefault();
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    window.scrollTo({ behavior: prefersReducedMotion ? "auto" : "smooth", top: 0 });
+    const behavior = prefersReducedMotion ? "auto" : "smooth";
+    const activeTimeline = document.querySelector<HTMLElement>(
+      '[data-swipeable-tabs-scroll-panel][aria-hidden="false"]'
+    );
+
+    if (activeTimeline) return activeTimeline.scrollTo({ behavior, top: 0 });
+
+    window.scrollTo({ behavior, top: 0 });
   }
 
   return (

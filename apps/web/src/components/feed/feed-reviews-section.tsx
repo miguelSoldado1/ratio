@@ -4,7 +4,7 @@ import { ReviewList, ReviewListSkeleton } from "@/components/review-list";
 import { ReviewManagementMenu } from "@/components/review-management-menu";
 import { useAdminMode } from "@/hooks/use-admin-mode";
 import { cn } from "@/lib/utils";
-import type { RefObject } from "react";
+import type { ReactNode, RefObject } from "react";
 import type { ReviewListViewer } from "@/components/review-list";
 import type { FeedPage } from "@/server/services/feed-service";
 
@@ -13,6 +13,7 @@ type FeedReview = FeedPage["reviews"][number];
 interface FeedReviewsSectionProps {
   className?: string;
   deletingReviewId: string | null;
+  emptyState?: ReactNode;
   isFetchingNextPage: boolean;
   loadMoreRef: RefObject<HTMLDivElement | null>;
   onReviewDelete: (reviewId: string) => Promise<boolean>;
@@ -24,6 +25,7 @@ interface FeedReviewsSectionProps {
 export function FeedReviewsSection({
   className,
   deletingReviewId,
+  emptyState = <EmptyFeed />,
   isFetchingNextPage,
   loadMoreRef,
   onReviewDelete,
@@ -36,7 +38,7 @@ export function FeedReviewsSection({
   return (
     <section className={cn("mt-7", className)}>
       <ReviewList
-        emptyState={<EmptyFeed />}
+        emptyState={emptyState}
         isFetchingNextPage={isFetchingNextPage}
         loadMoreRef={loadMoreRef}
         onReviewLikeToggle={onReviewLikeToggle}
