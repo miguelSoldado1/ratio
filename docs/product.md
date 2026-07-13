@@ -43,7 +43,7 @@ Authenticated (any provider)
 All album pages (`/album/:spotifyId`) are publicly accessible and shareable. Review permalinks are album-scoped (`/album/:spotifyId/r/:reviewCode`) so a shared review keeps the album context while using a short public review code instead of the internal review UUID.
 
 ```text
-/                          Public feed - trending + recent activity
+/                          Public home - For You feed + signed-in Following feed
 /album/:spotifyId          Album page - metadata, community rating, reviews
 /album/:spotifyId/r/:reviewCode
                            Review permalink dialog over the album page
@@ -64,15 +64,17 @@ Search is a global command/dialog experience in v1, not a standalone route. Sepa
 - Liked-by dialog for reviews
 - Follow users
 - User profiles with rating history
+- Profile Reviews and Likes use the shared independently scrollable tab behavior beneath one profile header. A collapsed header preserves each tab's deeper position when switching; once the header is revealed, it stays revealed across tabs. The tab bar sits directly against the profile header and spans the full viewport width
 - Album pages with community score and reviews
 - Search albums via Spotify API and users by username/display username from the global search dialog
 - Link/unlink sign-in methods in settings
-- Home feed blending recent reviews, recently liked reviews, and followed-user reviews when signed in
+- Home For You feed blending recent reviews, recently liked reviews, and followed-user reviews when signed in
+- Signed-in Following feed with reviews from followed users in reverse chronological order
 - Album-scoped review permalinks and basic review sharing
 - Basic admin moderation: remove bad reviews/ratings and ban abusive accounts
 - Notifications: someone liked your review, new follower
 - Private recent-listening shelf: up to 6 albums from the signed-in user's recently
-  played Spotify tracks, above the home feed. Ordered by most recent play, full
+  played Spotify tracks, in the shared scroll-away header above the Home feed tabs. Ordered by most recent play, full
   albums only, cached for 30 minutes, no listening history persisted, no manual
   refresh. Visible only to the user; a linked Spotify account that needs the
   permission granted or renewed shows a quiet inline reconnect card on the
@@ -95,7 +97,7 @@ Search is a global command/dialog experience in v1, not a standalone route. Sepa
 
 ### V1 Home Feed
 
-The root route (`/`) is the single home feed for anonymous and authenticated users. It intentionally uses no feed-specific schema changes for the first production release.
+The root route (`/`) is the home feed for anonymous and authenticated users. Signed-in users see independently scrollable `For You` and `Following` timelines; anonymous users see the For You feed without tabs. The recent-listening shelf sits in a shared header above the signed-in feed tabs, outside both timelines; it scrolls away with the active timeline while the tab bar remains at the top. It intentionally uses no feed-specific schema changes for the first production release.
 
 The feed uses a deterministic candidate/ranking/filtering pipeline:
 
@@ -114,6 +116,8 @@ Anonymous users receive a blend of:
 Authenticated users receive the anonymous candidate sources plus:
 
 - recent reviews from people they follow
+
+The signed-in-only Following tab is separate from this ranked blend. It returns reviews from followed users in strict reverse chronological order with cursor pagination, without ranking or diversity filters.
 
 The scoring weights live in `apps/web/src/server/services/feed-service.ts` near the feed constants so they can be tuned without changing query logic. Current signals are:
 
@@ -161,6 +165,7 @@ Set `min_votes` to something like 5. Tune `global_mean` from actual data over ti
 
 - Keep the app quiet, dense, and content-led. Ratio should feel closer to a focused music library than a marketing page.
 - Use the existing typography system and shared UI primitives first. Avoid local font changes or broad shadcn component changes unless the design system itself is being intentionally updated.
+- Use `PageContainer` for the full painted page rail and `PageContainerContent` for the standard margin-based horizontal gutters. Full-width headers, tabs, and swipe surfaces belong on the outer rail; their aligned content belongs inside the guttered content rail.
 - Use CSS theme variables or semantic Tailwind tokens for all colors. Do not use raw color values in Tailwind classes; add a named token to `apps/web/src/styles.css` first when the palette needs a new color.
 - Hover should imply action. Add hover states to links, buttons, icon buttons, tabs, and fully clickable cards; keep static rows, metadata, and read-only content visually still.
 - If only part of a card is interactive, make only that control react. Do not add full-card hover unless clicking the card itself has a clear destination.
@@ -178,7 +183,7 @@ Set `min_votes` to something like 5. Tune `global_mean` from actual data over ti
 | Album removed from Spotify | Keep cached metadata in existing local rows; hide or disable Spotify links when live lookup fails |
 | Duplicate review attempt | Enforced at DB level via unique constraint on `(userId, albumId)`; block duplicate creates; delete may come later, no edit/update flow planned |
 | Low vote count rating display | Bayesian average until threshold is met, show raw score + count after |
-| Empty social feed (new user) | Fall back to the global feed blend until they follow someone |
+| Empty Following feed (new user) | Show a quiet empty state directly beneath the tab bar; the For You tab remains fully usable |
 | Spotify recent-listening unavailable | Omit the shelf unless reauthorization is actionable; the feed loads independently and stays fully usable |
 | Spotify permission missing or token rejected | Show the inline reconnect card for a linked account; reauthorize in place without requiring another sign-in provider |
 | Spotify refresh token expired, revoked, or unavailable | Show the inline reconnect card when Better Auth cannot retrieve a valid token. A transient token-endpoint outage may cause an unnecessary reconnect prompt in v1; never revoke the Ratio session |

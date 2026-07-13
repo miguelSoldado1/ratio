@@ -1,5 +1,6 @@
 import { cleanTestDatabase, closeTestDatabase, migrateTestDatabase, testDb } from "@test/db";
 import {
+  createAuthenticatedContext,
   createTestAlbum,
   createTestReview,
   createTestReviewLike,
@@ -7,7 +8,7 @@ import {
   createTestUserFollow,
 } from "@test/fixtures";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { getFeedService } from "@/server/services/feed-service";
+import { getFeedService, getFollowingFeedService } from "@/server/services/feed-service";
 
 const mockState = vi.hoisted(() => ({
   currentUserId: undefined as string | undefined,
@@ -236,6 +237,89 @@ describe("getFeedService authenticated feed", () => {
     const page = await getFeedService({});
 
     expect(indexOfReview(page.reviews, followedReview.id)).toBeLessThan(indexOfReview(page.reviews, ownReview.id));
+  });
+});
+
+describe("getFollowingFeedService", () => {
+  it("returns only followed-user reviews in reverse chronological order", async () => {
+    const viewer = await createTestUser(testDb);
+    const followedAuthor = await createTestUser(testDb);
+    const globalAuthor = await createTestUser(testDb);
+    const context = createAuthenticatedContext(testDb, viewer);
+
+    await createTestUserFollow(testDb, { followerId: viewer.id, followingId: followedAuthor.id });
+    const olderFollowedReview = await createTestReview(testDb, {
+      createdAt: daysAgo(45),
+      userId: followedAuthor.id,
+    });
+    const newerFollowedReview = await createTestReview(testDb, {
+      createdAt: daysAgo(1),
+      userId: followedAuthor.id,
+    });
+    const globalReview = await createTestReview(testDb, {
+      createdAt: hoursAgo(1),
+      userId: globalAuthor.id,
+    });
+
+    const page = await getFollowingFeedService({}, context);
+
+    expect(page.reviews.map((review) => review.id)).toEqual([newerFollowedReview.id, olderFollowedReview.id]);
+    expect(page.reviews.map((review) => review.id)).not.toContain(globalReview.id);
+  });
+
+  it("maps viewer like state and excludes banned followed users", async () => {
+    const viewer = await createTestUser(testDb);
+    const followedAuthor = await createTestUser(testDb);
+    const bannedFollowedAuthor = await createTestUser(testDb, { banned: true });
+    const context = createAuthenticatedContext(testDb, viewer);
+
+    await createTestUserFollow(testDb, { followerId: viewer.id, followingId: followedAuthor.id });
+    await createTestUserFollow(testDb, { followerId: viewer.id, followingId: bannedFollowedAuthor.id });
+    const visibleReview = await createTestReview(testDb, { userId: followedAuthor.id });
+    const bannedReview = await createTestReview(testDb, { userId: bannedFollowedAuthor.id });
+    await createTestReviewLike(testDb, { reviewId: visibleReview.id, userId: viewer.id });
+
+    const page = await getFollowingFeedService({}, context);
+
+    expect(page.reviews).toEqual([
+      expect.objectContaining({ canDelete: false, id: visibleReview.id, liked: true, likes: 1 }),
+    ]);
+    expect(page.reviews.map((review) => review.id)).not.toContain(bannedReview.id);
+  });
+
+  it("paginates without repeating reviews", async () => {
+    const viewer = await createTestUser(testDb);
+    const followedAuthor = await createTestUser(testDb);
+    const context = createAuthenticatedContext(testDb, viewer);
+
+    await createTestUserFollow(testDb, { followerId: viewer.id, followingId: followedAuthor.id });
+    await Promise.all(
+      Array.from({ length: 21 }, (_, index) =>
+        createTestReview(testDb, {
+          body: `Following review ${index}`,
+          createdAt: minutesAgo(index),
+          userId: followedAuthor.id,
+        })
+      )
+    );
+
+    const firstPage = await getFollowingFeedService({}, context);
+    const secondPage = await getFollowingFeedService({ cursor: firstPage.nextCursor ?? undefined }, context);
+    const firstPageIds = new Set(firstPage.reviews.map((review) => review.id));
+
+    expect(firstPage.reviews).toHaveLength(20);
+    expect(firstPage.nextCursor).toEqual(expect.any(String));
+    expect(secondPage.reviews).toHaveLength(1);
+    expect(secondPage.reviews.some((review) => firstPageIds.has(review.id))).toBe(false);
+    expect(secondPage.nextCursor).toBeNull();
+  });
+
+  it("rejects malformed cursors", async () => {
+    const viewer = await createTestUser(testDb);
+
+    await expect(
+      getFollowingFeedService({ cursor: "not a cursor" }, createAuthenticatedContext(testDb, viewer))
+    ).rejects.toThrow("Invalid following feed cursor");
   });
 });
 

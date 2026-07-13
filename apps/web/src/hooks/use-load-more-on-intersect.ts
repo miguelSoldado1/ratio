@@ -27,6 +27,7 @@ export function useLoadMoreOnIntersect({
     if (!(enabled && loadMoreRef.current && typeof IntersectionObserver !== "undefined")) return;
 
     const loadMoreElement = loadMoreRef.current;
+    const root = rootRef?.current ?? loadMoreElement.closest("[data-swipeable-tabs-scroll-panel]");
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting) && !(isLoading || loadMoreInFlightRef.current)) {
@@ -38,7 +39,7 @@ export function useLoadMoreOnIntersect({
             });
         }
       },
-      { root: rootRef?.current ?? null, rootMargin }
+      { root, rootMargin }
     );
 
     observer.observe(loadMoreElement);

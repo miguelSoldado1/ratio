@@ -61,7 +61,7 @@ export function ProfileReviewsSection({
   }
 
   return (
-    <section className="mt-7">
+    <section className="bg-background pt-7">
       <ReviewList
         emptyState={<EmptyReviews displayName={displayName} />}
         isFetchingNextPage={isFetchingNextPage}

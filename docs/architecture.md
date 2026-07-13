@@ -56,3 +56,5 @@ At minimum, web watch paths should include `apps/web/*`, `packages/database/*`, 
 ## Coding Conventions
 
 Implementation conventions for route organization, TanStack Query, server functions, and mutation handling live in `AGENTS.md` so coding agents and contributors follow the same rules.
+
+`SwipeableTabs` owns horizontal swipe navigation and an independent vertical scroller for every panel by default. Consumers only need to place it inside a bounded flex-height layout. Infinite-list sentinels automatically use their nearest swipeable panel as the intersection root; explicit roots remain available for other nested scrollers such as notification menus.

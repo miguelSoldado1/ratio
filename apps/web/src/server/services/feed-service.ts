@@ -3,9 +3,10 @@ import { alias } from "drizzle-orm/pg-core";
 import z from "zod";
 import { getDb } from "@/lib/db";
 import { albums, reviewLikes, reviews, user, userFollows } from "@/lib/db/schema";
-import { decodeCursor, encodeCursor, getOptionalCurrentUserId } from "../server-utils";
+import { decodeCursor, encodeCursor, getCreatedAtIdCursorFilter, getOptionalCurrentUserId } from "../server-utils";
 import type { SQL } from "drizzle-orm";
 import type { Db } from "@/lib/db";
+import type { AuthenticatedContext } from "../auth-middleware";
 
 // Constants
 
@@ -48,12 +49,22 @@ const feedCursorPayloadSchema = z.object({
   seenReviewIds: z.array(z.uuid()).max(maxCursorSeenReviewIds).optional(),
 });
 
+const followingFeedCursorPayloadSchema = z.object({
+  createdAt: z.iso.datetime(),
+  id: z.uuid(),
+});
+
 // Types
 
 type FeedCandidateSource = "followed" | "recent" | "recent-like";
 
 interface FeedCursorPayload {
   seenReviewIds?: string[];
+}
+
+interface FollowingFeedCursorPayload {
+  createdAt: string;
+  id: string;
 }
 
 interface FeedCandidateRow {
@@ -157,6 +168,52 @@ export async function getFeedService(data: FeedInput): Promise<FeedPage> {
       });
 
   return mapFeedPage(rankAndFilterCandidates(candidates, { now, viewerUserId }), cursor?.seenReviewIds ?? []);
+}
+
+export async function getFollowingFeedService(data: FeedInput, context: AuthenticatedContext): Promise<FeedPage> {
+  const cursor = data.cursor ? decodeFollowingFeedCursor(data.cursor) : undefined;
+  const rows = await context.db
+    .select({
+      ...getFeedCandidateSelect({ viewerUserId: context.user.id }),
+      activityAt: reviews.createdAt,
+    })
+    .from(reviews)
+    .innerJoin(
+      userFollows,
+      and(eq(userFollows.followerId, context.user.id), eq(userFollows.followingId, reviews.userId))
+    )
+    .innerJoin(albums, eq(reviews.albumId, albums.id))
+    .innerJoin(user, eq(reviews.userId, user.id))
+    .where(
+      and(
+        isNotNull(user.username),
+        getVisibleReviewAuthorFilter(),
+        cursor ? getCreatedAtIdCursorFilter(cursor, { createdAt: reviews.createdAt, id: reviews.id }) : undefined
+      )
+    )
+    .orderBy(desc(reviews.createdAt), desc(reviews.id))
+    .limit(feedPageSize + 1)
+    .then((followingRows) => followingRows.map((row) => ({ ...row, source: "followed" as const })));
+
+  const hasNextPage = rows.length > feedPageSize;
+  const pageRows = hasNextPage ? rows.slice(0, feedPageSize) : rows;
+  const candidates = await hydrateCandidateLikeStats(
+    context.db,
+    mergeCandidateRows(pageRows),
+    subDays(new Date(), recentLikeWindowDays)
+  );
+  const lastCandidate = candidates.at(-1);
+
+  return {
+    nextCursor:
+      hasNextPage && lastCandidate
+        ? encodeCursor({
+            createdAt: lastCandidate.review.createdAt.toISOString(),
+            id: lastCandidate.review.id,
+          })
+        : null,
+    reviews: candidates.map(mapFeedReview),
+  };
 }
 
 // Candidate queries
@@ -491,6 +548,10 @@ function getVisibleReviewAuthorFilter(): SQL {
 
 function decodeFeedCursor(cursor: string): FeedCursorPayload {
   return decodeCursor(cursor, feedCursorPayloadSchema, "Invalid feed cursor");
+}
+
+function decodeFollowingFeedCursor(cursor: string): FollowingFeedCursorPayload {
+  return decodeCursor(cursor, followingFeedCursorPayloadSchema, "Invalid following feed cursor");
 }
 
 function getNextSeenReviewIds(seenReviewIds: string[], candidates: FeedCandidate[]) {

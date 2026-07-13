@@ -1,19 +1,26 @@
-import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useMemo } from "react";
-import { FeedReviewsSection, FeedReviewsSectionSkeleton } from "@/components/feed/feed-reviews-section";
-import { InlineError } from "@/components/inline-error";
-import { PageContainer } from "@/components/page-container";
+import { useMemo, useState } from "react";
+import { FollowingFeedTab } from "@/components/feed/following-feed-tab";
+import { ForYouFeedTab } from "@/components/feed/for-you-feed-tab";
+import { PageContainer, PageContainerContent } from "@/components/page-container";
 import { RecentRotation } from "@/components/recent-rotation/recent-rotation";
-import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
+import {
+  SwipeableTabs,
+  SwipeableTabsContent,
+  SwipeableTabsHeader,
+  SwipeableTabsList,
+  SwipeableTabsTrigger,
+  SwipeableTabsViewport,
+} from "@/components/swipeable-tabs";
 import { useReviewDelete } from "@/hooks/use-review-delete";
 import { useReviewLikeToggle } from "@/hooks/use-review-like-toggle";
 import { authClient } from "@/lib/auth/auth-client";
 import { createCanonicalLink, createJsonLdScript, createSeoMeta, getCanonicalUrl, siteName } from "@/lib/seo";
-import { albumQueryKeys, feedQueryKeys } from "@/lib/tanstack-query/query-keys";
-import { getFeed } from "@/server/functions/feed-functions";
+import { feedQueryKeys } from "@/lib/tanstack-query/query-keys";
+import { cn } from "@/lib/utils";
 import type { FeedPage as FeedPageData } from "@/server/services/feed-service";
+
+type HomeFeedTab = "following" | "for-you";
 
 export const Route = createFileRoute("/")({
   component: FeedPage,
@@ -33,72 +40,80 @@ export const Route = createFileRoute("/")({
 });
 
 function FeedPage() {
-  const queryClient = useQueryClient();
   const session = authClient.useSession();
+  const [activeTab, setActiveTab] = useState<HomeFeedTab>("for-you");
   const viewerUserId = session.data?.user.id;
   const hasSession = Boolean(viewerUserId);
   const viewer = useMemo(() => ({ hasSession, userId: viewerUserId }), [hasSession, viewerUserId]);
   const feedQueryKey = feedQueryKeys.root(viewerUserId);
-
-  const getFeedFn = useServerFn(getFeed);
-  const feedQuery = useInfiniteQuery({
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
-    initialPageParam: null,
-    queryFn: ({ pageParam }: { pageParam: string | null }) => getFeedFn({ data: { cursor: pageParam ?? undefined } }),
-    queryKey: feedQueryKey,
-  });
+  const followingFeedQueryKey = viewerUserId ? feedQueryKeys.following(viewerUserId) : feedQueryKeys.all();
 
   const handleReviewLikeToggle = useReviewLikeToggle<FeedPageData>({
     enabled: hasSession,
-    queryKeys: [feedQueryKey],
+    queryKeys: hasSession ? [feedQueryKey, followingFeedQueryKey] : [feedQueryKey],
   });
 
-  const handleReviewDeleted = useCallback(
-    async (deletedReview: { albumId: string }) => {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: feedQueryKey }),
-        queryClient.invalidateQueries({ queryKey: albumQueryKeys.review(deletedReview.albumId) }),
-      ]);
-    },
-    [feedQueryKey, queryClient]
-  );
+  const { deleteReview: handleReviewDelete, deletingReviewId } = useReviewDelete();
 
-  const { deleteReview: handleReviewDelete, deletingReviewId } = useReviewDelete({
-    onDeleted: handleReviewDeleted,
-  });
-
-  const reviews = feedQuery.data?.pages.flatMap((page) => page.reviews) ?? [];
-  const { fetchNextPage, hasNextPage, isFetchNextPageError, isFetchingNextPage } = feedQuery;
-  const loadMoreRef = useLoadMoreOnIntersect({
-    enabled: hasNextPage && !isFetchNextPageError,
-    isLoading: isFetchingNextPage,
-    onLoadMore: fetchNextPage,
-  });
-
-  const showFeedError = !feedQuery.isPending && feedQuery.isError && reviews.length === 0;
-  const showFeedReviews = !(feedQuery.isPending || showFeedError);
+  function handleTabChange(value: string) {
+    if (value === "following" || value === "for-you") setActiveTab(value);
+  }
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <PageContainer className="flex flex-col pt-0 pb-8 lg:pb-12">
+    <main className={cn("bg-background text-foreground", hasSession ? "h-[calc(100dvh-4.0625rem)]" : "min-h-screen")}>
+      <PageContainer className={cn(hasSession && "flex h-full min-h-0 flex-col")}>
         <h1 className="sr-only">Album reviews feed</h1>
-        <RecentRotation viewerUserId={viewerUserId} />
-        {feedQuery.isPending ? <FeedReviewsSectionSkeleton className="mt-0" /> : null}
-        {showFeedError ? (
-          <InlineError className="py-5" description="Could not load reviews right now." title="Feed unavailable" />
-        ) : null}
-        {showFeedReviews ? (
-          <FeedReviewsSection
-            className="mt-0"
-            deletingReviewId={deletingReviewId}
-            isFetchingNextPage={isFetchingNextPage}
-            loadMoreRef={loadMoreRef}
-            onReviewDelete={handleReviewDelete}
-            onReviewLikeToggle={handleReviewLikeToggle}
-            reviews={reviews}
-            viewer={viewer}
-          />
-        ) : null}
+        {hasSession ? (
+          <SwipeableTabs className="min-h-0 flex-1" defaultValue="for-you" onValueChange={handleTabChange}>
+            <SwipeableTabsHeader>
+              <PageContainerContent className="py-0">
+                <RecentRotation viewerUserId={viewerUserId} />
+              </PageContainerContent>
+            </SwipeableTabsHeader>
+            <SwipeableTabsList
+              aria-label="Home feed sections"
+              className="bg-background p-0 group-data-horizontal/tabs:h-12"
+            >
+              <SwipeableTabsTrigger value="for-you">For You</SwipeableTabsTrigger>
+              <SwipeableTabsTrigger value="following">Following</SwipeableTabsTrigger>
+            </SwipeableTabsList>
+            <SwipeableTabsViewport className="mx-0">
+              <SwipeableTabsContent className="px-0 pb-8 lg:pb-12" value="for-you">
+                <PageContainerContent className="py-0">
+                  <ForYouFeedTab
+                    active={activeTab === "for-you"}
+                    deletingReviewId={deletingReviewId}
+                    onReviewDelete={handleReviewDelete}
+                    onReviewLikeToggle={handleReviewLikeToggle}
+                    viewer={viewer}
+                  />
+                </PageContainerContent>
+              </SwipeableTabsContent>
+              <SwipeableTabsContent className="px-0 pb-8 lg:pb-12" value="following">
+                <PageContainerContent className="py-0">
+                  <FollowingFeedTab
+                    active={activeTab === "following"}
+                    deletingReviewId={deletingReviewId}
+                    onReviewDelete={handleReviewDelete}
+                    onReviewLikeToggle={handleReviewLikeToggle}
+                    viewer={viewer}
+                  />
+                </PageContainerContent>
+              </SwipeableTabsContent>
+            </SwipeableTabsViewport>
+          </SwipeableTabs>
+        ) : (
+          <PageContainerContent className="flex flex-col pt-0 pb-8 lg:pb-12">
+            <RecentRotation viewerUserId={viewerUserId} />
+            <ForYouFeedTab
+              active
+              deletingReviewId={deletingReviewId}
+              onReviewDelete={handleReviewDelete}
+              onReviewLikeToggle={handleReviewLikeToggle}
+              viewer={viewer}
+            />
+          </PageContainerContent>
+        )}
       </PageContainer>
     </main>
   );

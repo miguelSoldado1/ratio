@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { PageContainer } from "@/components/page-container";
+import { PageContainer, PageContainerContent } from "@/components/page-container";
 import { DeleteAccountSection } from "@/components/settings/delete-account-section";
 import { SessionsSection } from "@/components/settings/sessions-section";
 import { SettingsHeader } from "@/components/settings/settings-header";
@@ -150,22 +150,24 @@ function SettingsPage() {
 
   return (
     <main className="min-h-screen bg-background text-foreground">
-      <PageContainer className="flex max-w-5xl flex-col gap-10">
-        <SettingsHeader />
-        <SignInMethodsTable
-          linkedAccounts={linkedAccounts}
-          linkedProviderCount={linkedProviderCount}
-          onLink={handleLinkProvider}
-          onUnlink={handleUnlinkProvider}
-          pendingProvider={pendingProvider}
-          unlinkingProvider={unlinkingProvider}
-        />
-        <SessionsSection isPending={isRevokingOtherSessions} onSignOutOthers={handleRevokeOtherSessions} />
-        <DeleteAccountSection
-          confirmationHandle={deletionHandle}
-          isPending={isDeletingAccount}
-          onDeleteAccount={handleDeleteAccount}
-        />
+      <PageContainer className="max-w-5xl">
+        <PageContainerContent className="flex flex-col gap-10">
+          <SettingsHeader />
+          <SignInMethodsTable
+            linkedAccounts={linkedAccounts}
+            linkedProviderCount={linkedProviderCount}
+            onLink={handleLinkProvider}
+            onUnlink={handleUnlinkProvider}
+            pendingProvider={pendingProvider}
+            unlinkingProvider={unlinkingProvider}
+          />
+          <SessionsSection isPending={isRevokingOtherSessions} onSignOutOthers={handleRevokeOtherSessions} />
+          <DeleteAccountSection
+            confirmationHandle={deletionHandle}
+            isPending={isDeletingAccount}
+            onDeleteAccount={handleDeleteAccount}
+          />
+        </PageContainerContent>
       </PageContainer>
     </main>
   );
