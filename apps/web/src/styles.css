@@ -145,6 +145,7 @@
     @apply focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30;
   }
 
+  .feed-tabs-enter,
   .recent-rotation-enter {
     opacity: 1;
     transform: translateY(0);
