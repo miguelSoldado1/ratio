@@ -7,6 +7,7 @@ import { RecentRotation } from "@/components/recent-rotation/recent-rotation";
 import {
   SwipeableTabs,
   SwipeableTabsContent,
+  SwipeableTabsHeader,
   SwipeableTabsList,
   SwipeableTabsTrigger,
   SwipeableTabsViewport,
@@ -59,26 +60,23 @@ function FeedPage() {
   }
 
   return (
-    <main
-      className={cn(
-        "bg-background text-foreground",
-        hasSession ? "h-[calc(100dvh-4.0625rem)] overflow-hidden" : "min-h-screen"
-      )}
-    >
+    <main className={cn("bg-background text-foreground", hasSession ? "h-[calc(100dvh-4.0625rem)]" : "min-h-screen")}>
       <PageContainer className={cn("flex flex-col pt-0", hasSession ? "h-full min-h-0 pb-0" : "pb-8 lg:pb-12")}>
         <h1 className="sr-only">Album reviews feed</h1>
         {hasSession ? (
           <SwipeableTabs className="min-h-0 flex-1" defaultValue="for-you" onValueChange={handleTabChange}>
+            <SwipeableTabsHeader>
+              <RecentRotation viewerUserId={viewerUserId} />
+            </SwipeableTabsHeader>
             <SwipeableTabsList
               aria-label="Home feed sections"
-              className="z-30 -mx-5 w-[calc(100%+2.5rem)] shrink-0 bg-background p-0 group-data-horizontal/tabs:h-12 lg:-mx-10 lg:w-[calc(100%+5rem)]"
+              className="bg-background p-0 group-data-horizontal/tabs:h-12"
             >
               <SwipeableTabsTrigger value="for-you">For You</SwipeableTabsTrigger>
               <SwipeableTabsTrigger value="following">Following</SwipeableTabsTrigger>
             </SwipeableTabsList>
             <SwipeableTabsViewport>
               <SwipeableTabsContent className="pb-8 lg:pb-12" value="for-you">
-                <RecentRotation viewerUserId={viewerUserId} />
                 <ForYouFeedTab
                   active={activeTab === "for-you"}
                   deletingReviewId={deletingReviewId}

@@ -64,7 +64,7 @@ Search is a global command/dialog experience in v1, not a standalone route. Sepa
 - Liked-by dialog for reviews
 - Follow users
 - User profiles with rating history
-- Profile Reviews and Likes use the shared independently scrollable tab behavior beneath one profile header, preserving each tab's position when switching
+- Profile Reviews and Likes use the shared independently scrollable tab behavior beneath one profile header. A collapsed header preserves each tab's deeper position when switching; once the header is revealed, it stays revealed across tabs. The tab bar sits directly against the profile header and spans the full viewport width
 - Album pages with community score and reviews
 - Search albums via Spotify API and users by username/display username from the global search dialog
 - Link/unlink sign-in methods in settings
@@ -74,7 +74,7 @@ Search is a global command/dialog experience in v1, not a standalone route. Sepa
 - Basic admin moderation: remove bad reviews/ratings and ban abusive accounts
 - Notifications: someone liked your review, new follower
 - Private recent-listening shelf: up to 6 albums from the signed-in user's recently
-  played Spotify tracks, at the top of the For You timeline. Ordered by most recent play, full
+  played Spotify tracks, in the shared scroll-away header above the Home feed tabs. Ordered by most recent play, full
   albums only, cached for 30 minutes, no listening history persisted, no manual
   refresh. Visible only to the user; a linked Spotify account that needs the
   permission granted or renewed shows a quiet inline reconnect card on the
@@ -97,7 +97,7 @@ Search is a global command/dialog experience in v1, not a standalone route. Sepa
 
 ### V1 Home Feed
 
-The root route (`/`) is the home feed for anonymous and authenticated users. Signed-in users see independently scrollable `For You` and `Following` timelines; anonymous users see the For You feed without tabs. The recent-listening shelf sits at the top of the signed-in For You timeline. It intentionally uses no feed-specific schema changes for the first production release.
+The root route (`/`) is the home feed for anonymous and authenticated users. Signed-in users see independently scrollable `For You` and `Following` timelines; anonymous users see the For You feed without tabs. The recent-listening shelf sits in a shared header above the signed-in feed tabs, outside both timelines; it scrolls away with the active timeline while the tab bar remains at the top. It intentionally uses no feed-specific schema changes for the first production release.
 
 The feed uses a deterministic candidate/ranking/filtering pipeline:
 
@@ -182,7 +182,7 @@ Set `min_votes` to something like 5. Tune `global_mean` from actual data over ti
 | Album removed from Spotify | Keep cached metadata in existing local rows; hide or disable Spotify links when live lookup fails |
 | Duplicate review attempt | Enforced at DB level via unique constraint on `(userId, albumId)`; block duplicate creates; delete may come later, no edit/update flow planned |
 | Low vote count rating display | Bayesian average until threshold is met, show raw score + count after |
-| Empty Following feed (new user) | Show a quiet empty state; the For You tab remains fully usable |
+| Empty Following feed (new user) | Show a quiet empty state directly beneath the tab bar; the For You tab remains fully usable |
 | Spotify recent-listening unavailable | Omit the shelf unless reauthorization is actionable; the feed loads independently and stays fully usable |
 | Spotify permission missing or token rejected | Show the inline reconnect card for a linked account; reauthorize in place without requiring another sign-in provider |
 | Spotify refresh token expired, revoked, or unavailable | Show the inline reconnect card when Better Auth cannot retrieve a valid token. A transient token-endpoint outage may cause an unnecessary reconnect prompt in v1; never revoke the Ratio session |

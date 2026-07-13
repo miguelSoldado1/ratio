@@ -12,6 +12,7 @@ import { ProfileTabsSkeleton } from "@/components/profile/profile-tabs-skeleton"
 import {
   SwipeableTabs,
   SwipeableTabsContent,
+  SwipeableTabsHeader,
   SwipeableTabsList,
   SwipeableTabsTrigger,
   SwipeableTabsViewport,
@@ -134,22 +135,25 @@ function UserPage() {
   return (
     <>
       <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} />
-      <main className="h-[calc(100dvh-4.0625rem)] overflow-hidden bg-background text-foreground">
-        <PageContainer className="flex h-full min-h-0 flex-col pt-5 pb-0 lg:pt-8 lg:pb-0">
-          <ProfileHeader
-            onAuthRequired={() => setAuthDialogOpen(true)}
-            profile={profile}
-            stats={{
-              followersCount: userProfileQuery.data.followersCount,
-              followingCount: userProfileQuery.data.followingCount,
-              reviewCount: userProfileQuery.data.reviewCount,
-            }}
-            viewer={viewer}
-          />
-          <SwipeableTabs className="mt-7 min-h-0 flex-1" defaultValue="reviews" onValueChange={handleTabChange}>
+      <main className="h-[calc(100dvh-4.0625rem)] bg-background text-foreground">
+        <PageContainer className="flex h-full min-h-0 flex-col pt-0 pb-0 lg:pb-0">
+          <SwipeableTabs className="min-h-0 flex-1" defaultValue="reviews" onValueChange={handleTabChange}>
+            <SwipeableTabsHeader className="pt-5 lg:pt-8">
+              <ProfileHeader
+                className="pb-0 sm:pb-0"
+                onAuthRequired={() => setAuthDialogOpen(true)}
+                profile={profile}
+                stats={{
+                  followersCount: userProfileQuery.data.followersCount,
+                  followingCount: userProfileQuery.data.followingCount,
+                  reviewCount: userProfileQuery.data.reviewCount,
+                }}
+                viewer={viewer}
+              />
+            </SwipeableTabsHeader>
             <SwipeableTabsList
               aria-label={`${profile.displayName}'s profile sections`}
-              className="z-30 -mx-5 w-[calc(100%+2.5rem)] shrink-0 bg-background p-0 group-data-horizontal/tabs:h-12 lg:-mx-10 lg:w-[calc(100%+5rem)]"
+              className="bg-background p-0 group-data-horizontal/tabs:h-12"
             >
               <SwipeableTabsTrigger value="reviews">Reviews</SwipeableTabsTrigger>
               <SwipeableTabsTrigger value="likes">Likes</SwipeableTabsTrigger>

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   SwipeableTabs,
   SwipeableTabsContent,
+  SwipeableTabsHeader,
   SwipeableTabsList,
   SwipeableTabsTrigger,
   SwipeableTabsViewport,
@@ -115,6 +116,161 @@ describe("SwipeableTabs", () => {
     expect(forYouPanel.scrollTop).toBe(900);
     expect(followingPanel.scrollTop).toBe(180);
     expect(windowScrollTo).not.toHaveBeenCalled();
+  });
+
+  it("lets the tab list span the viewport outside its content container", () => {
+    render(
+      <SwipeableTabs defaultValue="reviews">
+        <SwipeableTabsList aria-label="Profile sections">
+          <SwipeableTabsTrigger value="reviews">Reviews</SwipeableTabsTrigger>
+          <SwipeableTabsTrigger value="likes">Likes</SwipeableTabsTrigger>
+        </SwipeableTabsList>
+        <SwipeableTabsViewport>
+          <SwipeableTabsContent value="reviews">Reviews panel</SwipeableTabsContent>
+          <SwipeableTabsContent value="likes">Likes panel</SwipeableTabsContent>
+        </SwipeableTabsViewport>
+      </SwipeableTabs>
+    );
+
+    const root = document.querySelector<HTMLElement>("[data-swipeable-tabs-root]");
+    const list = document.querySelector<HTMLElement>("[data-swipeable-tabs-list]");
+    expect(root).not.toBeNull();
+    expect(list).not.toBeNull();
+    expect(root?.classList.contains("overflow-hidden")).toBe(false);
+    expect(list?.classList.contains("left-[calc(50%-50vw)]")).toBe(true);
+    expect(list?.classList.contains("w-screen")).toBe(true);
+  });
+
+  it("keeps vertical touch gestures native and captures horizontal swipes", () => {
+    render(
+      <SwipeableTabs defaultValue="for-you">
+        <SwipeableTabsList aria-label="Home feed sections">
+          <SwipeableTabsTrigger value="for-you">For You</SwipeableTabsTrigger>
+          <SwipeableTabsTrigger value="following">Following</SwipeableTabsTrigger>
+        </SwipeableTabsList>
+        <SwipeableTabsViewport>
+          <SwipeableTabsContent value="for-you">For You panel</SwipeableTabsContent>
+          <SwipeableTabsContent value="following">Following panel</SwipeableTabsContent>
+        </SwipeableTabsViewport>
+      </SwipeableTabs>
+    );
+
+    const viewport = document.querySelector<HTMLElement>("[data-swipeable-tabs-viewport]");
+    expect(viewport).not.toBeNull();
+    if (!viewport) return;
+
+    Object.defineProperty(viewport, "clientWidth", { configurable: true, value: 320 });
+    Object.defineProperty(viewport, "scrollWidth", { configurable: true, value: 640 });
+    Object.defineProperty(viewport, "scrollLeft", { configurable: true, value: 0, writable: true });
+    const scrollTo = vi.fn();
+    const setPointerCapture = vi.fn();
+    const releasePointerCapture = vi.fn();
+    Object.defineProperties(viewport, {
+      hasPointerCapture: { configurable: true, value: vi.fn(() => true) },
+      releasePointerCapture: { configurable: true, value: releasePointerCapture },
+      scrollTo: { configurable: true, value: scrollTo },
+      setPointerCapture: { configurable: true, value: setPointerCapture },
+    });
+
+    fireEvent.pointerDown(viewport, {
+      clientX: 240,
+      clientY: 100,
+      isPrimary: true,
+      pointerId: 1,
+      pointerType: "touch",
+    });
+    fireEvent.pointerMove(viewport, { clientX: 235, clientY: 150, pointerId: 1, pointerType: "touch" });
+    fireEvent.pointerUp(viewport, { clientX: 235, clientY: 150, pointerId: 1, pointerType: "touch" });
+
+    expect(viewport.scrollLeft).toBe(0);
+    expect(setPointerCapture).not.toHaveBeenCalled();
+
+    fireEvent.pointerDown(viewport, {
+      clientX: 240,
+      clientY: 100,
+      isPrimary: true,
+      pointerId: 2,
+      pointerType: "touch",
+    });
+    fireEvent.pointerMove(viewport, { clientX: 140, clientY: 105, pointerId: 2, pointerType: "touch" });
+
+    expect(setPointerCapture).toHaveBeenCalledWith(2);
+    expect(viewport.scrollLeft).toBe(100);
+    expect(viewport.style.scrollSnapType).toBe("none");
+
+    fireEvent.pointerUp(viewport, { clientX: 140, clientY: 105, pointerId: 2, pointerType: "touch" });
+
+    expect(releasePointerCapture).toHaveBeenCalledWith(2);
+    expect(viewport.style.scrollSnapType).toBe("");
+    expect(scrollTo).toHaveBeenCalledWith({ behavior: "smooth", left: 320 });
+  });
+
+  it("scrolls a shared header away while keeping the tab list at the top", () => {
+    const offsetHeight = vi.spyOn(HTMLElement.prototype, "offsetHeight", "get").mockImplementation(function (
+      this: HTMLElement
+    ) {
+      if (this.hasAttribute("data-swipeable-tabs-header")) return 200;
+      if (this.hasAttribute("data-swipeable-tabs-list")) return 48;
+      return 0;
+    });
+
+    render(
+      <SwipeableTabs defaultValue="reviews">
+        <SwipeableTabsHeader>Profile header</SwipeableTabsHeader>
+        <SwipeableTabsList aria-label="Profile sections">
+          <SwipeableTabsTrigger value="reviews">Reviews</SwipeableTabsTrigger>
+          <SwipeableTabsTrigger value="likes">Likes</SwipeableTabsTrigger>
+        </SwipeableTabsList>
+        <SwipeableTabsViewport>
+          <SwipeableTabsContent value="reviews">Reviews panel</SwipeableTabsContent>
+          <SwipeableTabsContent value="likes">Likes panel</SwipeableTabsContent>
+        </SwipeableTabsViewport>
+      </SwipeableTabs>
+    );
+
+    const header = document.querySelector<HTMLElement>("[data-swipeable-tabs-header]");
+    const list = document.querySelector<HTMLElement>("[data-swipeable-tabs-list]");
+    const viewport = document.querySelector<HTMLElement>("[data-swipeable-tabs-viewport]");
+    const reviewsPanel = document.querySelector<HTMLElement>('[data-value="reviews"][role="tabpanel"]');
+    const likesPanel = document.querySelector<HTMLElement>('[data-value="likes"][role="tabpanel"]');
+    const likesContent = likesPanel?.querySelector<HTMLElement>("[data-swipeable-tabs-content-inner]");
+    expect(header).not.toBeNull();
+    expect(list).not.toBeNull();
+    expect(viewport).not.toBeNull();
+    expect(reviewsPanel).not.toBeNull();
+    expect(likesPanel).not.toBeNull();
+    expect(likesContent).not.toBeNull();
+    if (!(header && list && viewport && reviewsPanel && likesPanel && likesContent)) return;
+
+    Object.defineProperty(viewport, "clientWidth", { configurable: true, value: 320 });
+    Object.defineProperty(viewport, "scrollTo", { configurable: true, value: vi.fn() });
+
+    expect(reviewsPanel.style.paddingTop).toBe("247px");
+    expect(likesContent.style.minHeight).toBe("calc(100% + 200px)");
+
+    reviewsPanel.scrollTop = 120;
+    fireEvent.scroll(reviewsPanel);
+    expect(header.style.transform).toBe("translate3d(0, -120px, 0)");
+    expect(list.style.transform).toBe("translate3d(0, -120px, 0)");
+
+    reviewsPanel.scrollTop = 300;
+    fireEvent.scroll(reviewsPanel);
+    expect(header.style.transform).toBe("translate3d(0, -200px, 0)");
+    expect(list.style.transform).toBe("translate3d(0, -200px, 0)");
+
+    fireEvent.click(screen.getByRole("tab", { name: "Likes" }));
+    expect(likesPanel.scrollTop).toBe(200);
+    expect(header.style.transform).toBe("translate3d(0, -200px, 0)");
+    expect(list.style.transform).toBe("translate3d(0, -200px, 0)");
+
+    likesPanel.scrollTop = 0;
+    fireEvent.scroll(likesPanel);
+    fireEvent.click(screen.getByRole("tab", { name: "Reviews" }));
+    expect(reviewsPanel.scrollTop).toBe(0);
+    expect(header.style.transform).toBe("translate3d(0, 0px, 0)");
+    expect(list.style.transform).toBe("translate3d(0, 0px, 0)");
+
+    offsetHeight.mockRestore();
   });
 
   it("provides its panel as the automatic infinite-scroll root", () => {

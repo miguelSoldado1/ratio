@@ -53,7 +53,7 @@ export function ProfileLikedReviewsTab({
   if (userLikedReviewsQuery.isError && reviews.length === 0) {
     return (
       <InlineError
-        className="mt-7"
+        className="bg-background pt-7"
         description="Could not load liked reviews for this profile."
         title="Liked reviews unavailable"
       />

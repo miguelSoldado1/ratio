@@ -33,7 +33,7 @@ export function ProfileLikedReviewsSection({
   const { adminModeEnabled, isAdmin } = useAdminMode();
 
   return (
-    <section className="mt-7">
+    <section className="bg-background pt-7">
       <ReviewList
         emptyState={<EmptyLikedReviews displayName={displayName} />}
         isFetchingNextPage={isFetchingNextPage}
