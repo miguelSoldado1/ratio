@@ -64,7 +64,11 @@ function FeedPage() {
       <PageContainer className={cn(hasSession && "flex h-full min-h-0 flex-col")}>
         <h1 className="sr-only">Album reviews feed</h1>
         {hasSession ? (
-          <SwipeableTabs className="min-h-0 flex-1" defaultValue="for-you" onValueChange={handleTabChange}>
+          <SwipeableTabs
+            className="feed-tabs-enter min-h-0 flex-1"
+            defaultValue="for-you"
+            onValueChange={handleTabChange}
+          >
             <SwipeableTabsHeader>
               <PageContainerContent className="py-0">
                 <RecentRotation viewerUserId={viewerUserId} />
