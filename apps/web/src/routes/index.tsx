@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { FollowingFeedTab } from "@/components/feed/following-feed-tab";
 import { ForYouFeedTab } from "@/components/feed/for-you-feed-tab";
-import { PageContainer } from "@/components/page-container";
+import { PageContainer, PageContainerContent } from "@/components/page-container";
 import { RecentRotation } from "@/components/recent-rotation/recent-rotation";
 import {
   SwipeableTabs,
@@ -61,12 +61,14 @@ function FeedPage() {
 
   return (
     <main className={cn("bg-background text-foreground", hasSession ? "h-[calc(100dvh-4.0625rem)]" : "min-h-screen")}>
-      <PageContainer className={cn("flex flex-col pt-0", hasSession ? "h-full min-h-0 pb-0" : "pb-8 lg:pb-12")}>
+      <PageContainer className={cn(hasSession && "flex h-full min-h-0 flex-col")}>
         <h1 className="sr-only">Album reviews feed</h1>
         {hasSession ? (
           <SwipeableTabs className="min-h-0 flex-1" defaultValue="for-you" onValueChange={handleTabChange}>
             <SwipeableTabsHeader>
-              <RecentRotation viewerUserId={viewerUserId} />
+              <PageContainerContent className="py-0">
+                <RecentRotation viewerUserId={viewerUserId} />
+              </PageContainerContent>
             </SwipeableTabsHeader>
             <SwipeableTabsList
               aria-label="Home feed sections"
@@ -75,29 +77,33 @@ function FeedPage() {
               <SwipeableTabsTrigger value="for-you">For You</SwipeableTabsTrigger>
               <SwipeableTabsTrigger value="following">Following</SwipeableTabsTrigger>
             </SwipeableTabsList>
-            <SwipeableTabsViewport>
-              <SwipeableTabsContent className="pb-8 lg:pb-12" value="for-you">
-                <ForYouFeedTab
-                  active={activeTab === "for-you"}
-                  deletingReviewId={deletingReviewId}
-                  onReviewDelete={handleReviewDelete}
-                  onReviewLikeToggle={handleReviewLikeToggle}
-                  viewer={viewer}
-                />
+            <SwipeableTabsViewport className="mx-0">
+              <SwipeableTabsContent className="px-0 pb-8 lg:pb-12" value="for-you">
+                <PageContainerContent className="py-0">
+                  <ForYouFeedTab
+                    active={activeTab === "for-you"}
+                    deletingReviewId={deletingReviewId}
+                    onReviewDelete={handleReviewDelete}
+                    onReviewLikeToggle={handleReviewLikeToggle}
+                    viewer={viewer}
+                  />
+                </PageContainerContent>
               </SwipeableTabsContent>
-              <SwipeableTabsContent className="pb-8 lg:pb-12" value="following">
-                <FollowingFeedTab
-                  active={activeTab === "following"}
-                  deletingReviewId={deletingReviewId}
-                  onReviewDelete={handleReviewDelete}
-                  onReviewLikeToggle={handleReviewLikeToggle}
-                  viewer={viewer}
-                />
+              <SwipeableTabsContent className="px-0 pb-8 lg:pb-12" value="following">
+                <PageContainerContent className="py-0">
+                  <FollowingFeedTab
+                    active={activeTab === "following"}
+                    deletingReviewId={deletingReviewId}
+                    onReviewDelete={handleReviewDelete}
+                    onReviewLikeToggle={handleReviewLikeToggle}
+                    viewer={viewer}
+                  />
+                </PageContainerContent>
               </SwipeableTabsContent>
             </SwipeableTabsViewport>
           </SwipeableTabs>
         ) : (
-          <>
+          <PageContainerContent className="flex flex-col pt-0 pb-8 lg:pb-12">
             <RecentRotation viewerUserId={viewerUserId} />
             <ForYouFeedTab
               active
@@ -106,7 +112,7 @@ function FeedPage() {
               onReviewLikeToggle={handleReviewLikeToggle}
               viewer={viewer}
             />
-          </>
+          </PageContainerContent>
         )}
       </PageContainer>
     </main>

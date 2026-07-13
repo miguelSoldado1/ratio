@@ -165,6 +165,7 @@ Set `min_votes` to something like 5. Tune `global_mean` from actual data over ti
 
 - Keep the app quiet, dense, and content-led. Ratio should feel closer to a focused music library than a marketing page.
 - Use the existing typography system and shared UI primitives first. Avoid local font changes or broad shadcn component changes unless the design system itself is being intentionally updated.
+- Use `PageContainer` for the full painted page rail and `PageContainerContent` for the standard margin-based horizontal gutters. Full-width headers, tabs, and swipe surfaces belong on the outer rail; their aligned content belongs inside the guttered content rail.
 - Use CSS theme variables or semantic Tailwind tokens for all colors. Do not use raw color values in Tailwind classes; add a named token to `apps/web/src/styles.css` first when the palette needs a new color.
 - Hover should imply action. Add hover states to links, buttons, icon buttons, tabs, and fully clickable cards; keep static rows, metadata, and read-only content visually still.
 - If only part of a card is interactive, make only that control react. Do not add full-card hover unless clicking the card itself has a clear destination.

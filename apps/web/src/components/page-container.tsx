@@ -1,11 +1,13 @@
 import { cn } from "@/lib/utils";
-import type { ReactNode } from "react";
+import type { ComponentProps } from "react";
 
-interface PageContainerProps {
-  children: ReactNode;
-  className?: string;
+type PageContainerProps = ComponentProps<"div">;
+type PageContainerContentProps = ComponentProps<"div">;
+
+export function PageContainer({ className, ...props }: PageContainerProps) {
+  return <div className={cn("mx-auto w-full max-w-375 bg-background", className)} {...props} />;
 }
 
-export function PageContainer({ children, className }: PageContainerProps) {
-  return <div className={cn("mx-auto w-full max-w-375 px-5 py-8 lg:px-10", className)}>{children}</div>;
+export function PageContainerContent({ className, ...props }: PageContainerContentProps) {
+  return <div className={cn("mx-5 py-8 lg:mx-10", className)} {...props} />;
 }
