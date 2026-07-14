@@ -96,6 +96,8 @@ describe("SwipeableTabs", () => {
     expect(followingPanel.hasAttribute("data-swipeable-tabs-scroll-panel")).toBe(true);
     expect(forYouPanel.classList.contains("overflow-y-auto")).toBe(true);
     expect(followingPanel.classList.contains("overflow-y-auto")).toBe(true);
+    expect(forYouPanel.classList.contains("[scrollbar-width:none]")).toBe(true);
+    expect(forYouPanel.classList.contains("[&::-webkit-scrollbar]:hidden")).toBe(true);
     expect(forYouPanel.hasAttribute("inert")).toBe(false);
     expect(followingPanel.hasAttribute("inert")).toBe(true);
 
@@ -118,7 +120,7 @@ describe("SwipeableTabs", () => {
     expect(windowScrollTo).not.toHaveBeenCalled();
   });
 
-  it("lets the tab list span the viewport outside its content container", () => {
+  it("lets the tab list and swipe viewport span the full viewport", () => {
     render(
       <SwipeableTabs defaultValue="reviews">
         <SwipeableTabsList aria-label="Profile sections">
@@ -134,11 +136,20 @@ describe("SwipeableTabs", () => {
 
     const root = document.querySelector<HTMLElement>("[data-swipeable-tabs-root]");
     const list = document.querySelector<HTMLElement>("[data-swipeable-tabs-list]");
+    const controls = document.querySelector<HTMLElement>("[data-swipeable-tabs-controls]");
+    const viewport = document.querySelector<HTMLElement>("[data-swipeable-tabs-viewport]");
     expect(root).not.toBeNull();
     expect(list).not.toBeNull();
+    expect(controls).not.toBeNull();
+    expect(viewport).not.toBeNull();
     expect(root?.classList.contains("overflow-hidden")).toBe(false);
     expect(list?.classList.contains("left-[calc(50%-50vw)]")).toBe(true);
     expect(list?.classList.contains("w-screen")).toBe(true);
+    expect(controls?.classList.contains("w-full")).toBe(true);
+    expect(controls?.classList.contains("lg:w-fit")).toBe(true);
+    expect(screen.getByRole("tab", { name: "Reviews" }).classList.contains("lg:min-w-36")).toBe(true);
+    expect(viewport?.classList.contains("left-[calc(50%-50vw)]")).toBe(true);
+    expect(viewport?.classList.contains("w-screen")).toBe(true);
   });
 
   it("keeps vertical touch gestures native and captures horizontal swipes", () => {

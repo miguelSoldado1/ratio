@@ -64,7 +64,7 @@ Search is a global command/dialog experience in v1, not a standalone route. Sepa
 - Liked-by dialog for reviews
 - Follow users
 - User profiles with rating history
-- Profile Reviews and Likes use the shared independently scrollable tab behavior beneath one profile header. A collapsed header preserves each tab's deeper position when switching; once the header is revealed, it stays revealed across tabs. The tab bar sits directly against the profile header and spans the full viewport width
+- Profile Reviews and Likes use the shared independently scrollable tab behavior beneath one profile header. A collapsed header preserves each tab's deeper position when switching; once the header is revealed, it stays revealed across tabs. The tab bar sits directly against the profile header and spans the full viewport width, while its visual controls become compact and centered on desktop
 - Album pages with community score and reviews
 - Search albums via Spotify API and users by username/display username from the global search dialog
 - Link/unlink sign-in methods in settings
@@ -165,11 +165,12 @@ Set `min_votes` to something like 5. Tune `global_mean` from actual data over ti
 
 - Keep the app quiet, dense, and content-led. Ratio should feel closer to a focused music library than a marketing page.
 - Use the existing typography system and shared UI primitives first. Avoid local font changes or broad shadcn component changes unless the design system itself is being intentionally updated.
-- Use `PageContainer` for the full painted page rail and `PageContainerContent` for the standard margin-based horizontal gutters. Full-width headers, tabs, and swipe surfaces belong on the outer rail; their aligned content belongs inside the guttered content rail.
+- Use `PageContainer` for the full painted page rail and `PageContainerContent` for centered, max-width horizontal gutters. Full-viewport headers, tabs, and swipe surfaces may break out of the outer rail; their aligned content belongs inside the guttered content rail.
 - Use CSS theme variables or semantic Tailwind tokens for all colors. Do not use raw color values in Tailwind classes; add a named token to `apps/web/src/styles.css` first when the palette needs a new color.
 - Hover should imply action. Add hover states to links, buttons, icon buttons, tabs, and fully clickable cards; keep static rows, metadata, and read-only content visually still.
 - If only part of a card is interactive, make only that control react. Do not add full-card hover unless clicking the card itself has a clear destination.
 - Motion should explain state or provide feedback. Frequent interactions should be instant or very subtle; avoid decorative animation on surfaces users scan repeatedly.
+- Hide native scrollbars on the independently scrolling tab panels while retaining wheel, trackpad, touch, and keyboard scrolling.
 - Prefer fine-pointer-only hover treatments where relevant so touch layouts do not inherit desktop affordances.
 - Use subdued metadata hierarchy. Secondary facts should be available but visually quiet, and repeated labels should be removed when nearby context already explains the content.
 - Empty states should preserve the layout and communicate the absence clearly without turning into a separate promotional panel.
