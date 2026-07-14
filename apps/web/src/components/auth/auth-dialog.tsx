@@ -15,7 +15,13 @@ interface AuthDialogProps {
 export function AuthDialog({ onOpenChange, open }: AuthDialogProps) {
   const [lastUsedMethod, setLastUsedMethod] = useState<string | null>();
   const [pendingProvider, setPendingProvider] = useState<AuthProviderId | null>(null);
+  const session = authClient.useSession();
+  const canOpen = !(session.isPending || session.data?.user);
   const returnUrl = getCurrentAuthReturnUrl();
+
+  useEffect(() => {
+    if (open && session.data?.user) onOpenChange(false);
+  }, [onOpenChange, open, session.data?.user]);
 
   useEffect(() => {
     function syncDialogState() {
@@ -52,7 +58,7 @@ export function AuthDialog({ onOpenChange, open }: AuthDialogProps) {
   }
 
   return (
-    <Dialog onOpenChange={onOpenChange} open={open}>
+    <Dialog onOpenChange={onOpenChange} open={open && canOpen}>
       <DialogContent size="md">
         <DialogHeader className="gap-2">
           <DialogTitle className="text-xl">Continue to Ratio</DialogTitle>
