@@ -1,4 +1,4 @@
-import { and, desc, eq, getTableColumns, gt, inArray, isNotNull, notInArray, sql } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, gt, inArray, isNotNull, notInArray, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import z from "zod";
 import { getDb } from "@/lib/db";
@@ -178,7 +178,7 @@ export async function getFollowingFeedService(data: FeedInput, context: Authenti
       activityAt: reviews.createdAt,
     })
     .from(reviews)
-    .innerJoin(
+    .leftJoin(
       userFollows,
       and(eq(userFollows.followerId, context.user.id), eq(userFollows.followingId, reviews.userId))
     )
@@ -186,6 +186,7 @@ export async function getFollowingFeedService(data: FeedInput, context: Authenti
     .innerJoin(user, eq(reviews.userId, user.id))
     .where(
       and(
+        or(eq(reviews.userId, context.user.id), isNotNull(userFollows.followingId)),
         isNotNull(user.username),
         getVisibleReviewAuthorFilter(),
         cursor ? getCreatedAtIdCursorFilter(cursor, { createdAt: reviews.createdAt, id: reviews.id }) : undefined
@@ -193,7 +194,7 @@ export async function getFollowingFeedService(data: FeedInput, context: Authenti
     )
     .orderBy(desc(reviews.createdAt), desc(reviews.id))
     .limit(feedPageSize + 1)
-    .then((followingRows) => followingRows.map((row) => ({ ...row, source: "followed" as const })));
+    .then((feedRows) => feedRows.map((row) => ({ ...row, source: "followed" as const })));
 
   const hasNextPage = rows.length > feedPageSize;
   const pageRows = hasNextPage ? rows.slice(0, feedPageSize) : rows;
