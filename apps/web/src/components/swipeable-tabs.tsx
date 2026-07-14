@@ -346,27 +346,29 @@ function SwipeableTabsList({ children, className, style, ...props }: SwipeableTa
   }, [listRef, setListHeight]);
 
   return (
-    <TabsList
-      className={cn(
-        "absolute left-[calc(50%-50vw)] z-50 w-screen border-border/70 border-b bg-background will-change-transform",
-        className
-      )}
+    <div
+      className="absolute left-[calc(50%-50vw)] z-50 w-screen border-border/70 border-b bg-background will-change-transform"
       data-swipeable-tabs-list=""
       ref={listRef}
       style={{ ...style, top: headerHeight - 1 }}
-      variant="line"
-      {...props}
     >
-      {children}
-      {count > 0 ? (
-        <span
-          aria-hidden="true"
-          className="pointer-events-none absolute bottom-0 left-0 h-0.5 rounded-full bg-foreground"
-          ref={indicatorRef}
-          style={{ width: `${100 / count}%` }}
-        />
-      ) : null}
-    </TabsList>
+      <TabsList
+        className={cn("relative mx-auto flex w-full gap-0 lg:w-fit", className)}
+        data-swipeable-tabs-controls=""
+        variant="line"
+        {...props}
+      >
+        {children}
+        {count > 0 ? (
+          <span
+            aria-hidden="true"
+            className="pointer-events-none absolute bottom-0 left-0 h-0.5 rounded-full bg-foreground"
+            ref={indicatorRef}
+            style={{ width: `${100 / count}%` }}
+          />
+        ) : null}
+      </TabsList>
+    </div>
   );
 }
 
@@ -377,7 +379,7 @@ function SwipeableTabsTrigger({ className, value, ...props }: SwipeableTabsTrigg
   return (
     <TabsTrigger
       aria-controls={`${idBase}-panel-${stringValue}`}
-      className={cn("after:hidden", className)}
+      className={cn("after:hidden lg:min-w-36 lg:flex-none", className)}
       data-swipeable-tabs-trigger=""
       data-value={stringValue}
       id={`${idBase}-tab-${stringValue}`}
@@ -535,7 +537,7 @@ function SwipeableTabsViewport({ children, className, ...props }: SwipeableTabsV
   return (
     <div
       className={cn(
-        "scrollbar-none -mx-0.5 flex min-h-0 flex-1 touch-pan-y snap-x snap-mandatory items-stretch overflow-x-auto overflow-y-hidden overscroll-x-contain [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
+        "scrollbar-none relative left-[calc(50%-50vw)] flex min-h-0 w-screen flex-1 touch-pan-y snap-x snap-mandatory items-stretch overflow-x-auto overflow-y-hidden overscroll-x-contain [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
         className
       )}
       data-swipeable-tabs-viewport=""
@@ -580,7 +582,10 @@ function SwipeableTabsContent({ children, className, onScroll, style, value, ...
     <div
       aria-hidden={!active}
       aria-labelledby={`${idBase}-tab-${value}`}
-      className={cn("h-full min-w-0 flex-[0_0_100%] snap-start overflow-y-auto overscroll-y-contain px-0.5", className)}
+      className={cn(
+        "h-full min-w-0 flex-[0_0_100%] snap-start overflow-y-auto overscroll-y-contain px-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+        className
+      )}
       data-swipeable-tabs-scroll-panel=""
       data-value={value}
       id={`${idBase}-panel-${value}`}
