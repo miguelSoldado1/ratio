@@ -241,7 +241,7 @@ describe("getFeedService authenticated feed", () => {
 });
 
 describe("getFollowingFeedService", () => {
-  it("returns only followed-user reviews in reverse chronological order", async () => {
+  it("returns viewer and followed-user reviews in reverse chronological order", async () => {
     const viewer = await createTestUser(testDb);
     const followedAuthor = await createTestUser(testDb);
     const globalAuthor = await createTestUser(testDb);
@@ -251,6 +251,10 @@ describe("getFollowingFeedService", () => {
     const olderFollowedReview = await createTestReview(testDb, {
       createdAt: daysAgo(45),
       userId: followedAuthor.id,
+    });
+    const viewerReview = await createTestReview(testDb, {
+      createdAt: daysAgo(2),
+      userId: viewer.id,
     });
     const newerFollowedReview = await createTestReview(testDb, {
       createdAt: daysAgo(1),
@@ -263,7 +267,12 @@ describe("getFollowingFeedService", () => {
 
     const page = await getFollowingFeedService({}, context);
 
-    expect(page.reviews.map((review) => review.id)).toEqual([newerFollowedReview.id, olderFollowedReview.id]);
+    expect(page.reviews.map((review) => review.id)).toEqual([
+      newerFollowedReview.id,
+      viewerReview.id,
+      olderFollowedReview.id,
+    ]);
+    expect(page.reviews.find((review) => review.id === viewerReview.id)).toMatchObject({ canDelete: true });
     expect(page.reviews.map((review) => review.id)).not.toContain(globalReview.id);
   });
 
@@ -287,18 +296,18 @@ describe("getFollowingFeedService", () => {
     expect(page.reviews.map((review) => review.id)).not.toContain(bannedReview.id);
   });
 
-  it("paginates without repeating reviews", async () => {
+  it("paginates viewer and followed-user reviews without repeating them", async () => {
     const viewer = await createTestUser(testDb);
     const followedAuthor = await createTestUser(testDb);
     const context = createAuthenticatedContext(testDb, viewer);
 
     await createTestUserFollow(testDb, { followerId: viewer.id, followingId: followedAuthor.id });
     await Promise.all(
-      Array.from({ length: 21 }, (_, index) =>
+      Array.from({ length: 22 }, (_, index) =>
         createTestReview(testDb, {
           body: `Following review ${index}`,
           createdAt: minutesAgo(index),
-          userId: followedAuthor.id,
+          userId: index % 2 === 0 ? viewer.id : followedAuthor.id,
         })
       )
     );
@@ -309,7 +318,7 @@ describe("getFollowingFeedService", () => {
 
     expect(firstPage.reviews).toHaveLength(20);
     expect(firstPage.nextCursor).toEqual(expect.any(String));
-    expect(secondPage.reviews).toHaveLength(1);
+    expect(secondPage.reviews).toHaveLength(2);
     expect(secondPage.reviews.some((review) => firstPageIds.has(review.id))).toBe(false);
     expect(secondPage.nextCursor).toBeNull();
   });

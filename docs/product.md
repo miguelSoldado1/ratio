@@ -69,7 +69,7 @@ Search is a global command/dialog experience in v1, not a standalone route. Sepa
 - Search albums via Spotify API and users by username/display username from the global search dialog
 - Link/unlink sign-in methods in settings
 - Home For You feed blending recent reviews, recently liked reviews, and followed-user reviews when signed in
-- Signed-in Following feed with reviews from followed users in reverse chronological order
+- Signed-in Following feed with the viewer's reviews and reviews from followed users in reverse chronological order
 - Album-scoped review permalinks and basic review sharing
 - Basic admin moderation: remove bad reviews/ratings and ban abusive accounts
 - Notifications: someone liked your review, new follower
@@ -117,7 +117,7 @@ Authenticated users receive the anonymous candidate sources plus:
 
 - recent reviews from people they follow
 
-The signed-in-only Following tab is separate from this ranked blend. It returns reviews from followed users in strict reverse chronological order with cursor pagination, without ranking or diversity filters.
+The signed-in-only Following tab is separate from this ranked blend. It returns the viewer's reviews and reviews from followed users in strict reverse chronological order with cursor pagination, without ranking or diversity filters.
 
 The scoring weights live in `apps/web/src/server/services/feed-service.ts` near the feed constants so they can be tuned without changing query logic. Current signals are:
 
