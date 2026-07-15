@@ -141,7 +141,7 @@ function SwipeableTabs({
       if (panelIndex === -1) return;
 
       const nextLeft = panelIndex * scroller.clientWidth;
-      if (Math.abs(scroller.scrollLeft - nextLeft) < 1) return;
+      if (programmaticTargetRef.current === null && Math.abs(scroller.scrollLeft - nextLeft) < 1) return;
 
       programmaticTargetRef.current = nextValue;
       if (unlockTimerRef.current !== null) clearTimeout(unlockTimerRef.current);
@@ -351,7 +351,10 @@ function SwipeableTabsList({ children, className, style, ...props }: SwipeableTa
     const resizeObserver = new ResizeObserver(updateHeight);
     resizeObserver.observe(list);
 
-    return () => resizeObserver.disconnect();
+    return () => {
+      resizeObserver.disconnect();
+      setListHeight(0);
+    };
   }, [listRef, setListHeight]);
 
   return (
@@ -528,12 +531,23 @@ function SwipeableTabsViewport({ children, className, ...props }: SwipeableTabsV
     const scroller = scrollerRef.current;
     if (!scroller) return;
 
-    const panels = Array.from(scroller.children) as HTMLElement[];
-    const activeIndex = panels.findIndex((panel) => panel.dataset.value === valueRef.current);
-    if (activeIndex >= 0) scroller.scrollLeft = activeIndex * scroller.clientWidth;
+    const alignToActivePanel = () => {
+      const panels = Array.from(scroller.children) as HTMLElement[];
+      const activeIndex = panels.findIndex((panel) => panel.dataset.value === valueRef.current);
+      if (activeIndex >= 0) scroller.scrollLeft = activeIndex * scroller.clientWidth;
+    };
+
+    alignToActivePanel();
     handleScrollRef.current();
 
-    const resizeObserver = new ResizeObserver(() => handleScrollRef.current());
+    let lastWidth = scroller.clientWidth;
+    const resizeObserver = new ResizeObserver(() => {
+      if (scroller.clientWidth !== lastWidth) {
+        lastWidth = scroller.clientWidth;
+        if (swipeGestureRef.current?.axis !== "horizontal") alignToActivePanel();
+      }
+      handleScrollRef.current();
+    });
     resizeObserver.observe(scroller);
 
     return () => {
@@ -592,7 +606,7 @@ function SwipeableTabsContent({ children, className, onScroll, style, value, ...
       aria-hidden={!active}
       aria-labelledby={`${idBase}-tab-${value}`}
       className={cn(
-        "h-full min-w-0 flex-[0_0_100%] snap-start overflow-y-auto overscroll-y-contain px-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+        "scrollbar-none h-full min-w-0 flex-[0_0_100%] snap-start overflow-y-auto overscroll-y-contain px-0.5 [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden",
         className
       )}
       data-swipeable-tabs-scroll-panel=""
