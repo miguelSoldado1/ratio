@@ -183,6 +183,15 @@ function SwipeableTabs({
     (scrollTop: number) => {
       const offset = Math.min(Math.max(scrollTop, 0), headerHeight);
       headerOffsetRef.current = offset;
+
+      for (const panel of Array.from(scrollerRef.current?.children ?? []) as HTMLElement[]) {
+        if (offset < headerHeight) {
+          if (panel.scrollTop !== offset) panel.scrollTop = offset;
+        } else if (panel.scrollTop < offset) {
+          panel.scrollTop = offset;
+        }
+      }
+
       const transform = `translate3d(0, ${-offset}px, 0)`;
       if (headerRef.current) headerRef.current.style.transform = transform;
       if (listRef.current) listRef.current.style.transform = transform;
