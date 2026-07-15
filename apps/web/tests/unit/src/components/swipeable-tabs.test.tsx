@@ -96,7 +96,7 @@ describe("SwipeableTabs", () => {
     expect(followingPanel.hasAttribute("data-swipeable-tabs-scroll-panel")).toBe(true);
     expect(forYouPanel.classList.contains("overflow-y-auto")).toBe(true);
     expect(followingPanel.classList.contains("overflow-y-auto")).toBe(true);
-    expect(forYouPanel.classList.contains("[scrollbar-width:none]")).toBe(true);
+    expect(forYouPanel.classList.contains("scrollbar-none")).toBe(true);
     expect(forYouPanel.classList.contains("[&::-webkit-scrollbar]:hidden")).toBe(true);
     expect(forYouPanel.hasAttribute("inert")).toBe(false);
     expect(followingPanel.hasAttribute("inert")).toBe(true);
@@ -263,11 +263,13 @@ describe("SwipeableTabs", () => {
     fireEvent.scroll(reviewsPanel);
     expect(header.style.transform).toBe("translate3d(0, -120px, 0)");
     expect(list.style.transform).toBe("translate3d(0, -120px, 0)");
+    expect(likesPanel.scrollTop).toBe(120);
 
     reviewsPanel.scrollTop = 300;
     fireEvent.scroll(reviewsPanel);
     expect(header.style.transform).toBe("translate3d(0, -200px, 0)");
     expect(list.style.transform).toBe("translate3d(0, -200px, 0)");
+    expect(likesPanel.scrollTop).toBe(200);
 
     fireEvent.click(screen.getByRole("tab", { name: "Likes" }));
     expect(likesPanel.scrollTop).toBe(200);
