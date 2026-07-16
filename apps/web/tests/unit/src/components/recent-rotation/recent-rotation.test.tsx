@@ -69,6 +69,7 @@ describe("RecentRotation", () => {
 
     const shelfHeading = await screen.findByText("Albums from your recent listening");
     expect(shelfHeading.closest("section")?.classList.contains("recent-rotation-enter")).toBe(true);
+    expect(shelfHeading.closest("section")?.querySelector("ul")?.className).toContain("xl:auto-cols-fr");
     expect(screen.getByText("First Album").closest("a")?.getAttribute("href")).toBe("/album/album_1");
     expect(screen.getByText("Second Album").closest("a")?.getAttribute("href")).toBe("/album/album_2");
     expect(screen.getAllByText("Artist One")).toHaveLength(2);

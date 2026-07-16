@@ -50,7 +50,7 @@ export function RecentRotation({ viewerUserId }: RecentRotationProps) {
       <div className="flex items-center justify-between gap-3">
         <h2 className="heading-section">Albums from your recent listening</h2>
       </div>
-      <ul className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-3 xl:grid-cols-6">
+      <ul className="mt-3 grid grid-cols-2 gap-2 lg:grid-cols-3 xl:auto-cols-fr xl:grid-flow-col xl:grid-cols-none">
         {albums.map((album) => (
           <RecentRotationTile album={album} key={album.id} />
         ))}
