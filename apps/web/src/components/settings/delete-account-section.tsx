@@ -64,7 +64,12 @@ export function DeleteAccountSection({ confirmationHandle, isPending, onDeleteAc
               </FieldLabel>
               <Input
                 autoComplete="off"
+                data-1p-ignore
+                data-bwignore="true"
+                data-form-type="other"
+                data-lpignore="true"
                 id="delete-confirmation"
+                name="delete-account-confirmation"
                 onChange={(event) => setConfirmation(event.target.value)}
                 value={confirmation}
               />
