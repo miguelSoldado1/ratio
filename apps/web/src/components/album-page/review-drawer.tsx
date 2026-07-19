@@ -160,7 +160,7 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
             ratingInputRef.current?.focus();
           }}
         >
-          <form className="mx-auto flex min-h-0 w-full max-w-sm flex-1 flex-col sm:max-w-lg" onSubmit={handleSubmit}>
+          <form className="mx-2 flex min-h-0 flex-1 flex-col sm:mx-3" onSubmit={handleSubmit}>
             <DrawerHeader className="gap-0 px-4 py-3 sm:gap-0.5 sm:py-4">
               <DrawerTitle className="text-sm sm:text-base">Add a review</DrawerTitle>
               <DrawerDescription className="text-xs sm:text-sm">
@@ -182,12 +182,12 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
                     Click or drag across the stars to set your rating.
                   </FieldDescription>
                 </Field>
-                <Field>
+                <Field className="max-w-prose border-border border-t pt-4">
                   <FieldLabel htmlFor={reviewFormIds.review}>Review</FieldLabel>
                   <Textarea
                     aria-describedby={`${reviewFormIds.reviewDescription}${reviewSubmitError ? ` ${reviewFormIds.reviewError}` : ""}`}
                     aria-invalid={reviewSubmitError ? true : undefined}
-                    className="min-h-40 sm:min-h-32"
+                    className="review-composer-textarea min-h-40 rounded-none border-border border-x-0 border-t-0 border-b bg-transparent px-0 py-3 text-[15px] leading-6 shadow-none outline-none ring-0 aria-invalid:ring-0 aria-invalid:placeholder:text-destructive/70"
                     id={reviewFormIds.review}
                     onAnimationEnd={(event) => event.currentTarget.classList.remove("animate-input-shake")}
                     onChange={(event) => {
