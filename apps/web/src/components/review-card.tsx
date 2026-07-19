@@ -260,7 +260,7 @@ function Review({ children, className, collapsed = true, permalink }: ReviewProp
         {collapsed && canToggle ? (
           <div
             className={cn(
-              "pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-linear-to-b from-[var(--review-fade-color,var(--background))]/0 via-[var(--review-fade-color,var(--background))]/80 to-[var(--review-fade-color,var(--background))] opacity-0 [transition:opacity_160ms_cubic-bezier(0.23,1,0.32,1)]",
+              "pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-linear-to-b from-(--review-fade-color,var(--background))/0 via-(--review-fade-color,var(--background))/80 to-(--review-fade-color,var(--background)) opacity-0 [transition:opacity_160ms_cubic-bezier(0.23,1,0.32,1)]",
               !expanded && "opacity-100"
             )}
           />
