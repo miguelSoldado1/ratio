@@ -1095,14 +1095,14 @@ function getDisplayActors(actors: NotificationActor[]) {
 }
 
 function formatReviewLikedText(actors: NotificationActor[], actorCount: number) {
-  return formatLikedText(actors, actorCount, "review", "");
+  return formatLikedText(actors, actorCount, "review");
 }
 
 function formatLikedText(
   actors: NotificationActor[],
   actorCount: number,
   target: "reply" | "review",
-  punctuation = "."
+  punctuation = ""
 ) {
   const actorNames = actors.map(getActorDisplayName);
 

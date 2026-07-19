@@ -4,9 +4,11 @@ import { NotificationList } from "@/components/notifications/notification-list";
 import type { NotificationItem } from "@/server/services/notification-service";
 
 const authorReplyName = /Carly replied to your review\./;
-const groupedReplyLikeName = /Carly and 1 other liked your reply\./;
+const groupedReplyLikeName = /Carly and 1 other liked your reply/;
+const groupedReplyLikeWithPeriodName = /Carly and 1 other liked your reply\./;
 const participantReplyName = /Carly also replied to Alice's review\./;
-const replyLikedName = /Carly liked your reply\./;
+const replyLikedName = /Carly liked your reply/;
+const replyLikedWithPeriodName = /Carly liked your reply\./;
 
 describe("NotificationList", () => {
   it("renders exact reply notification copy", () => {
@@ -22,6 +24,7 @@ describe("NotificationList", () => {
     expect(screen.getByRole("button", { name: authorReplyName })).toBeTruthy();
     expect(screen.getByRole("button", { name: participantReplyName })).toBeTruthy();
     expect(screen.getByRole("button", { name: replyLikedName })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: replyLikedWithPeriodName })).toBeNull();
   });
 
   it("keeps grouped like copy valid if a source changes between hydration queries", () => {
@@ -30,6 +33,7 @@ describe("NotificationList", () => {
     renderList([item]);
 
     expect(screen.getByRole("button", { name: groupedReplyLikeName })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: groupedReplyLikeWithPeriodName })).toBeNull();
   });
 });
 
@@ -80,7 +84,7 @@ function createReplyLikedItem(
     replyId: "reply-a",
     reviewId: "review-a",
     seen: false,
-    text: "Carly liked your reply.",
+    text: "Carly liked your reply",
     type: "reply_liked",
     ...overrides,
   };

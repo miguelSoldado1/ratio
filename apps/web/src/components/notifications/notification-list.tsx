@@ -179,7 +179,7 @@ function NotificationText({ item }: { item: NotificationItem }) {
         </>
       );
     case "reply_liked":
-      return <NotificationLikedText actorCount={item.actorCount} actors={item.actors} punctuation="." target="reply" />;
+      return <NotificationLikedText actorCount={item.actorCount} actors={item.actors} target="reply" />;
     case "user_followed":
       return (
         <>
@@ -194,11 +194,10 @@ function NotificationText({ item }: { item: NotificationItem }) {
 interface NotificationLikedTextProps {
   actorCount: number;
   actors: Array<{ displayUsername: string | null; username: string }>;
-  punctuation?: string;
   target: "reply" | "review";
 }
 
-function NotificationLikedText({ actorCount, actors, punctuation = "", target }: NotificationLikedTextProps) {
+function NotificationLikedText({ actorCount, actors, target }: NotificationLikedTextProps) {
   const actorNames = actors.map(getActorDisplayName);
 
   if (actorCount <= 1 || actorNames.length === 1) {
@@ -206,7 +205,6 @@ function NotificationLikedText({ actorCount, actors, punctuation = "", target }:
       return (
         <>
           <NotificationActorName name={actorNames[0]} /> and {formatOtherActorCount(actorCount - 1)} liked your {target}
-          {punctuation}
         </>
       );
     }
@@ -214,7 +212,6 @@ function NotificationLikedText({ actorCount, actors, punctuation = "", target }:
     return (
       <>
         <NotificationActorName name={actorNames[0]} /> liked your {target}
-        {punctuation}
       </>
     );
   }
@@ -224,7 +221,6 @@ function NotificationLikedText({ actorCount, actors, punctuation = "", target }:
       <>
         <NotificationActorName name={actorNames[0]} /> and <NotificationActorName name={actorNames[1]} /> liked your{" "}
         {target}
-        {punctuation}
       </>
     );
   }
@@ -234,7 +230,6 @@ function NotificationLikedText({ actorCount, actors, punctuation = "", target }:
       <>
         <NotificationActorName name={actorNames[0]} />, <NotificationActorName name={actorNames[1]} /> and{" "}
         <NotificationActorName name={actorNames[2]} /> liked your {target}
-        {punctuation}
       </>
     );
   }
@@ -243,7 +238,6 @@ function NotificationLikedText({ actorCount, actors, punctuation = "", target }:
     <>
       <NotificationActorName name={actorNames[0]} />, <NotificationActorName name={actorNames[1]} /> and{" "}
       {formatOtherActorCount(Math.max(1, actorCount - 2))} liked your {target}
-      {punctuation}
     </>
   );
 }
