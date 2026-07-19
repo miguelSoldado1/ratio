@@ -1,4 +1,4 @@
-import { useId, useRef } from "react";
+import { useEffect, useId, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
@@ -25,6 +25,7 @@ interface ReplyThreadProps {
   onRetryNextPage: () => void;
   onShowLikes: (replyId: string) => void;
   replies: ReviewReply[];
+  replyToRevealId?: string;
   totalCount: number;
 }
 
@@ -45,6 +46,7 @@ export function ReplyThread({
   onShowLikes,
   onRetryInitial,
   onRetryNextPage,
+  replyToRevealId,
   replies,
   totalCount,
 }: ReplyThreadProps) {
@@ -52,9 +54,23 @@ export function ReplyThread({
   const newlyPostedLabelId = `${headingId}-newly-posted`;
   const headingRef = useRef<HTMLHeadingElement>(null);
   const replyRefs = useRef(new Map<string, HTMLElement>());
+  const revealedReplyId = useRef<string | undefined>(undefined);
 
   const allVisibleReplies = [...replies, ...localTail];
   const showNextPageError = isNextPageError && !isFetchingNextPage;
+
+  useEffect(() => {
+    if (!replyToRevealId || revealedReplyId.current === replyToRevealId) return;
+
+    const replyElement = replyRefs.current.get(replyToRevealId);
+    if (!replyElement) return;
+
+    revealedReplyId.current = replyToRevealId;
+    window.requestAnimationFrame(() => {
+      replyElement.scrollIntoView?.({ behavior: "auto", block: "center" });
+      replyElement.focus({ preventScroll: true });
+    });
+  }, [replyToRevealId]);
 
   function setReplyRef(replyId: string, node: HTMLElement | null) {
     if (node) {
@@ -90,6 +106,29 @@ export function ReplyThread({
         )}
       </h2>
       {composer ? <div className="mt-4 border-border/80 border-y py-4">{composer}</div> : null}
+      {localTail.length > 0 ? (
+        <div className="border-border/80 border-b pt-4">
+          <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide" id={newlyPostedLabelId}>
+            {localTail.length === 1 ? "Your reply" : "Your replies"}
+          </p>
+          <ol aria-labelledby={newlyPostedLabelId} className="divide-y divide-border/80">
+            {localTail.map((reply) => (
+              <li key={reply.id}>
+                <ReplyRow
+                  articleRef={(node) => setReplyRef(reply.id, node)}
+                  canDeleteAsAdmin={isAdminMode && !reply.canDelete}
+                  hasSession={hasSession}
+                  isDeleting={deletingReplyId === reply.id}
+                  onDelete={() => handleDelete(reply.id)}
+                  onLikeToggle={(liked) => onLikeToggle(reply.id, liked)}
+                  onShowLikes={() => onShowLikes(reply.id)}
+                  reply={reply}
+                />
+              </li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
       {isInitialLoading ? <ReplyThreadLoading /> : null}
       {isInitialError ? <ReplyThreadInitialError onRetry={onRetryInitial} /> : null}
       {!(isInitialLoading || isInitialError) && replies.length === 0 && localTail.length === 0 ? (
@@ -124,29 +163,6 @@ export function ReplyThread({
           <Button onClick={onRetryNextPage} size="sm" type="button" variant="outline">
             Retry loading replies
           </Button>
-        </div>
-      ) : null}
-      {localTail.length > 0 ? (
-        <div className="border-border/80 border-t pt-4">
-          <p className="font-medium text-muted-foreground text-xs uppercase tracking-wide" id={newlyPostedLabelId}>
-            Newly posted
-          </p>
-          <ol aria-labelledby={newlyPostedLabelId} className="divide-y divide-border/80">
-            {localTail.map((reply) => (
-              <li key={reply.id}>
-                <ReplyRow
-                  articleRef={(node) => setReplyRef(reply.id, node)}
-                  canDeleteAsAdmin={isAdminMode && !reply.canDelete}
-                  hasSession={hasSession}
-                  isDeleting={deletingReplyId === reply.id}
-                  onDelete={() => handleDelete(reply.id)}
-                  onLikeToggle={(liked) => onLikeToggle(reply.id, liked)}
-                  onShowLikes={() => onShowLikes(reply.id)}
-                  reply={reply}
-                />
-              </li>
-            ))}
-          </ol>
         </div>
       ) : null}
     </section>

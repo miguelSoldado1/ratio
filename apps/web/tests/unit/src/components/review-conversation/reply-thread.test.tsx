@@ -12,6 +12,10 @@ beforeEach(() => {
     window.setTimeout(() => callback(0), 0);
     return 0;
   });
+  Object.defineProperty(HTMLElement.prototype, "scrollIntoView", {
+    configurable: true,
+    value: vi.fn(),
+  });
 });
 
 describe("ReplyThread", () => {
@@ -37,8 +41,9 @@ describe("ReplyThread", () => {
     expect(onRetryNextPage).toHaveBeenCalledOnce();
   });
 
-  it("renders an automatic pagination sentinel before a newly posted tail", () => {
+  it("renders the local reply section immediately below the composer", () => {
     renderThread({
+      composer: <textarea aria-label="Add a reply" />,
       hasNextPage: true,
       localTail: [createReply({ body: "Posted locally", id: "reply-z" })],
       replies: [createReply()],
@@ -47,8 +52,21 @@ describe("ReplyThread", () => {
 
     expect(screen.queryByRole("button", { name: "Load more replies" })).toBeNull();
     expect(document.querySelector('[data-slot="reply-pagination-sentinel"]')).not.toBeNull();
-    expect(screen.getByRole("list", { name: "Newly posted" })).toBeTruthy();
+    expect(screen.getByRole("list", { name: "Your reply" })).toBeTruthy();
     expect(screen.getByText("Posted locally")).toBeTruthy();
+    expect(screen.getByLabelText("Add a reply").compareDocumentPosition(screen.getByText("Posted locally"))).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+  });
+
+  it("reveals and focuses a newly posted reply", async () => {
+    renderThread({
+      localTail: [createReply({ id: "reply-z" })],
+      replyToRevealId: "reply-z",
+    });
+
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("article")));
+    expect(HTMLElement.prototype.scrollIntoView).toHaveBeenCalledWith({ behavior: "auto", block: "center" });
   });
 
   it("announces continuation loading and exposes the thread busy state", () => {
@@ -102,6 +120,7 @@ function renderThread(overrides: Partial<React.ComponentProps<typeof ReplyThread
       onRetryNextPage={vi.fn()}
       onShowLikes={vi.fn()}
       replies={[]}
+      replyToRevealId={undefined}
       totalCount={0}
       {...overrides}
     />

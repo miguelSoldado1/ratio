@@ -45,6 +45,7 @@ export function ReviewConversation({ reviewId: routeReviewId }: ReviewConversati
   const [reviewLikesId, setReviewLikesId] = useState<string>();
   const [replyLikesId, setReplyLikesId] = useState<string>();
   const [localReplyTail, setLocalReplyTail] = useState<ReviewReply[]>([]);
+  const [replyToRevealId, setReplyToRevealId] = useState<string>();
   const [deletingReplyId, setDeletingReplyId] = useState<string | null>(null);
 
   const userId = session.data?.user.id;
@@ -146,21 +147,16 @@ export function ReviewConversation({ reviewId: routeReviewId }: ReviewConversati
     const createdReply = result.reply;
 
     const cachedReplies = queryClient.getQueryData<ReviewRepliesData>(repliesQueryKey);
-    if (!cachedReplies) {
-      await queryClient.invalidateQueries({ queryKey: repliesQueryKey });
-      return null;
-    }
-
-    const hasUnloadedReplies = Boolean(cachedReplies.pages.at(-1)?.nextCursor);
-    queryClient.setQueryData<ReviewRepliesData>(repliesQueryKey, (data) =>
-      addReviewReply(data, createdReply, { appendToLoadedPages: !hasUnloadedReplies })
-    );
-
-    if (hasUnloadedReplies) {
-      setLocalReplyTail((tail) => reconcileReviewReplyLocalTail([...tail, createdReply], loadedReplies));
+    if (cachedReplies) {
+      queryClient.setQueryData<ReviewRepliesData>(repliesQueryKey, (data) =>
+        addReviewReply(data, createdReply, { appendToLoadedPages: false })
+      );
     } else {
-      setLocalReplyTail((tail) => tail.filter((reply) => reply.id !== createdReply.id));
+      await queryClient.invalidateQueries({ queryKey: repliesQueryKey });
     }
+
+    setLocalReplyTail((tail) => reconcileReviewReplyLocalTail([...tail, createdReply], loadedReplies));
+    setReplyToRevealId(createdReply.id);
 
     return null;
   }
@@ -181,6 +177,7 @@ export function ReviewConversation({ reviewId: routeReviewId }: ReviewConversati
         removeReviewReply(data, replyId, deletedReply.replyCount)
       );
       setLocalReplyTail((tail) => tail.filter((reply) => reply.id !== replyId));
+      setReplyToRevealId((currentReplyId) => (currentReplyId === replyId ? undefined : currentReplyId));
       patchReplyCountCaches(deletedReply.reviewId, () => deletedReply.replyCount);
 
       return true;
@@ -262,6 +259,7 @@ export function ReviewConversation({ reviewId: routeReviewId }: ReviewConversati
         onShowReplyLikes={setReplyLikesId}
         onShowReviewLikes={() => setReviewLikesId(review.id)}
         replies={loadedReplies}
+        replyToRevealId={replyToRevealId}
         replyTotalCount={replyTotalCount}
         review={review}
         viewer={viewer}

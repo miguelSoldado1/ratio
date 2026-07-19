@@ -46,6 +46,7 @@ interface ReviewConversationContentProps {
   onShowReplyLikes: (replyId: string) => void;
   onShowReviewLikes: () => void;
   replies: ReviewReply[];
+  replyToRevealId?: string;
   replyTotalCount: number;
   review: ReviewDetail;
   viewer: ReviewListViewer;
@@ -76,6 +77,7 @@ export function ReviewConversationContent({
   onReviewLikeToggle,
   onShowReplyLikes,
   onShowReviewLikes,
+  replyToRevealId,
   replies,
   replyTotalCount,
   review,
@@ -256,6 +258,7 @@ export function ReviewConversationContent({
         onRetryNextPage={onRetryNextReplyPage}
         onShowLikes={onShowReplyLikes}
         replies={replies}
+        replyToRevealId={replyToRevealId}
         totalCount={replyTotalCount}
       />
     </div>
