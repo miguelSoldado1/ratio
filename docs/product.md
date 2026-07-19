@@ -159,7 +159,8 @@ data. Their discussion icon, reply count, review body, and timestamp lead to the
 identity links continue to lead to the album page. List cards do not mount a reply composer. Reply content,
 authors, likes, and deletion controls render only on the standalone review permalink, which owns the full flat conversation: replies are
 oldest-first, load 12 at a time with automatic pagination, and can be created or liked only by authenticated users.
-Replies are plain text, limited to 500 characters, cannot be edited, and are hard-deleted by their author or an admin.
+Replies are plain text and limited to 500 characters when posted; longer drafts remain editable in the composer but
+cannot be submitted. Replies cannot be edited after posting and are hard-deleted by their author or an admin.
 
 ## Rating Display
 

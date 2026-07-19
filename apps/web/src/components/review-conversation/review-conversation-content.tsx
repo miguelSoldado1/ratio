@@ -16,6 +16,8 @@ type ReviewDetail = NonNullable<Awaited<ReturnType<typeof getReviewById>>>;
 const maxReplyLength = 500;
 
 function getReplyCountClassName(length: number) {
+  if (length > maxReplyLength) return "mr-auto text-destructive text-xs tabular-nums";
+
   return length > 400 ? "mr-auto text-muted-foreground-subtle text-xs tabular-nums" : "sr-only";
 }
 
@@ -144,7 +146,7 @@ export function ReviewConversationContent({
         ) : null}
         <div className="min-w-0 flex-1">
           <FieldGroup className="gap-0">
-            <Field data-disabled={isReplyBusy ? true : undefined} data-invalid={replySubmitError ? true : undefined}>
+            <Field data-disabled={isReplyBusy ? true : undefined}>
               <FieldLabel className="sr-only" htmlFor={replyFieldId}>
                 Add a reply
               </FieldLabel>
@@ -153,7 +155,6 @@ export function ReviewConversationContent({
                 aria-invalid={replySubmitError ? true : undefined}
                 className="field-sizing-content block max-h-36 min-h-8 w-full resize-none border-0 bg-transparent px-0 py-1 text-[15px] leading-6 outline-none placeholder:text-muted-foreground aria-invalid:placeholder:text-destructive/70"
                 id={replyFieldId}
-                maxLength={maxReplyLength}
                 onChange={handleReplyBodyChange}
                 placeholder="What do you think?"
                 readOnly={isReplyBusy}
@@ -162,7 +163,8 @@ export function ReviewConversationContent({
                 value={replyBody}
               />
               <FieldDescription className="sr-only" id={replyDescriptionId}>
-                Plain text only, up to {maxReplyLength} characters.
+                Plain text only, up to {maxReplyLength} characters when posted. Longer drafts can be edited before
+                posting.
               </FieldDescription>
               <FieldError id={replyErrorId}>{replySubmitError}</FieldError>
             </Field>

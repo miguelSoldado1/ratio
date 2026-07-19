@@ -116,6 +116,22 @@ describe("ReviewConversationContent", () => {
     expect(screen.getByRole("status").textContent).toContain("Reply posted.");
   });
 
+  it("keeps over-limit drafts editable but blocks posting them", async () => {
+    const onCreateReply = vi.fn().mockResolvedValue(null);
+    renderContent({ onCreateReply });
+    const textarea = screen.getByLabelText("Add a reply") as HTMLTextAreaElement;
+    const overLimitBody = "x".repeat(501);
+
+    expect(textarea.maxLength).toBe(-1);
+    fireEvent.change(textarea, { target: { value: overLimitBody } });
+    fireEvent.click(screen.getByRole("button", { name: "Reply" }));
+
+    expect(textarea.value).toBe(overLimitBody);
+    expect(screen.getByText("501/500")).toBeTruthy();
+    expect((await screen.findByRole("alert")).textContent).toContain("500 characters or fewer");
+    expect(onCreateReply).not.toHaveBeenCalled();
+  });
+
   it("retains and marks the draft invalid when posting fails", async () => {
     const onCreateReply = vi.fn().mockResolvedValue("The reply could not be posted.");
     renderContent({ onCreateReply });
