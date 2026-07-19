@@ -58,7 +58,8 @@ Search is a global command/dialog experience in v1, not a standalone route. Sepa
 
 - Browse albums without account
 - Rate albums 0.5-5 in half-star increments (auth required; stored as 1-10)
-- Optional written review alongside rating, max 2000 characters
+- Optional written review alongside rating, limited to 2000 characters when posted; longer drafts remain editable but
+  cannot be submitted
 - Like reviews
 - Liked-by dialog for reviews
 - Follow users

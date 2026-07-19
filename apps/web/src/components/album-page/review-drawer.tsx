@@ -14,7 +14,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { Field, FieldDescription, FieldGroup, FieldLabel, FieldTitle } from "@/components/ui/field";
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldTitle } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { authClient } from "@/lib/auth/auth-client";
 import { albumQueryKeys } from "@/lib/tanstack-query/query-keys";
@@ -28,7 +28,10 @@ const reviewFormIds = {
   ratingLabel: "review-rating-label",
   review: "review-body",
   reviewDescription: "review-body-description",
+  reviewError: "review-body-error",
 } as const;
+
+const maxReviewLength = 2000;
 
 interface ReviewDrawerProps {
   albumArtist?: string;
@@ -39,10 +42,12 @@ interface ReviewDrawerProps {
 export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerProps) {
   const queryClient = useQueryClient();
   const ratingInputRef = useRef<HTMLDivElement>(null);
+  const reviewBodyRef = useRef<HTMLTextAreaElement>(null);
   const reviewTriggerDescriptionId = useId();
   const [open, setOpen] = useState(false);
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewSubmitError, setReviewSubmitError] = useState<string>();
   const [reviewForm, setReviewForm] = useState({ body: "", rating: 0 });
   const session = authClient.useSession();
   const userId = session.data?.user.id;
@@ -70,12 +75,22 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
 
     if (!canSaveReview) return;
 
+    const trimmedBody = reviewForm.body.trim();
+    if (trimmedBody.length > maxReviewLength) {
+      setReviewSubmitError(`Remove ${trimmedBody.length - maxReviewLength} characters to save.`);
+      shakeReviewComposer();
+      return;
+    }
+
+    setReviewSubmitError(undefined);
+
     setIsSubmittingReview(true);
 
     const data = { albumId, body: reviewForm.body, rating: Math.round(reviewForm.rating * 2) };
     const { error } = await tryCatch(createReviewMutation.mutateAsync({ data }));
     if (error) {
       setIsSubmittingReview(false);
+      shakeReviewComposer();
       return toast.error("Couldn't save review", {
         description: error instanceof Error ? error.message : "Something went wrong. Try again.",
       });
@@ -86,6 +101,14 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
     setOpen(false);
     setReviewForm({ body: "", rating: 0 });
     setIsSubmittingReview(false);
+  }
+
+  function shakeReviewComposer() {
+    const textarea = reviewBodyRef.current;
+    if (!textarea) return;
+
+    textarea.classList.remove("animate-input-shake");
+    window.requestAnimationFrame(() => textarea.classList.add("animate-input-shake"));
   }
 
   function handleReviewTriggerClick(event: MouseEvent<HTMLButtonElement>) {
@@ -103,7 +126,15 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
   return (
     <>
       <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} />
-      <Drawer direction="bottom" handleOnly onOpenChange={setOpen} open={open}>
+      <Drawer
+        direction="bottom"
+        handleOnly
+        onOpenChange={(nextOpen) => {
+          setOpen(nextOpen);
+          if (!nextOpen) setReviewSubmitError(undefined);
+        }}
+        open={open}
+      >
         <div className="min-w-0">
           <Button
             aria-busy={isCheckingReview || undefined}
@@ -129,7 +160,7 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
             ratingInputRef.current?.focus();
           }}
         >
-          <form className="mx-auto flex min-h-0 w-full max-w-sm flex-1 flex-col sm:max-w-md" onSubmit={handleSubmit}>
+          <form className="mx-auto flex min-h-0 w-full max-w-sm flex-1 flex-col sm:max-w-lg" onSubmit={handleSubmit}>
             <DrawerHeader className="gap-0 px-4 py-3 sm:gap-0.5 sm:py-4">
               <DrawerTitle className="text-sm sm:text-base">Add a review</DrawerTitle>
               <DrawerDescription className="text-xs sm:text-sm">
@@ -154,17 +185,26 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
                 <Field>
                   <FieldLabel htmlFor={reviewFormIds.review}>Review</FieldLabel>
                   <Textarea
-                    aria-describedby={reviewFormIds.reviewDescription}
+                    aria-describedby={`${reviewFormIds.reviewDescription}${reviewSubmitError ? ` ${reviewFormIds.reviewError}` : ""}`}
+                    aria-invalid={reviewSubmitError ? true : undefined}
                     className="min-h-40 sm:min-h-32"
                     id={reviewFormIds.review}
-                    maxLength={2000}
-                    onChange={(event) => setReviewForm((form) => ({ ...form, body: event.target.value }))}
+                    onAnimationEnd={(event) => event.currentTarget.classList.remove("animate-input-shake")}
+                    onChange={(event) => {
+                      setReviewForm((form) => ({ ...form, body: event.target.value }));
+                      setReviewSubmitError(undefined);
+                    }}
                     placeholder="Write your review here..."
+                    ref={reviewBodyRef}
                     value={reviewForm.body}
                   />
-                  <FieldDescription id={reviewFormIds.reviewDescription}>
-                    {reviewForm.body.length}/2000 characters
+                  <FieldDescription
+                    className={reviewForm.body.length > maxReviewLength ? "text-destructive" : undefined}
+                    id={reviewFormIds.reviewDescription}
+                  >
+                    {reviewForm.body.length}/{maxReviewLength} characters
                   </FieldDescription>
+                  <FieldError id={reviewFormIds.reviewError}>{reviewSubmitError}</FieldError>
                 </Field>
               </FieldGroup>
             </div>

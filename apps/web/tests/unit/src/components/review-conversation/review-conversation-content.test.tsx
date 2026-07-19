@@ -127,8 +127,9 @@ describe("ReviewConversationContent", () => {
     fireEvent.click(screen.getByRole("button", { name: "Reply" }));
 
     expect(textarea.value).toBe(overLimitBody);
-    expect(screen.getByText("501/500")).toBeTruthy();
-    expect((await screen.findByRole("alert")).textContent).toContain("500 characters or fewer");
+    expect(screen.getByText("501/500 characters")).toBeTruthy();
+    await waitFor(() => expect(textarea.className).toContain("animate-input-shake"));
+    expect(screen.queryByRole("alert")).toBeNull();
     expect(onCreateReply).not.toHaveBeenCalled();
   });
 

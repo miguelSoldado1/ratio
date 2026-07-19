@@ -5,6 +5,7 @@ import { ReviewManagementMenu } from "@/components/review-management-menu";
 import { Button } from "@/components/ui/button";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Spinner } from "@/components/ui/spinner";
+import { Textarea } from "@/components/ui/textarea";
 import { UserAvatar } from "@/components/user-avatar";
 import { ReplyThread } from "./reply-thread";
 import type { ChangeEvent, FormEvent, RefObject } from "react";
@@ -91,6 +92,7 @@ export function ReviewConversationContent({
   const [replyStatusMessage, setReplyStatusMessage] = useState("");
   const replyComposerRef = useRef<HTMLTextAreaElement>(null);
   const replyFieldId = useId();
+
   const isReplyBusy = isCreatingReply || isSubmittingReplyLocally;
   const replyDescriptionId = `${replyFieldId}-description`;
   const replyCountId = `${replyFieldId}-count`;
@@ -102,17 +104,31 @@ export function ReviewConversationContent({
     replyComposerRef.current?.focus();
   }
 
+  function shakeReplyComposer() {
+    const textarea = replyComposerRef.current;
+    if (!textarea) return;
+
+    textarea.classList.remove("animate-input-shake");
+    window.requestAnimationFrame(() => textarea.classList.add("animate-input-shake"));
+  }
+
+  function showReplySubmitError(message: string) {
+    setReplySubmitError(message);
+    shakeReplyComposer();
+  }
+
   async function handleReplySubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (isReplyBusy) return;
 
     const trimmedBody = replyBody.trim();
     if (!trimmedBody) {
-      return setReplySubmitError("Write a reply before posting.");
+      return showReplySubmitError("Write a reply before posting.");
     }
 
     if (trimmedBody.length > maxReplyLength) {
-      return setReplySubmitError(`Keep your reply to ${maxReplyLength} characters or fewer.`);
+      setReplySubmitError(undefined);
+      return shakeReplyComposer();
     }
 
     setReplySubmitError(undefined);
@@ -123,7 +139,7 @@ export function ReviewConversationContent({
     setIsSubmittingReplyLocally(false);
 
     if (errorMessage) {
-      return setReplySubmitError(errorMessage);
+      return showReplySubmitError(errorMessage);
     }
 
     setReplyBody("");
@@ -150,11 +166,12 @@ export function ReviewConversationContent({
               <FieldLabel className="sr-only" htmlFor={replyFieldId}>
                 Add a reply
               </FieldLabel>
-              <textarea
+              <Textarea
                 aria-describedby={`${replyDescriptionId} ${replyCountId}${replySubmitError ? ` ${replyErrorId}` : ""}`}
                 aria-invalid={replySubmitError ? true : undefined}
-                className="field-sizing-content block max-h-36 min-h-8 w-full resize-none border-0 bg-transparent px-0 py-1 text-[15px] leading-6 outline-none placeholder:text-muted-foreground aria-invalid:placeholder:text-destructive/70"
+                className="reply-composer-textarea field-sizing-content block max-h-36 min-h-8 w-full resize-none rounded-none border-0 bg-transparent px-0 py-1 text-[15px] leading-6 shadow-none outline-none ring-0 placeholder:text-muted-foreground focus-visible:border-transparent focus-visible:ring-0 aria-invalid:ring-0 aria-invalid:placeholder:text-destructive/70"
                 id={replyFieldId}
+                onAnimationEnd={(event) => event.currentTarget.classList.remove("animate-input-shake")}
                 onChange={handleReplyBodyChange}
                 placeholder="What do you think?"
                 readOnly={isReplyBusy}
@@ -171,7 +188,7 @@ export function ReviewConversationContent({
           </FieldGroup>
           <div className="mt-1 flex min-h-8 items-center justify-end gap-1.5">
             <span className={getReplyCountClassName(replyBody.length)} id={replyCountId}>
-              {replyBody.length}/{maxReplyLength}
+              {replyBody.length}/{maxReplyLength} characters
             </span>
             <Button
               aria-disabled={isReplyBusy || replyBody.trim().length === 0 || undefined}
