@@ -19,6 +19,7 @@
     "seed:feed": "node scripts/seed-feed.mjs",
     "seed:notifications": "node scripts/seed-notifications.mjs",
     "seed:review-likes": "node scripts/seed-review-likes.mjs",
+    "seed:review-replies": "node scripts/seed-review-replies.mjs",
     "seed:users-and-follows": "node scripts/seed-users-and-follows.mjs",
     "test": "pnpm --filter @ratio/web test",
     "test:admin": "pnpm --filter @ratio/admin test",

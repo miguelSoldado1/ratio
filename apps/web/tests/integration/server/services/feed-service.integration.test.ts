@@ -4,6 +4,7 @@ import {
   createTestAlbum,
   createTestReview,
   createTestReviewLike,
+  createTestReviewReply,
   createTestUser,
   createTestUserFollow,
 } from "@test/fixtures";
@@ -147,7 +148,6 @@ describe("getFeedService anonymous feed", () => {
       liked: false,
       rating: 3.5,
       review: "Mapped review body",
-      shareCode: review.shareCode,
       user: {
         avatarUrl: "https://example.com/avatar.jpg",
         displayUsername: "Mapped User",
@@ -237,6 +237,24 @@ describe("getFeedService authenticated feed", () => {
     const page = await getFeedService({});
 
     expect(indexOfReview(page.reviews, followedReview.id)).toBeLessThan(indexOfReview(page.reviews, ownReview.id));
+  });
+
+  it("does not use followed-user replies as For You candidates", async () => {
+    const viewer = await createTestUser(testDb);
+    const followedReplier = await createTestUser(testDb);
+    const oldReview = await createTestReview(testDb, { createdAt: daysAgo(45) });
+    mockState.currentUserId = viewer.id;
+
+    await createTestUserFollow(testDb, { followerId: viewer.id, followingId: followedReplier.id });
+    await createTestReviewReply(testDb, {
+      createdAt: hoursAgo(1),
+      reviewId: oldReview.id,
+      userId: followedReplier.id,
+    });
+
+    const page = await getFeedService({});
+
+    expect(page.reviews.map((review) => review.id)).not.toContain(oldReview.id);
   });
 });
 
@@ -329,6 +347,20 @@ describe("getFollowingFeedService", () => {
     await expect(
       getFollowingFeedService({ cursor: "not a cursor" }, createAuthenticatedContext(testDb, viewer))
     ).rejects.toThrow("Invalid following feed cursor");
+  });
+
+  it("does not surface reviews solely because a followed user replied", async () => {
+    const viewer = await createTestUser(testDb);
+    const followedReplier = await createTestUser(testDb);
+    const context = createAuthenticatedContext(testDb, viewer);
+    const review = await createTestReview(testDb, { createdAt: daysAgo(45) });
+
+    await createTestUserFollow(testDb, { followerId: viewer.id, followingId: followedReplier.id });
+    await createTestReviewReply(testDb, { createdAt: hoursAgo(1), reviewId: review.id, userId: followedReplier.id });
+
+    const page = await getFollowingFeedService({}, context);
+
+    expect(page.reviews).toEqual([]);
   });
 });
 
@@ -513,6 +545,45 @@ describe("getFeedService edge cases", () => {
 
     expect(ids).not.toContain(oldReview.id);
     expect(ids).toContain(resurfacedReview.id);
+  });
+});
+
+describe("feed reply summaries", () => {
+  it("hydrates For You reviews with visible counts but no arbitrary preview", async () => {
+    const reviewAuthor = await createTestUser(testDb);
+    const discussedReview = await createTestReview(testDb, { userId: reviewAuthor.id });
+    const quietReview = await createTestReview(testDb);
+    const replyAuthor = await createTestUser(testDb);
+    const bannedReplyAuthor = await createTestUser(testDb, { banned: true });
+    await createTestReviewReply(testDb, {
+      createdAt: hoursAgo(2),
+      reviewId: discussedReview.id,
+      userId: bannedReplyAuthor.id,
+    });
+    await createTestReviewReply(testDb, {
+      createdAt: hoursAgo(1),
+      reviewId: discussedReview.id,
+      userId: replyAuthor.id,
+    });
+
+    const feed = await getFeedService({});
+    const discussed = feed.reviews.find((review) => review.id === discussedReview.id);
+    const quiet = feed.reviews.find((review) => review.id === quietReview.id);
+
+    expect(discussed?.replyCount).toBe(1);
+    expect(quiet?.replyCount).toBe(0);
+  });
+
+  it("hydrates review-driven Following cards with counts but no arbitrary preview", async () => {
+    const viewer = await createTestUser(testDb);
+    const followedUser = await createTestUser(testDb);
+    await createTestUserFollow(testDb, { followerId: viewer.id, followingId: followedUser.id });
+    const review = await createTestReview(testDb, { userId: followedUser.id });
+    await createTestReviewReply(testDb, { reviewId: review.id, userId: viewer.id });
+
+    const feed = await getFollowingFeedService({}, createAuthenticatedContext(testDb, viewer));
+
+    expect(feed.reviews[0]?.replyCount).toBe(1);
   });
 });
 

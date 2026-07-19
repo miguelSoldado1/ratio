@@ -19,8 +19,8 @@ const albumReviewsSchema = albumIdSchema.extend({
   cursor: z.string().trim().min(1).optional(),
 });
 
-const reviewCodeSchema = albumIdSchema.extend({
-  reviewCode: z.string().trim().min(1).max(32),
+const reviewIdSchema = z.object({
+  reviewId: z.uuid(),
 });
 
 const userReviewsSchema = z.object({
@@ -86,9 +86,9 @@ export const getAlbumReviews = createServerFn()
   .validator(albumReviewsSchema)
   .handler(({ data }) => reviewService.getAlbumReviewsService(data));
 
-export const getReviewByShareCode = createServerFn()
-  .validator(reviewCodeSchema)
-  .handler(({ data }) => reviewService.getReviewByShareCodeService(data));
+export const getReviewById = createServerFn()
+  .validator(reviewIdSchema)
+  .handler(({ data }) => reviewService.getReviewByIdService(data));
 
 export const getAlbumRatingSummary = createServerFn()
   .validator(albumIdSchema)

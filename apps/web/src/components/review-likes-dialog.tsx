@@ -10,14 +10,12 @@ interface ViewerState {
 
 interface ReviewLikesDialogProps {
   onOpenChange: (open: boolean) => void;
-  open: boolean;
   reviewId?: string;
   viewer: ViewerState;
 }
 
-export function ReviewLikesDialog({ onOpenChange, open, reviewId, viewer }: ReviewLikesDialogProps) {
+export function ReviewLikesDialog({ onOpenChange, reviewId, viewer }: ReviewLikesDialogProps) {
   const selectedReviewId = reviewId ?? "";
-  const queryKey = reviewQueryKeys.likes(selectedReviewId, viewer.userId);
   const getReviewLikesFn = useServerFn(getReviewLikes);
 
   return (
@@ -26,8 +24,8 @@ export function ReviewLikesDialog({ onOpenChange, open, reviewId, viewer }: Revi
       getInvalidationKeys={(user) => [userQueryKeys.profile(user.username, viewer.userId)]}
       getPage={(cursor) => getReviewLikesFn({ data: { cursor: cursor ?? undefined, reviewId: selectedReviewId } })}
       onOpenChange={onOpenChange}
-      open={open && Boolean(reviewId)}
-      queryKey={queryKey}
+      open={Boolean(reviewId)}
+      queryKey={reviewQueryKeys.likes(selectedReviewId, viewer.userId)}
       title="Likes"
       viewer={viewer}
     />

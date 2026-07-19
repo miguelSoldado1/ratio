@@ -124,7 +124,7 @@ async function createReview(userId: string, albumId: string, albumOverrides: Par
 
   const [review] = await testDb
     .insert(reviews)
-    .values({ albumId, body: `Review ${albumId}`, rating: 8, shareCode: `share_${albumId}`, userId })
+    .values({ albumId, body: `Review ${albumId}`, rating: 8, userId })
     .returning();
 
   return review;

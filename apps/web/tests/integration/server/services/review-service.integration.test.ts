@@ -43,7 +43,6 @@ describe("createReviewService", () => {
       rating: 9,
       userId: testUser.id,
     });
-    expect(review.shareCode).toHaveLength(10);
   });
 
   it("stores the provided rating and normalizes an empty body to null", async () => {

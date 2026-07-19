@@ -15,6 +15,20 @@
       "when": 1783895371262,
       "tag": "0001_tiresome_omega_flight",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1784325725303,
+      "tag": "0002_exotic_red_hulk",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1784489629119,
+      "tag": "0003_worthless_mandroid",
+      "breakpoints": true
     }
   ]
 }

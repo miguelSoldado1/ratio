@@ -58,6 +58,10 @@ export const reviewCreateHourlyRateLimit = defineFixedWindowRateLimitRule({
   windowSeconds: 60 * 60,
 });
 
+export const replyCreateRateLimit = defineCloudflareRateLimitRule({
+  bindingName: "REPLY_CREATE_RATE_LIMITER",
+});
+
 export const userMutationRateLimit = defineCloudflareRateLimitRule({
   bindingName: "USER_MUTATION_RATE_LIMITER",
 });

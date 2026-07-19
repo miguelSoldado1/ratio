@@ -83,7 +83,7 @@ export const reviewsColumns: ColumnDef<AdminReviewRow>[] = [
         <a
           aria-label={`Open ${review.albumTitle} review on Ratio`}
           className="group/album flex min-w-48 items-center gap-2.5 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          href={getWebAppHref(`/album/${encodeURIComponent(review.albumId)}/r/${encodeURIComponent(review.shareCode)}`)}
+          href={getWebAppHref(`/review/${encodeURIComponent(review.id)}`)}
           rel="noreferrer"
           target="_blank"
         >

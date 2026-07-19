@@ -1,15 +1,16 @@
 import { Link } from "@tanstack/react-router";
-import { ChevronDown, Heart } from "lucide-react";
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { ChevronDown, Heart, MessageCircle } from "lucide-react";
+import { useCallback, useId, useRef, useState } from "react";
 import { AlbumArtwork } from "@/components/album-artwork";
 import { RatingStarIcon } from "@/components/rating-star-icon";
 import { ReviewShareButton } from "@/components/review-share-button";
 import { Button } from "@/components/ui/button";
 import { UserAvatar } from "@/components/user-avatar";
-import { useDebounce } from "@/hooks/use-debounce";
+import { useDebouncedOptimisticLike } from "@/hooks/use-debounced-optimistic-like";
 import { formatRelativeTime } from "@/lib/date-format";
 import { abbreviateCount, cn } from "@/lib/utils";
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
+import type { OptimisticLikeToggleHandler } from "@/hooks/use-debounced-optimistic-like";
 
 // --- Types ---
 
@@ -27,6 +28,11 @@ export interface ReviewAlbum {
   year: string;
 }
 
+export interface ReviewPermalink {
+  reviewAuthorName: string;
+  reviewId: string;
+}
+
 export interface ReviewData {
   album: ReviewAlbum;
   createdAt: Date;
@@ -40,21 +46,27 @@ export interface ReviewData {
 
 // --- Sub-components ---
 
-function Root({ children, className }: { children: ReactNode; className?: string }) {
-  return <article className={cn("border-border border-b py-4 last-of-type:border-0", className)}>{children}</article>;
+function Root({ children, className, ...props }: ComponentProps<"article">) {
+  return (
+    <article className={cn("border-border border-b py-4 last-of-type:border-0", className)} {...props}>
+      {children}
+    </article>
+  );
 }
 
 interface HeaderProps {
   className?: string;
   createdAt: Date;
   meta?: ReactNode;
+  permalink?: ReviewPermalink;
   user: ReviewUser;
 }
 
-function Header({ user, createdAt, className, meta }: HeaderProps) {
+function Header({ user, createdAt, className, meta, permalink }: HeaderProps) {
   const displayNameClass = "font-medium text-foreground/75 text-sm";
   const identityClass = "flex min-w-0 items-center gap-2";
   const identityLinkClass = "group -ml-1.5 h-8 rounded-full px-1.5 pr-2.5 press-feedback hover:bg-primary/10";
+  const relativeTime = formatRelativeTime(createdAt);
 
   return (
     <div className={cn("mb-3 flex items-center gap-2", className)}>
@@ -75,7 +87,20 @@ function Header({ user, createdAt, className, meta }: HeaderProps) {
           <span className={displayNameClass}>{user.displayUsername}</span>
         </div>
       )}
-      <span className="text-muted-foreground text-xs">{formatRelativeTime(createdAt)}</span>
+      {permalink ? (
+        <Link
+          aria-label={`Open ${permalink.reviewAuthorName}'s review from ${relativeTime}`}
+          className="focus-ring rounded-sm text-muted-foreground text-xs outline-none transition-colors hover:text-primary"
+          params={{ reviewId: permalink.reviewId }}
+          to="/review/$reviewId"
+        >
+          <time dateTime={createdAt.toISOString()}>{relativeTime}</time>
+        </Link>
+      ) : (
+        <time className="text-muted-foreground text-xs" dateTime={createdAt.toISOString()}>
+          {relativeTime}
+        </time>
+      )}
       {meta}
     </div>
   );
@@ -161,13 +186,14 @@ interface ReviewProps {
   children: ReactNode;
   className?: string;
   collapsed?: boolean;
+  permalink?: ReviewPermalink;
 }
 
 // ~8 lines at the review's line-height (15px × 1.45 ≈ 21.75px). Keep in sync
 // with the `max-h-44` (176px) clamp applied below.
 const collapsedReviewMaxHeightPx = 176;
 
-function Review({ children, className, collapsed = true }: ReviewProps) {
+function Review({ children, className, collapsed = true, permalink }: ReviewProps) {
   const reviewId = useId();
   const reviewRef = useRef<HTMLParagraphElement>(null);
   const resizeObserverRef = useRef<ResizeObserver | null>(null);
@@ -202,20 +228,35 @@ function Review({ children, className, collapsed = true }: ReviewProps) {
     [collapsed, updateCanToggle]
   );
 
+  const reviewText = (
+    <p
+      className={cn(
+        "wrap-break-word whitespace-pre-wrap text-[15px] text-foreground/90 leading-[1.45]",
+        collapsed && !expanded && "max-h-44 overflow-hidden",
+        className
+      )}
+      id={reviewId}
+      ref={collapsed ? setReviewElement : undefined}
+    >
+      {children}
+    </p>
+  );
+
   return (
     <div className="mt-3">
       <div className="relative">
-        <p
-          className={cn(
-            "wrap-break-word whitespace-pre-wrap text-[15px] text-foreground/90 leading-[1.45]",
-            collapsed && !expanded && "max-h-44 overflow-hidden",
-            className
-          )}
-          id={reviewId}
-          ref={collapsed ? setReviewElement : undefined}
-        >
-          {children}
-        </p>
+        {permalink ? (
+          <Link
+            aria-label={`Open ${permalink.reviewAuthorName}'s review`}
+            className="focus-ring block rounded-sm outline-none"
+            params={{ reviewId: permalink.reviewId }}
+            to="/review/$reviewId"
+          >
+            {reviewText}
+          </Link>
+        ) : (
+          reviewText
+        )}
         {collapsed && canToggle ? (
           <div
             className={cn(
@@ -253,21 +294,8 @@ interface LikesProps {
   disabled?: boolean;
   liked?: boolean;
   onShowLikes?: () => void;
-  onToggle?: (liked: boolean) => boolean | Promise<boolean | undefined> | undefined;
+  onToggle?: OptimisticLikeToggleHandler;
 }
-
-interface OptimisticLikeState {
-  count: number;
-  liked: boolean;
-}
-
-interface UseDebouncedOptimisticLikeParams {
-  count: number;
-  liked: boolean;
-  onToggle?: LikesProps["onToggle"];
-}
-
-const likePersistDebounceMs = 350;
 
 function getLikeHeartClass({ disabled, liked }: { disabled: boolean; liked: boolean }) {
   if (liked) return "fill-primary stroke-primary";
@@ -287,153 +315,6 @@ function getLikeButtonClass({ disabled }: { disabled: boolean }) {
   if (disabled) return "cursor-default";
 
   return "cursor-pointer press-feedback";
-}
-
-function useDebouncedOptimisticLike({ count, liked, onToggle }: UseDebouncedOptimisticLikeParams) {
-  const [optimisticLiked, setOptimisticLiked] = useState(liked);
-  const [optimisticCount, setOptimisticCount] = useState(count);
-  const [justLiked, setJustLiked] = useState(false);
-  const [countDir, setCountDir] = useState<"up" | "down" | null>(null);
-  const debouncedLiked = useDebounce(optimisticLiked, likePersistDebounceMs);
-  const latestLikedRef = useRef(liked);
-  const persistedLikedRef = useRef(liked);
-  const inFlightLikedRef = useRef<boolean | null>(null);
-  const queuedLikedRef = useRef<boolean | null>(null);
-  const rollbackStateRef = useRef<OptimisticLikeState | null>(null);
-
-  useEffect(() => {
-    persistedLikedRef.current = liked;
-
-    if (rollbackStateRef.current) return;
-
-    setOptimisticLiked(liked);
-    setOptimisticCount(count);
-    latestLikedRef.current = liked;
-  }, [count, liked]);
-
-  const applyOptimisticLike = useCallback((nextLiked: boolean) => {
-    setOptimisticLiked(nextLiked);
-    setOptimisticCount((currentCount) => Math.max(0, currentCount + (nextLiked ? 1 : -1)));
-    setCountDir(nextLiked ? "up" : "down");
-    if (nextLiked) setJustLiked(true);
-  }, []);
-
-  const restoreOptimisticLike = useCallback((previousState: OptimisticLikeState) => {
-    setOptimisticLiked(previousState.liked);
-    setOptimisticCount(previousState.count);
-    setCountDir(previousState.liked ? "up" : "down");
-  }, []);
-
-  const rollbackOptimisticLike = useCallback(() => {
-    const previousState = rollbackStateRef.current;
-
-    rollbackStateRef.current = null;
-    queuedLikedRef.current = null;
-    latestLikedRef.current = previousState?.liked ?? liked;
-
-    if (previousState) {
-      restoreOptimisticLike(previousState);
-    }
-  }, [liked, restoreOptimisticLike]);
-
-  const takeQueuedLikedToPersist = useCallback(() => {
-    const queuedLiked = queuedLikedRef.current;
-
-    queuedLikedRef.current = null;
-
-    return queuedLiked === persistedLikedRef.current ? null : queuedLiked;
-  }, []);
-
-  const persistLikeChange = useCallback(
-    async (likedToPersist: boolean) => {
-      if (!onToggle) return;
-
-      if (inFlightLikedRef.current !== null) {
-        queuedLikedRef.current = likedToPersist;
-        return;
-      }
-
-      let nextLikedToPersist: boolean | null = likedToPersist;
-
-      while (nextLikedToPersist !== null) {
-        const currentLikedToPersist: boolean = nextLikedToPersist;
-
-        nextLikedToPersist = null;
-        inFlightLikedRef.current = currentLikedToPersist;
-
-        const shouldKeepOptimisticState = await Promise.resolve()
-          .then(() => onToggle(currentLikedToPersist))
-          .catch(() => false);
-        inFlightLikedRef.current = null;
-
-        if (shouldKeepOptimisticState === false) {
-          rollbackOptimisticLike();
-          return;
-        }
-
-        persistedLikedRef.current = currentLikedToPersist;
-        nextLikedToPersist = takeQueuedLikedToPersist();
-
-        if (nextLikedToPersist !== null) {
-          continue;
-        }
-
-        if (latestLikedRef.current === currentLikedToPersist) {
-          rollbackStateRef.current = null;
-        }
-      }
-    },
-    [onToggle, rollbackOptimisticLike, takeQueuedLikedToPersist]
-  );
-
-  useEffect(() => {
-    if (!(onToggle && rollbackStateRef.current)) return;
-
-    if (inFlightLikedRef.current !== null) {
-      queuedLikedRef.current = debouncedLiked;
-      return;
-    }
-
-    if (debouncedLiked === persistedLikedRef.current) {
-      if (latestLikedRef.current === persistedLikedRef.current) {
-        rollbackStateRef.current = null;
-        queuedLikedRef.current = null;
-      }
-      return;
-    }
-
-    persistLikeChange(debouncedLiked).catch(() => undefined);
-  }, [debouncedLiked, onToggle, persistLikeChange]);
-
-  const toggle = useCallback(() => {
-    const previousState = { count: optimisticCount, liked: optimisticLiked };
-    const next = !optimisticLiked;
-
-    latestLikedRef.current = next;
-    applyOptimisticLike(next);
-
-    if (!onToggle) return;
-
-    if (!rollbackStateRef.current) {
-      rollbackStateRef.current = previousState;
-    }
-
-    if (next === persistedLikedRef.current && inFlightLikedRef.current === null) {
-      rollbackStateRef.current = null;
-      queuedLikedRef.current = null;
-    }
-  }, [applyOptimisticLike, optimisticCount, optimisticLiked, onToggle]);
-
-  const clearJustLiked = useCallback(() => setJustLiked(false), []);
-
-  return {
-    clearJustLiked,
-    count: optimisticCount,
-    countDir,
-    justLiked,
-    liked: optimisticLiked,
-    toggle,
-  };
 }
 
 function Likes({ count, disabled = false, liked = false, onShowLikes, onToggle, className }: LikesProps) {
@@ -516,6 +397,42 @@ function Footer({ children, className }: FooterProps) {
   return <div className={cn("mt-3 flex items-center gap-3", className)}>{children}</div>;
 }
 
+interface RepliesProps {
+  replyCount?: number;
+  reviewAuthorName: string;
+  reviewId: string;
+}
+
+function Replies({ replyCount, reviewAuthorName, reviewId }: RepliesProps) {
+  if (replyCount === undefined) return null;
+
+  const replyLabel = replyCount === 1 ? "reply" : "replies";
+
+  return (
+    <div className="-ml-2 flex h-8 items-center">
+      <Link
+        aria-label={`View discussion of ${reviewAuthorName}'s review`}
+        className="group/replies focus-ring press-feedback flex size-8 items-center justify-center rounded-full outline-none hover:bg-transparent [&_svg]:size-3.5"
+        params={{ reviewId }}
+        to="/review/$reviewId"
+      >
+        <MessageCircle
+          aria-hidden="true"
+          className="stroke-muted-foreground transition-colors group-hover/replies:stroke-primary"
+        />
+      </Link>
+      <Link
+        aria-label={`View discussion of ${reviewAuthorName}'s review, ${replyCount} ${replyLabel}`}
+        className="focus-ring flex h-8 min-w-6 items-center justify-start rounded-sm pr-1 pl-0 text-muted-foreground text-xs tabular-nums outline-none transition-colors hover:text-primary"
+        params={{ reviewId }}
+        to="/review/$reviewId"
+      >
+        {abbreviateCount(replyCount)}
+      </Link>
+    </div>
+  );
+}
+
 // --- Default composed component ---
 
 interface ReviewCardProps extends ReviewData {
@@ -546,6 +463,7 @@ ReviewCard.Album = Album;
 ReviewCard.Rating = Rating;
 ReviewCard.Review = Review;
 ReviewCard.Footer = Footer;
+ReviewCard.Replies = Replies;
 ReviewCard.Likes = Likes;
 ReviewCard.Share = ReviewShareButton;
 

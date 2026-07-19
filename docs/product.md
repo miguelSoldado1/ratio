@@ -40,13 +40,12 @@ Authenticated (any provider)
 
 ## Routes
 
-All album pages (`/album/:spotifyId`) are publicly accessible and shareable. Review permalinks are album-scoped (`/album/:spotifyId/r/:reviewCode`) so a shared review keeps the album context while using a short public review code instead of the internal review UUID.
+All album pages (`/album/:spotifyId`) are publicly accessible and shareable. Review permalinks use the review UUID (`/review/:reviewId`).
 
 ```text
 /                          Public home - For You feed + signed-in Following feed
 /album/:spotifyId          Album page - metadata, community rating, reviews
-/album/:spotifyId/r/:reviewCode
-                           Review permalink dialog over the album page
+/review/:reviewId          Standalone review conversation page
 /user/:username            Profile - ratings, reviews, followers
 /settings                  Account settings and linked sign-in methods
 ```
@@ -70,9 +69,11 @@ Search is a global command/dialog experience in v1, not a standalone route. Sepa
 - Link/unlink sign-in methods in settings
 - Home For You feed blending recent reviews, recently liked reviews, and followed-user reviews when signed in
 - Signed-in Following feed with the viewer's reviews and reviews from followed users in reverse chronological order
-- Album-scoped review permalinks and basic review sharing
+- Review permalinks and basic review sharing
 - Basic admin moderation: remove bad reviews/ratings and ban abusive accounts
-- Notifications: someone liked your review, new follower
+- Flat review conversations with public reading, authenticated replies and reply likes, owner/admin deletion, and
+  batched reply counts on review cards
+- Notifications: review likes, review replies, reply likes, and new followers
 - Private recent-listening shelf: up to 6 albums from the signed-in user's recently
   played Spotify tracks, in the shared scroll-away header above the Home feed tabs. Ordered by most recent play, full
   albums only, cached for 30 minutes, no listening history persisted, no manual
@@ -117,7 +118,9 @@ Authenticated users receive the anonymous candidate sources plus:
 
 - recent reviews from people they follow
 
-The signed-in-only Following tab is separate from this ranked blend. It returns the viewer's reviews and reviews from followed users in strict reverse chronological order with cursor pagination, without ranking or diversity filters.
+The signed-in-only Following tab is separate from this ranked blend. It returns the viewer's reviews and reviews from
+followed users in strict reverse-chronological review order with cursor pagination, without ranking or diversity
+filters. Replies and reply likes do not affect either feed's candidates or ordering.
 
 The scoring weights live in `apps/web/src/server/services/feed-service.ts` near the feed constants so they can be tuned without changing query logic. Current signals are:
 
@@ -150,6 +153,13 @@ Do not block the first production release on these:
 Authenticated album review lists should show the viewer's own review first when present. This makes the disabled `Add a review` action self-explanatory without adding persistent helper text or a tooltip to the album actions.
 
 The v1 query uses two index-friendly reads on the first page: fetch the viewer review by `(userId, albumId)`, fetch the normal album review page by `(albumId, createdAt, id)` while excluding the viewer, then merge in application code. Cursor pages only read the normal chronological page and continue excluding the viewer to avoid duplicates. This avoids a computed pin sort on the primary album review list.
+
+Album, feed, and profile review cards hydrate visible reply counts without returning reply bodies or reply-author
+data. Their discussion icon, reply count, review body, and timestamp lead to the standalone conversation while album
+identity links continue to lead to the album page. List cards do not mount a reply composer. Reply content,
+authors, likes, and deletion controls render only on the standalone review permalink, which owns the full flat conversation: replies are
+oldest-first, load 12 at a time with automatic pagination, and can be created or liked only by authenticated users.
+Replies are plain text, limited to 500 characters, cannot be edited, and are hard-deleted by their author or an admin.
 
 ## Rating Display
 
@@ -190,3 +200,5 @@ Set `min_votes` to something like 5. Tune `global_mean` from actual data over ti
 | Spotify refresh token expired, revoked, or unavailable | Show the inline reconnect card when Better Auth cannot retrieve a valid token. A transient token-endpoint outage may cause an unnecessary reconnect prompt in v1; never revoke the Ratio session |
 | Compilation / single vs album | Filter search and product surfaces to albums only; reject non-`album` Spotify IDs before creating local album rows |
 | Self-follow attempt | Guard in the follow/unfollow endpoint |
+| Reply created while older pages remain unloaded | Keep it in a labelled local tail until pagination reaches and deduplicates it |
+| Banned reply author | Exclude the reply from threads, counts, and notifications |

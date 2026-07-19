@@ -9,6 +9,8 @@ interface UseLoadMoreOnIntersectParams {
   rootRef?: RefObject<Element | null>;
 }
 
+const automaticScrollRootSelector = "[data-infinite-scroll-root], [data-swipeable-tabs-scroll-panel]";
+
 export function useLoadMoreOnIntersect({
   enabled,
   isLoading,
@@ -27,7 +29,7 @@ export function useLoadMoreOnIntersect({
     if (!(enabled && loadMoreRef.current && typeof IntersectionObserver !== "undefined")) return;
 
     const loadMoreElement = loadMoreRef.current;
-    const root = rootRef?.current ?? loadMoreElement.closest("[data-swipeable-tabs-scroll-panel]");
+    const root = rootRef?.current ?? loadMoreElement.closest(automaticScrollRootSelector);
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries.some((entry) => entry.isIntersecting) && !(isLoading || loadMoreInFlightRef.current)) {

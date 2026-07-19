@@ -13,6 +13,7 @@ import {
 } from "../server-utils";
 import { ensureAlbumExistsForWrite, getMissingAlbumMetadataForWrite } from "./album-service";
 import { createReviewLikedNotification } from "./notification-service";
+import { getReviewReplyCounts, getVisibleReviewReplyCountSql } from "./review-reply-service";
 import type { Db } from "@/lib/db";
 import type { AuthenticatedContext } from "../auth-middleware";
 
@@ -20,10 +21,7 @@ import type { AuthenticatedContext } from "../auth-middleware";
 
 const ratingBuckets: readonly ["1", "2", "3", "4", "5"] = ["1", "2", "3", "4", "5"];
 const maxProfilePinnedReviews = 3;
-const maxReviewShareCodeAttempts = 5;
 const reviewLikesPageSize = 24;
-const reviewShareCodeAlphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-const reviewShareCodeLength = 10;
 const reviewsPageSize = 12;
 const userSearchResultLimit = 5;
 
@@ -63,7 +61,7 @@ interface UserLikedReviewsCursorPayload {
 
 export interface AlbumReviewsPage {
   nextCursor: string | null;
-  reviews: ReturnType<typeof mapAlbumReview>[];
+  reviews: (ReturnType<typeof mapAlbumReview> & { replyCount: number })[];
 }
 
 export interface ReviewLikesPage {
@@ -78,7 +76,7 @@ export interface UserReviewsPage {
 
 export interface UserLikedReviewsPage {
   nextCursor: string | null;
-  reviews: ReturnType<typeof mapReviewDetail>[];
+  reviews: ReturnType<typeof mapProfileLikedReview>[];
 }
 
 export interface UserProfile {
@@ -110,8 +108,8 @@ export interface AlbumReviewsInput extends AlbumIdInput {
   cursor?: string;
 }
 
-export interface ReviewCodeInput extends AlbumIdInput {
-  reviewCode: string;
+export interface ReviewIdInput {
+  reviewId: string;
 }
 
 export interface UserReviewsInput {
@@ -192,6 +190,11 @@ export async function getAlbumReviewsService(data: AlbumReviewsInput): Promise<A
   const hasNextPage = albumReviews.length > reviewsPageSize;
   const pageRows = hasNextPage ? albumReviews.slice(0, reviewsPageSize) : albumReviews;
   const lastReview = pageRows.at(-1)?.review;
+  const finalRows = [...pinnedReviewRows, ...pageRows];
+  const replyCounts = await getReviewReplyCounts(
+    db,
+    finalRows.map((row) => row.review.id)
+  );
 
   return {
     nextCursor:
@@ -201,11 +204,14 @@ export async function getAlbumReviewsService(data: AlbumReviewsInput): Promise<A
             id: lastReview.id,
           })
         : null,
-    reviews: [...pinnedReviewRows, ...pageRows].map(mapAlbumReview),
+    reviews: finalRows.map((row) => ({
+      ...mapAlbumReview(row),
+      replyCount: replyCounts.get(row.review.id) ?? 0,
+    })),
   };
 }
 
-export async function getReviewByShareCodeService(data: ReviewCodeInput): Promise<ReviewDetail> {
+export async function getReviewByIdService(data: ReviewIdInput): Promise<ReviewDetail | null> {
   const db = await getDb();
   const currentUser = await getOptionalCurrentUser(db);
   const viewerUserId = currentUser?.id;
@@ -232,11 +238,11 @@ export async function getReviewByShareCodeService(data: ReviewCodeInput): Promis
     .from(reviews)
     .innerJoin(albums, eq(reviews.albumId, albums.id))
     .innerJoin(user, eq(reviews.userId, user.id))
-    .where(and(eq(reviews.albumId, data.albumId), eq(reviews.shareCode, data.reviewCode), authorFilter))
+    .where(and(eq(reviews.id, data.reviewId), authorFilter))
     .limit(1);
 
   if (!review) {
-    throw new Error("Review not found");
+    return null;
   }
 
   return mapReviewDetail(review);
@@ -333,6 +339,7 @@ export async function getUserReviewsService(data: UserReviewsInput): Promise<Use
       liked: likedByViewer,
       likes: getVisibleReviewLikeCountSql(reviews.id),
       pinned: pinnedByProfile,
+      replyCount: getVisibleReviewReplyCountSql(reviews.id),
       review: getTableColumns(reviews),
     })
     .from(reviews)
@@ -390,6 +397,7 @@ export async function getUserLikedReviewsService(data: UserLikedReviewsInput): P
       liked: likedByViewer,
       likes: getVisibleReviewLikeCountSql(reviews.id),
       likeCreatedAt: reviewLikes.createdAt,
+      replyCount: getVisibleReviewReplyCountSql(reviews.id),
       review: getTableColumns(reviews),
       user: {
         avatarUrl: reviewAuthor.image,
@@ -419,7 +427,7 @@ export async function getUserLikedReviewsService(data: UserLikedReviewsInput): P
             id: lastRow.review.id,
           })
         : null,
-    reviews: pageRows.map(mapReviewDetail),
+    reviews: pageRows.map(mapProfileLikedReview),
   };
 }
 
@@ -531,34 +539,21 @@ export async function hasMyAlbumReviewService(data: AlbumIdInput, context: Authe
 export async function createReviewService(data: CreateReviewInput, context: AuthenticatedContext) {
   const albumMetadata = await getMissingAlbumMetadataForWrite(data.albumId, context.db);
 
-  for (let attempt = 0; attempt < maxReviewShareCodeAttempts; attempt++) {
-    try {
-      return await context.db.transaction(async (transaction) => {
-        await ensureAlbumExistsForWrite(albumMetadata, transaction);
+  return context.db.transaction(async (transaction) => {
+    await ensureAlbumExistsForWrite(albumMetadata, transaction);
 
-        const [review] = await transaction
-          .insert(reviews)
-          .values({
-            albumId: data.albumId,
-            body: data.body || null,
-            rating: data.rating,
-            shareCode: generateReviewShareCode(),
-            userId: context.user.id,
-          })
-          .returning();
+    const [review] = await transaction
+      .insert(reviews)
+      .values({
+        albumId: data.albumId,
+        body: data.body || null,
+        rating: data.rating,
+        userId: context.user.id,
+      })
+      .returning();
 
-        return review;
-      });
-    } catch (error) {
-      if (isShareCodeUniqueViolation(error)) {
-        continue;
-      }
-
-      throw error;
-    }
-  }
-
-  throw new Error("Could not create review share code");
+    return review;
+  });
 }
 
 export async function deleteReviewService(data: DeleteReviewInput, context: AuthenticatedContext) {
@@ -741,38 +736,6 @@ function escapeLikePattern(value: string) {
   return value.replace(/[\\%_]/g, "\\$&");
 }
 
-function generateReviewShareCode() {
-  const code: string[] = [];
-
-  while (code.length < reviewShareCodeLength) {
-    const bytes = new Uint8Array(reviewShareCodeLength);
-    globalThis.crypto.getRandomValues(bytes);
-
-    for (const byte of bytes) {
-      if (byte >= 232) continue;
-
-      code.push(reviewShareCodeAlphabet[byte % reviewShareCodeAlphabet.length]);
-
-      if (code.length === reviewShareCodeLength) break;
-    }
-  }
-
-  return code.join("");
-}
-
-function isShareCodeUniqueViolation(error: unknown) {
-  if (!(error && typeof error === "object")) return false;
-
-  const dbError = error as { code?: unknown; constraint?: unknown; constraint_name?: unknown; message?: unknown };
-  const constraintName = dbError.constraint_name ?? dbError.constraint;
-
-  return (
-    dbError.code === "23505" &&
-    (constraintName === "reviews_share_code_unique_idx" ||
-      (typeof dbError.message === "string" && dbError.message.includes("reviews_share_code_unique_idx")))
-  );
-}
-
 // Rows
 
 interface AlbumReviewRow {
@@ -821,6 +784,7 @@ interface UserReviewRow {
   liked: boolean;
   likes: number;
   pinned: boolean;
+  replyCount: number;
   review: typeof reviews.$inferSelect;
 }
 
@@ -869,7 +833,6 @@ function mapAlbumReview({ canDelete, liked, likes, review, user }: AlbumReviewRo
     likes,
     rating: review.rating / 2,
     review: review.body ?? undefined,
-    shareCode: review.shareCode,
     createdAt: review.createdAt,
     user: {
       avatarUrl: user.avatarUrl ?? undefined,
@@ -894,6 +857,10 @@ function mapReviewDetail(row: ReviewDetailRow) {
       year: row.album.releaseDate.slice(0, 4),
     },
   };
+}
+
+function mapProfileLikedReview(row: ReviewDetailRow & { replyCount: number }) {
+  return { ...mapReviewDetail(row), replyCount: row.replyCount };
 }
 
 function mapUserProfile(
@@ -927,7 +894,7 @@ function mapUserSearchResult(userRow: UserSearchRow) {
   ];
 }
 
-function mapUserReview({ album, liked, likes, pinned, review }: UserReviewRow, canDelete: boolean) {
+function mapUserReview({ album, liked, likes, pinned, replyCount, review }: UserReviewRow, canDelete: boolean) {
   return {
     album: {
       artist: album.artistNames.join(", "),
@@ -943,8 +910,8 @@ function mapUserReview({ album, liked, likes, pinned, review }: UserReviewRow, c
     likes,
     pinned,
     rating: review.rating / 2,
+    replyCount,
     review: review.body ?? undefined,
-    shareCode: review.shareCode,
   };
 }
 

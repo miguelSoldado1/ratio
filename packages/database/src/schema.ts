@@ -42,7 +42,6 @@ export const reviews = pgTable(
     albumId: text("album_id")
       .notNull()
       .references(() => albums.id),
-    shareCode: text("share_code").notNull(),
     rating: smallint("rating").notNull(),
     body: text("body"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
@@ -56,7 +55,6 @@ export const reviews = pgTable(
     index("reviews_album_created_id_idx").on(table.albumId, table.createdAt, table.id),
     index("reviews_user_id_idx").on(table.userId),
     uniqueIndex("reviews_user_album_unique_idx").on(table.userId, table.albumId),
-    uniqueIndex("reviews_share_code_unique_idx").on(table.shareCode),
     check("reviews_ratings_range_check", sql`${table.rating} >= 1 AND ${table.rating} <= 10`),
   ]
 );
@@ -77,6 +75,46 @@ export const reviewLikes = pgTable(
     index("review_likes_review_created_user_idx").on(table.reviewId, table.createdAt, table.userId),
     index("review_likes_review_id_idx").on(table.reviewId),
     index("review_likes_user_created_review_idx").on(table.userId, table.createdAt, table.reviewId),
+  ]
+);
+
+export const reviewReplies = pgTable(
+  "review_reply",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    reviewId: uuid("review_id")
+      .notNull()
+      .references(() => reviews.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    index("review_replies_review_created_id_idx").on(table.reviewId, table.createdAt, table.id),
+    index("review_replies_user_created_id_idx").on(table.userId, table.createdAt, table.id),
+    check(
+      "review_replies_body_length_check",
+      sql`char_length(${table.body}) between 1 and 500 and ${table.body} ~ '[^[:space:]]'`
+    ),
+  ]
+);
+
+export const reviewReplyLikes = pgTable(
+  "review_reply_like",
+  {
+    replyId: uuid("reply_id")
+      .notNull()
+      .references(() => reviewReplies.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.replyId, table.userId], name: "review_reply_likes_reply_user_pk" }),
+    index("review_reply_likes_user_created_reply_idx").on(table.userId, table.createdAt, table.replyId),
   ]
 );
 
@@ -113,7 +151,12 @@ export const userFollows = pgTable(
   ]
 );
 
-export const notificationType = pgEnum("notification_type", ["review_liked", "user_followed"]);
+export const notificationType = pgEnum("notification_type", [
+  "review_liked",
+  "review_replied",
+  "reply_liked",
+  "user_followed",
+]);
 
 export const notifications = pgTable(
   "notification",
@@ -127,6 +170,7 @@ export const notifications = pgTable(
       .references(() => user.id, { onDelete: "cascade" }),
     type: notificationType("type").notNull(),
     reviewId: uuid("review_id").references(() => reviews.id, { onDelete: "cascade" }),
+    replyId: uuid("reply_id").references(() => reviewReplies.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     seenAt: timestamp("seen_at"),
   },
@@ -138,12 +182,23 @@ export const notifications = pgTable(
     uniqueIndex("notifications_review_liked_unique_idx")
       .on(table.recipientUserId, table.actorUserId, table.type, table.reviewId)
       .where(sql`${table.type} = 'review_liked'`),
+    uniqueIndex("notifications_review_replied_unique_idx")
+      .on(table.recipientUserId, table.type, table.reviewId)
+      .where(sql`${table.type} = 'review_replied'`),
+    uniqueIndex("notifications_reply_liked_unique_idx")
+      .on(table.recipientUserId, table.actorUserId, table.type, table.replyId)
+      .where(sql`${table.type} = 'reply_liked'`),
     uniqueIndex("notifications_user_followed_unique_idx")
       .on(table.recipientUserId, table.actorUserId, table.type)
       .where(sql`${table.type} = 'user_followed'`),
+    index("notifications_review_id_idx").on(table.reviewId).where(sql`${table.reviewId} is not null`),
+    index("notifications_reply_id_idx").on(table.replyId).where(sql`${table.replyId} is not null`),
     check(
-      "notifications_review_id_matches_type_check",
-      sql`(${table.type} = 'review_liked' and ${table.reviewId} is not null) or (${table.type} = 'user_followed' and ${table.reviewId} is null)`
+      "notifications_target_matches_type_check",
+      sql`(${table.type} = 'review_liked' and ${table.reviewId} is not null and ${table.replyId} is null)
+        or (${table.type} = 'review_replied' and ${table.reviewId} is not null and ${table.replyId} is not null)
+        or (${table.type} = 'reply_liked' and ${table.reviewId} is null and ${table.replyId} is not null)
+        or (${table.type} = 'user_followed' and ${table.reviewId} is null and ${table.replyId} is null)`
     ),
     check("notifications_no_self_notify_check", sql`${table.recipientUserId} <> ${table.actorUserId}`),
   ]
@@ -160,8 +215,32 @@ export const reviewRelations = relations(reviews, ({ many, one }) => ({
   }),
   likes: many(reviewLikes),
   profilePins: many(profilePinnedReviews),
+  replies: many(reviewReplies),
   user: one(user, {
     fields: [reviews.userId],
+    references: [user.id],
+  }),
+}));
+
+export const reviewReplyRelations = relations(reviewReplies, ({ many, one }) => ({
+  likes: many(reviewReplyLikes),
+  review: one(reviews, {
+    fields: [reviewReplies.reviewId],
+    references: [reviews.id],
+  }),
+  user: one(user, {
+    fields: [reviewReplies.userId],
+    references: [user.id],
+  }),
+}));
+
+export const reviewReplyLikeRelations = relations(reviewReplyLikes, ({ one }) => ({
+  reply: one(reviewReplies, {
+    fields: [reviewReplyLikes.replyId],
+    references: [reviewReplies.id],
+  }),
+  user: one(user, {
+    fields: [reviewReplyLikes.userId],
     references: [user.id],
   }),
 }));
@@ -215,5 +294,9 @@ export const notificationRelations = relations(notifications, ({ one }) => ({
   review: one(reviews, {
     fields: [notifications.reviewId],
     references: [reviews.id],
+  }),
+  reply: one(reviewReplies, {
+    fields: [notifications.replyId],
+    references: [reviewReplies.id],
   }),
 }));

@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import { config } from "dotenv";
 import postgres from "postgres";
 
@@ -24,8 +23,6 @@ const maxOldTrendingReviewAgeHours = 21 * 24;
 const spotifyReleaseYearDatePattern = /^\d{4}$/;
 const spotifyReleaseMonthDatePattern = /^\d{4}-\d{2}$/;
 const spotifyReleaseDayDatePattern = /^\d{4}-\d{2}-\d{2}$/;
-const reviewShareCodeAlphabet = "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
-const reviewShareCodeLength = 10;
 const resettableTables = [
   "review_like",
   "user_follow",
@@ -490,13 +487,10 @@ async function upsertReviews(transaction, reviewPlans) {
     const albumId = seedAlbumIds[spec.album];
     const body = spec.body ? reviewBodies[spec.body] : null;
     const createdAt = new Date(seedStartedAt.getTime() - spec.createdHoursAgo * oneHourMs);
-    const shareCode = getSeedReviewShareCode(authorId, albumId);
-
     const [review] = await transaction`
-      insert into review (user_id, album_id, share_code, rating, body, created_at, updated_at)
-      values (${authorId}, ${albumId}, ${shareCode}, ${spec.rating}, ${body}, ${createdAt}, ${createdAt})
+      insert into review (user_id, album_id, rating, body, created_at, updated_at)
+      values (${authorId}, ${albumId}, ${spec.rating}, ${body}, ${createdAt}, ${createdAt})
       on conflict (user_id, album_id) do update set
-        share_code = excluded.share_code,
         rating = excluded.rating,
         body = excluded.body,
         created_at = excluded.created_at,
@@ -508,18 +502,6 @@ async function upsertReviews(transaction, reviewPlans) {
   }
 
   return seededReviews;
-}
-
-function getSeedReviewShareCode(authorId, albumId) {
-  const bytes = createHash("sha256").update(`${authorId}:${albumId}`).digest();
-  let code = "";
-
-  for (const byte of bytes) {
-    code += reviewShareCodeAlphabet[byte % reviewShareCodeAlphabet.length];
-    if (code.length === reviewShareCodeLength) return code;
-  }
-
-  return code;
 }
 
 async function resetSeedReviewLikes(transaction, seededReviews) {

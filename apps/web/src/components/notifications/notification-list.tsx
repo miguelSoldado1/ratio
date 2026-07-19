@@ -163,38 +163,78 @@ function NotificationRowContent({ item }: { item: NotificationItem }) {
 }
 
 function NotificationText({ item }: { item: NotificationItem }) {
-  if (item.type === "user_followed") {
+  switch (item.type) {
+    case "review_liked":
+      return <NotificationLikedText actorCount={item.actorCount} actors={item.actors} target="review" />;
+    case "review_replied":
+      return item.recipientOwnsReview ? (
+        <>
+          <NotificationActorName name={getActorDisplayName(item.actor)} /> replied to your review.
+        </>
+      ) : (
+        <>
+          <NotificationActorName name={getActorDisplayName(item.actor)} /> also replied to{" "}
+          <NotificationActorName name={getActorDisplayName(item.reviewAuthor)} />
+          &apos;s review.
+        </>
+      );
+    case "reply_liked":
+      return <NotificationLikedText actorCount={item.actorCount} actors={item.actors} punctuation="." target="reply" />;
+    case "user_followed":
+      return (
+        <>
+          <NotificationActorName name={getActorDisplayName(item.actor)} /> followed you
+        </>
+      );
+    default:
+      return assertNever(item);
+  }
+}
+
+interface NotificationLikedTextProps {
+  actorCount: number;
+  actors: Array<{ displayUsername: string | null; username: string }>;
+  punctuation?: string;
+  target: "reply" | "review";
+}
+
+function NotificationLikedText({ actorCount, actors, punctuation = "", target }: NotificationLikedTextProps) {
+  const actorNames = actors.map(getActorDisplayName);
+
+  if (actorCount <= 1 || actorNames.length === 1) {
+    if (actorCount > 1) {
+      return (
+        <>
+          <NotificationActorName name={actorNames[0]} /> and {formatOtherActorCount(actorCount - 1)} liked your {target}
+          {punctuation}
+        </>
+      );
+    }
+
     return (
       <>
-        <NotificationActorName name={getActorDisplayName(item.actor)} /> followed you
+        <NotificationActorName name={actorNames[0]} /> liked your {target}
+        {punctuation}
       </>
     );
   }
 
-  const actorNames = item.actors.map(getActorDisplayName);
-
-  if (item.actorCount === 1) {
+  if (actorCount === 2) {
     return (
       <>
-        <NotificationActorName name={actorNames[0]} /> liked your review
+        <NotificationActorName name={actorNames[0]} /> and <NotificationActorName name={actorNames[1]} /> liked your{" "}
+        {target}
+        {punctuation}
       </>
     );
   }
 
-  if (item.actorCount === 2) {
-    return (
-      <>
-        <NotificationActorName name={actorNames[0]} /> and <NotificationActorName name={actorNames[1]} /> liked your
-        review
-      </>
-    );
-  }
-
-  if (item.actorCount === 3) {
+  if (actorCount === 3 && actorNames.length >= 3) {
     return (
       <>
         <NotificationActorName name={actorNames[0]} />, <NotificationActorName name={actorNames[1]} /> and{" "}
-        <NotificationActorName name={actorNames[2]} /> liked your review
+        <NotificationActorName name={actorNames[2]} /> liked your {target}
+        {punctuation}
       </>
     );
   }
@@ -202,9 +242,14 @@ function NotificationText({ item }: { item: NotificationItem }) {
   return (
     <>
       <NotificationActorName name={actorNames[0]} />, <NotificationActorName name={actorNames[1]} /> and{" "}
-      {item.actorCount - 2} others liked your review
+      {formatOtherActorCount(Math.max(1, actorCount - 2))} liked your {target}
+      {punctuation}
     </>
   );
+}
+
+function formatOtherActorCount(count: number) {
+  return `${count} ${count === 1 ? "other" : "others"}`;
 }
 
 function NotificationActorName({ name }: { name: string }) {
@@ -218,11 +263,16 @@ function getActorDisplayName(actor: { displayUsername: string | null; username: 
 function formatNotificationMeta(item: NotificationItem) {
   const time = formatRelativeTime(item.latestCreatedAt);
 
-  if (item.type === "review_liked") {
-    return `${item.albumTitle} · ${time}`;
+  switch (item.type) {
+    case "review_liked":
+    case "review_replied":
+    case "reply_liked":
+      return `${item.albumTitle} · ${time}`;
+    case "user_followed":
+      return `@${item.actor.username} · ${time}`;
+    default:
+      return assertNever(item);
   }
-
-  return `@${item.actor.username} · ${time}`;
 }
 
 function groupNotifications(items: NotificationItem[]): NotificationGroup[] {
@@ -240,4 +290,9 @@ function groupNotifications(items: NotificationItem[]): NotificationGroup[] {
     { items: recentItems, label: "Last 30 days" as const },
     { items: olderItems, label: "Older" as const },
   ].filter((group): group is NotificationGroup => group.items.length > 0);
+}
+
+// Keeps notification copy and metadata exhaustive as the notification union grows.
+function assertNever(value: never): never {
+  throw new Error(`Unsupported notification item: ${String(value)}`);
 }

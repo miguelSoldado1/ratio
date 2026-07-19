@@ -58,6 +58,14 @@
         "limit": 30,
         "period": 60
       }
+    },
+    {
+      "name": "REPLY_CREATE_RATE_LIMITER",
+      "namespace_id": "1008",
+      "simple": {
+        "limit": 10,
+        "period": 60
+      }
     }
   ],
   "hyperdrive": [
@@ -126,6 +134,14 @@
           "namespace_id": "2007",
           "simple": {
             "limit": 30,
+            "period": 60
+          }
+        },
+        {
+          "name": "REPLY_CREATE_RATE_LIMITER",
+          "namespace_id": "2008",
+          "simple": {
+            "limit": 10,
             "period": 60
           }
         }

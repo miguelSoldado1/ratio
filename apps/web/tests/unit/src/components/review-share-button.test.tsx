@@ -42,7 +42,9 @@ describe("ReviewShareButton", () => {
     fireEvent.click(screen.getByRole("button", { name: "Share review" }));
 
     await waitFor(() =>
-      expect(writeText).toHaveBeenCalledWith(expect.stringContaining("https://ratio.test/album/album_1/r/code_1"))
+      expect(writeText).toHaveBeenCalledWith(
+        expect.stringContaining("https://ratio.test/review/00000000-0000-4000-8000-000000000001")
+      )
     );
     expect(mockToastSuccess).toHaveBeenCalledWith("Review copied", { description: "The review is on your clipboard." });
   });
@@ -85,7 +87,7 @@ describe("ReviewShareButton", () => {
           "Alice reviewed Album by Artist",
           "★★★★½ 4.5/5",
           'He shouted, "There is a bomb!"',
-          "https://ratio.test/album/album_1/r/code_1",
+          "https://ratio.test/review/00000000-0000-4000-8000-000000000001",
         ].join("\n")
       )
     );
@@ -98,7 +100,7 @@ function renderShareButton(overrides: Partial<Parameters<typeof ReviewShareButto
       album={{ artist: "Artist", id: "album_1", title: "Album" }}
       rating={4.5}
       reviewBody="A sharp review."
-      reviewCode="code_1"
+      reviewId="00000000-0000-4000-8000-000000000001"
       userDisplayName="Alice"
       {...overrides}
     />

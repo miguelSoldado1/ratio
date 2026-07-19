@@ -110,7 +110,7 @@ export function ReviewsSection({ album, className }: ReviewsSectionProps) {
               album={{ artist: albumArtist, id: album.id, title: album.title }}
               rating={review.rating}
               reviewBody={review.review}
-              reviewCode={review.shareCode}
+              reviewId={review.id}
               userDisplayName={review.user.displayUsername}
             />
             <ReviewManagementMenu
@@ -121,6 +121,17 @@ export function ReviewsSection({ album, className }: ReviewsSectionProps) {
             />
           </>
         )}
+        renderReplies={(review) => (
+          <ReviewCard.Replies
+            replyCount={review.replyCount}
+            reviewAuthorName={review.user.displayUsername}
+            reviewId={review.id}
+          />
+        )}
+        resolvePermalink={(review) => ({
+          reviewAuthorName: review.user.displayUsername,
+          reviewId: review.id,
+        })}
         resolveUser={(review) => review.user}
         reviews={reviews}
         showAlbum={false}

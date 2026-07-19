@@ -92,6 +92,37 @@ Deleting the last review for an album does not delete the album row. Cleanup, if
 
 When adding the `review.albumId -> album.id` foreign key to a database with existing reviews, choose the migration path explicitly. Disposable or empty databases can apply the final schema directly. Databases with reviews that matter should do it in phases: create `album`, backfill distinct existing review album IDs from Spotify, then add the foreign key.
 
+## Review Replies
+
+`review_reply` stores one-level, immutable reply text against a root review. It uses a random UUID primary key, cascading
+review/user foreign keys, a database-enforced trimmed-content equivalent of 1–500 characters, and no update timestamp.
+The indexes `(review_id, created_at, id)` and `(user_id, created_at, id)` support oldest-first thread pagination,
+batched counts, and account deletion.
+
+`review_reply_like` uses `(reply_id, user_id)` as its primary key for idempotent likes. Its additional
+`(user_id, created_at, reply_id)` index supports account cleanup and user activity without adding a redundant
+reply-only index. Review deletion cascades through replies, reply likes, and reply-targeted notifications.
+
+Reply counts are computed from visible rows in bounded queries. Reply content is fetched only for the standalone
+conversation page. There are deliberately no denormalized
+reply counters, thread activity columns, materialized feed rows, or realtime infrastructure.
+
+## Reply Notifications
+
+`notification_type` contains `review_liked`, `review_replied`, `reply_liked`, and `user_followed`.
+`notification.reply_id` is nullable and cascades to `review_reply`; a check constraint enforces the target-column
+matrix for every type. Partial unique indexes keep one updatable review-reply notification per recipient/thread and
+one reply-like notification per recipient/actor/reply. Partial `review_id` and `reply_id` indexes support foreign-key
+cascades.
+
+Migration `0002_exotic_red_hulk.sql` replaces the PostgreSQL enum inside the migration transaction instead of using
+`ALTER TYPE ... ADD VALUE`, because Drizzle 0.45 wraps pending migrations together and PostgreSQL cannot use a newly
+added enum value before commit. The integration suite verifies both a fresh isolated schema and an upgrade containing
+existing review-like and follow notifications.
+
+Deploy the migration before application code that queries reply tables. Development and production migration state
+must be checked independently; never assume a successful local migration updated a Worker's remote database.
+
 ## Initial App Tables
 
 ```ts
