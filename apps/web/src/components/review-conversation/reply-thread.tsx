@@ -1,8 +1,8 @@
 import { useEffect, useId, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import { ReplyRow } from "./reply-row";
+import { ReplyRowsSkeleton } from "./reply-rows-skeleton";
 import type { ReactNode, RefObject } from "react";
 import type { ReviewReply } from "@/lib/tanstack-query/review-reply-cache";
 
@@ -176,19 +176,15 @@ interface ReplyPaginationSentinelProps {
 
 function ReplyPaginationSentinel({ isFetchingNextPage, loadMoreRef }: ReplyPaginationSentinelProps) {
   return (
-    <div
-      aria-busy={isFetchingNextPage || undefined}
-      className="flex h-12 items-center justify-center border-border/60 border-t"
-      data-slot="reply-pagination-sentinel"
-      ref={loadMoreRef}
-      role={isFetchingNextPage ? "status" : undefined}
-    >
+    <div className="border-border/60 border-t" data-slot="reply-pagination-sentinel" ref={loadMoreRef}>
       {isFetchingNextPage ? (
-        <>
-          <Spinner aria-hidden="true" className="text-muted-foreground" />
-          <span className="sr-only">Loading more replies…</span>
-        </>
-      ) : null}
+        <div aria-busy="true" role="status">
+          <span className="sr-only">Loading more replies</span>
+          <ReplyRowsSkeleton count={1} />
+        </div>
+      ) : (
+        <div className="h-12" />
+      )}
     </div>
   );
 }
@@ -209,9 +205,8 @@ function ReplyThreadInitialError({ onRetry }: { onRetry: () => void }) {
 
 function ReplyThreadLoading() {
   return (
-    <div className="flex items-center gap-2 py-6 text-muted-foreground text-sm" role="status">
-      <Spinner aria-hidden="true" />
-      Loading replies…
+    <div aria-busy="true" aria-label="Loading replies" role="status">
+      <ReplyRowsSkeleton count={2} />
     </div>
   );
 }

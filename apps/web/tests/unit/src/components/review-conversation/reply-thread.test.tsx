@@ -75,6 +75,17 @@ describe("ReplyThread", () => {
     const status = screen.getByRole("status");
     expect(status.textContent).toContain("Loading more replies");
     expect(status.getAttribute("aria-busy")).toBe("true");
+    expect(status.querySelector('[data-slot="skeleton"]')).not.toBeNull();
+    expect(status.querySelector('[data-slot="spinner"]')).toBeNull();
+  });
+
+  it("renders reply-shaped skeletons without visible loading copy for the initial load", () => {
+    renderThread({ isInitialLoading: true });
+
+    const status = screen.getByRole("status", { name: "Loading replies" });
+    expect(status.querySelectorAll('[data-slot="skeleton"]')).toHaveLength(12);
+    expect(status.textContent).toBe("");
+    expect(status.querySelector('[data-slot="spinner"]')).toBeNull();
   });
 
   it("preserves the review flow with a retryable initial error", () => {

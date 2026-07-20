@@ -1,4 +1,5 @@
 import { Skeleton } from "@/components/ui/skeleton";
+import { ReplyRowsSkeleton } from "./reply-rows-skeleton";
 
 /** Loading shape for the profile-style root review and its discussion. */
 export function ReviewConversationSkeleton() {
@@ -29,7 +30,16 @@ export function ReviewConversationSkeleton() {
         <Skeleton className="h-8 w-24 rounded-full" />
         <div className="border-border/80 border-t pt-7">
           <Skeleton className="h-5 w-28 rounded-sm" />
-          <Skeleton className="mt-4 h-14 w-full rounded-md" />
+          <div className="mt-4 border-border/80 border-y py-4">
+            <div className="flex items-start gap-3">
+              <Skeleton className="size-8 shrink-0 rounded-full" />
+              <div className="min-w-0 flex-1">
+                <Skeleton className="h-8 w-full rounded-md" />
+                <Skeleton className="mt-2 ml-auto h-8 w-16 rounded-full" />
+              </div>
+            </div>
+          </div>
+          <ReplyRowsSkeleton count={2} />
         </div>
       </div>
     </div>
