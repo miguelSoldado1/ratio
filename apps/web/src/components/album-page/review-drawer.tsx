@@ -14,7 +14,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel, FieldTitle } from "@/components/ui/field";
+import { Field, FieldDescription, FieldGroup, FieldLabel, FieldTitle } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
 import { authClient } from "@/lib/auth/auth-client";
 import { albumQueryKeys } from "@/lib/tanstack-query/query-keys";
@@ -28,7 +28,6 @@ const reviewFormIds = {
   ratingLabel: "review-rating-label",
   review: "review-body",
   reviewDescription: "review-body-description",
-  reviewError: "review-body-error",
 } as const;
 
 const maxReviewLength = 2000;
@@ -47,7 +46,6 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
   const [open, setOpen] = useState(false);
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
-  const [reviewSubmitError, setReviewSubmitError] = useState<string>();
   const [reviewForm, setReviewForm] = useState({ body: "", rating: 0 });
   const session = authClient.useSession();
   const userId = session.data?.user.id;
@@ -77,12 +75,8 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
 
     const trimmedBody = reviewForm.body.trim();
     if (trimmedBody.length > maxReviewLength) {
-      setReviewSubmitError(`Remove ${trimmedBody.length - maxReviewLength} characters to save.`);
-      shakeReviewComposer();
-      return;
+      return shakeReviewComposer();
     }
-
-    setReviewSubmitError(undefined);
 
     setIsSubmittingReview(true);
 
@@ -126,15 +120,7 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
   return (
     <>
       <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} />
-      <Drawer
-        direction="bottom"
-        handleOnly
-        onOpenChange={(nextOpen) => {
-          setOpen(nextOpen);
-          if (!nextOpen) setReviewSubmitError(undefined);
-        }}
-        open={open}
-      >
+      <Drawer direction="bottom" handleOnly onOpenChange={(nextOpen) => setOpen(nextOpen)} open={open}>
         <div className="min-w-0">
           <Button
             aria-busy={isCheckingReview || undefined}
@@ -185,14 +171,12 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
                 <Field className="border-border border-t pt-4">
                   <FieldLabel htmlFor={reviewFormIds.review}>Review</FieldLabel>
                   <Textarea
-                    aria-describedby={`${reviewFormIds.reviewDescription}${reviewSubmitError ? ` ${reviewFormIds.reviewError}` : ""}`}
-                    aria-invalid={reviewSubmitError ? true : undefined}
-                    className="review-composer-textarea min-h-40 rounded-none border-border border-x-0 border-t-0 border-b bg-transparent px-0 py-3 text-[15px] leading-6 shadow-none outline-none ring-0 aria-invalid:ring-0 aria-invalid:placeholder:text-destructive/70"
+                    aria-describedby={reviewFormIds.reviewDescription}
+                    className="review-composer-textarea rounded-none border-border border-x-0 border-t-0 border-b bg-transparent px-0 py-3 text-[15px] leading-6 shadow-none outline-none ring-0"
                     id={reviewFormIds.review}
                     onAnimationEnd={(event) => event.currentTarget.classList.remove("animate-input-shake")}
                     onChange={(event) => {
                       setReviewForm((form) => ({ ...form, body: event.target.value }));
-                      setReviewSubmitError(undefined);
                     }}
                     placeholder="Write your review here..."
                     ref={reviewBodyRef}
@@ -204,7 +188,6 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
                   >
                     {reviewForm.body.length}/{maxReviewLength} characters
                   </FieldDescription>
-                  <FieldError id={reviewFormIds.reviewError}>{reviewSubmitError}</FieldError>
                 </Field>
               </FieldGroup>
             </div>
