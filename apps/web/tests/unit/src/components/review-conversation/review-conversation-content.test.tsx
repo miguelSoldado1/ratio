@@ -78,6 +78,7 @@ describe("ReviewConversationContent", () => {
 
     const discussion = screen.getByRole("region", { name: "Discussion (2)" });
     expect(discussion.contains(screen.getByLabelText("Add a reply"))).toBe(true);
+    expect(screen.getByText("0/500 characters").className).not.toContain("sr-only");
     expect(discussion.textContent).toContain("No replies yet. Start the discussion.");
   });
 

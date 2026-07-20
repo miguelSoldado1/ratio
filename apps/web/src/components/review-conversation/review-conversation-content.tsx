@@ -19,7 +19,7 @@ const maxReplyLength = 500;
 function getReplyCountClassName(length: number) {
   if (length > maxReplyLength) return "mr-auto text-destructive text-xs tabular-nums";
 
-  return length > 400 ? "mr-auto text-muted-foreground-subtle text-xs tabular-nums" : "sr-only";
+  return "mr-auto text-muted-foreground-subtle text-xs tabular-nums";
 }
 
 interface ReviewConversationContentProps {
