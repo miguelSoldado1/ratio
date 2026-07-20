@@ -160,7 +160,7 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
             ratingInputRef.current?.focus();
           }}
         >
-          <form className="mx-2 flex min-h-0 flex-1 flex-col sm:mx-3" onSubmit={handleSubmit}>
+          <form className="mx-auto flex min-h-0 w-full max-w-xl flex-1 flex-col px-2 sm:px-3" onSubmit={handleSubmit}>
             <DrawerHeader className="gap-0 px-4 py-3 sm:gap-0.5 sm:py-4">
               <DrawerTitle className="text-sm sm:text-base">Add a review</DrawerTitle>
               <DrawerDescription className="text-xs sm:text-sm">
@@ -182,7 +182,7 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
                     Click or drag across the stars to set your rating.
                   </FieldDescription>
                 </Field>
-                <Field className="max-w-prose border-border border-t pt-4">
+                <Field className="border-border border-t pt-4">
                   <FieldLabel htmlFor={reviewFormIds.review}>Review</FieldLabel>
                   <Textarea
                     aria-describedby={`${reviewFormIds.reviewDescription}${reviewSubmitError ? ` ${reviewFormIds.reviewError}` : ""}`}
