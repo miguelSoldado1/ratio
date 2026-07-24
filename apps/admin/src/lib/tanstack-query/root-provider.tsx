@@ -4,7 +4,8 @@ import { toast } from "sonner";
 const queryClientOptions: QueryClientConfig = {
   defaultOptions: {
     queries: {
-      retry: false,
+      retry: 1,
+      staleTime: 30 * 1000,
     },
   },
   queryCache: new QueryCache({
