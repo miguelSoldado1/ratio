@@ -2,10 +2,6 @@ export const albumQueryKeys = {
   all: () => ["album"] as const,
   details: (albumId: string) => ["album", albumId, "details"] as const,
   review: (albumId: string) => ["album", albumId, "review"] as const,
-  reviewDetailByCode: (albumId: string, reviewCode: string, userId?: string) =>
-    userId
-      ? ([...albumQueryKeys.review(albumId), "detail-code", reviewCode, userId] as const)
-      : ([...albumQueryKeys.review(albumId), "detail-code", reviewCode] as const),
   hasMyReview: (albumId: string, userId?: string) => [...albumQueryKeys.review(albumId), "me", userId] as const,
   ratingSummary: (albumId: string) => [...albumQueryKeys.review(albumId), "rating-summary"] as const,
   reviews: (albumId: string, userId?: string) => [...albumQueryKeys.review(albumId), "list", userId] as const,
@@ -14,8 +10,21 @@ export const albumQueryKeys = {
 
 export const reviewQueryKeys = {
   all: () => ["review"] as const,
+  detail: (reviewId: string, viewerUserId?: string) =>
+    viewerUserId
+      ? ([...reviewQueryKeys.all(), reviewId, "detail", viewerUserId] as const)
+      : ([...reviewQueryKeys.all(), reviewId, "detail"] as const),
   likes: (reviewId: string, viewerUserId?: string) =>
     viewerUserId ? (["review", reviewId, "likes", viewerUserId] as const) : (["review", reviewId, "likes"] as const),
+  replyLikes: (replyId: string, viewerUserId?: string) =>
+    viewerUserId
+      ? (["review", "reply", replyId, "likes", viewerUserId] as const)
+      : (["review", "reply", replyId, "likes"] as const),
+  repliesRoot: (reviewId: string) => ["review", reviewId, "replies"] as const,
+  replies: (reviewId: string, viewerUserId?: string) =>
+    viewerUserId
+      ? ([...reviewQueryKeys.repliesRoot(reviewId), viewerUserId] as const)
+      : reviewQueryKeys.repliesRoot(reviewId),
 };
 
 export const feedQueryKeys = {

@@ -13,6 +13,8 @@ const expectedMigrationNoticeCodes = new Set(["42P06", "42P07"]);
 const testTables = [
   '"notification"',
   '"profile_pinned_review"',
+  '"review_reply_like"',
+  '"review_reply"',
   '"review_like"',
   '"user_follow"',
   '"review"',

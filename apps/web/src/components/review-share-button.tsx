@@ -21,18 +21,18 @@ interface ReviewShareButtonProps {
   album: ReviewShareAlbum;
   rating: number;
   reviewBody?: string;
-  reviewCode: string;
+  reviewId: string;
   userDisplayName: string;
 }
 
-export function ReviewShareButton({ album, rating, reviewBody, reviewCode, userDisplayName }: ReviewShareButtonProps) {
+export function ReviewShareButton({ album, rating, reviewBody, reviewId, userDisplayName }: ReviewShareButtonProps) {
   const sharingRef = useRef(false);
 
   async function handleShareClick() {
     if (sharingRef.current) return;
 
     sharingRef.current = true;
-    const permalinkPath = `/album/${encodeURIComponent(album.id)}/r/${encodeURIComponent(reviewCode)}`;
+    const permalinkPath = `/review/${encodeURIComponent(reviewId)}`;
     const permalink = new URL(permalinkPath, window.location.origin).href;
     const shareText = createReviewShareText({ album, permalink, rating, reviewBody, userDisplayName });
 

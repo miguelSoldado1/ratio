@@ -4,13 +4,17 @@ import {
   createTestNotification,
   createTestReview,
   createTestReviewLike,
+  createTestReviewReply,
+  createTestReviewReplyLike,
   createTestUser,
 } from "@test/fixtures";
-import { and, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { notifications } from "@/lib/db/schema";
+import { notifications, reviewReplies, reviewReplyLikes } from "@/lib/db/schema";
 import {
+  createReplyLikedNotification,
   createReviewLikedNotification,
+  createReviewRepliedNotifications,
   createUserFollowedNotification,
   getNotificationsService,
   getUnseenNotificationCountService,
@@ -94,6 +98,25 @@ describe("getUnseenNotificationCountService", () => {
 
     await expect(getUnseenNotificationCountService(context)).resolves.toEqual({ count: 1 });
   });
+
+  it("counts review likes and replies on the same review as separate unseen groups", async () => {
+    const author = await createTestUser(testDb);
+    const likeActor = await createTestUser(testDb);
+    const replyActor = await createTestUser(testDb);
+    const review = await createTestReview(testDb, { userId: author.id });
+    const reply = await createTestReviewReply(testDb, { reviewId: review.id, userId: replyActor.id });
+
+    await createTestReviewLike(testDb, { reviewId: review.id, userId: likeActor.id });
+    await createReviewLikedNotification({ actorUserId: likeActor.id, reviewId: review.id }, testDb);
+    await createReviewRepliedNotifications(
+      { actorUserId: replyActor.id, replyId: reply.id, reviewId: review.id },
+      testDb
+    );
+
+    await expect(getUnseenNotificationCountService(createAuthenticatedContext(testDb, author))).resolves.toEqual({
+      count: 2,
+    });
+  });
 });
 
 describe("markNotificationsSeenService", () => {
@@ -150,6 +173,31 @@ describe("markNotificationsSeenService", () => {
 });
 
 describe("getNotificationsService", () => {
+  it("stores reply notification timestamps at cursor-safe millisecond precision", async () => {
+    const reviewAuthor = await createTestUser(testDb);
+    const replyAuthor = await createTestUser(testDb);
+    const likeActor = await createTestUser(testDb);
+    const review = await createTestReview(testDb, { userId: reviewAuthor.id });
+    const reply = await createTestReviewReply(testDb, { reviewId: review.id, userId: replyAuthor.id });
+
+    await createReviewRepliedNotifications(
+      { actorUserId: replyAuthor.id, replyId: reply.id, reviewId: review.id },
+      testDb
+    );
+    await createReplyLikedNotification({ actorUserId: likeActor.id, replyId: reply.id }, testDb);
+
+    const rows = await testDb
+      .select({
+        submillisecondMicroseconds: sql<number>`(extract(microseconds from ${notifications.createdAt})::int % 1000)`,
+        type: notifications.type,
+      })
+      .from(notifications)
+      .where(inArray(notifications.type, ["review_replied", "reply_liked"]));
+
+    expect(rows).toHaveLength(2);
+    expect(rows.map((row) => row.submillisecondMicroseconds)).toEqual([0, 0]);
+  });
+
   it("returns user_followed notifications with actor, href, text, and seen state", async () => {
     const recipient = await createTestUser(testDb);
     const actor = await createTestUser(testDb, {
@@ -191,8 +239,7 @@ describe("getNotificationsService", () => {
     expect(item).toMatchObject({
       actorCount: 4,
       albumId: review.albumId,
-      href: `/album/${review.albumId}/r/${review.shareCode}`,
-      reviewCode: review.shareCode,
+      href: `/review/${review.id}`,
       reviewId: review.id,
       seen: false,
       type: "review_liked",
@@ -272,6 +319,132 @@ describe("getNotificationsService", () => {
     const page = await getNotificationsService({}, createAuthenticatedContext(testDb, recipient));
 
     expect(page.items.map((item) => item.seen)).toEqual([false, true]);
+  });
+
+  it("hydrates review likes and replies on the same review as separate groups", async () => {
+    const recipient = await createTestUser(testDb);
+    const replyActor = await createTestUser(testDb, { displayUsername: "Carly" });
+    const likeActor = await createTestUser(testDb, { displayUsername: "Drew" });
+    const review = await createTestReview(testDb, { userId: recipient.id });
+    const reply = await createTestReviewReply(testDb, { reviewId: review.id, userId: replyActor.id });
+    await createTestReviewLike(testDb, { reviewId: review.id, userId: likeActor.id });
+    await createReviewLikedNotification({ actorUserId: likeActor.id, reviewId: review.id }, testDb);
+    await createReviewRepliedNotifications(
+      { actorUserId: replyActor.id, replyId: reply.id, reviewId: review.id },
+      testDb
+    );
+
+    const page = await getNotificationsService({}, createAuthenticatedContext(testDb, recipient));
+
+    expect(page.items).toHaveLength(2);
+    expect(page.items.map((item) => item.type).sort()).toEqual(["review_liked", "review_replied"]);
+  });
+
+  it("returns author and participant copy for review replies", async () => {
+    const reviewAuthor = await createTestUser(testDb, { displayUsername: "Alice" });
+    const participant = await createTestUser(testDb, { displayUsername: "Bob" });
+    const actor = await createTestUser(testDb, { displayUsername: "Carly" });
+    const review = await createTestReview(testDb, { userId: reviewAuthor.id });
+    await createTestReviewReply(testDb, { reviewId: review.id, userId: participant.id });
+    const triggeringReply = await createTestReviewReply(testDb, { reviewId: review.id, userId: actor.id });
+    await createReviewRepliedNotifications(
+      { actorUserId: actor.id, replyId: triggeringReply.id, reviewId: review.id },
+      testDb
+    );
+
+    const authorPage = await getNotificationsService({}, createAuthenticatedContext(testDb, reviewAuthor));
+    const participantPage = await getNotificationsService({}, createAuthenticatedContext(testDb, participant));
+
+    expect(authorPage.items).toMatchObject([
+      {
+        href: `/review/${review.id}`,
+        recipientOwnsReview: true,
+        text: "Carly replied to your review.",
+        type: "review_replied",
+      },
+    ]);
+    expect(participantPage.items).toMatchObject([
+      {
+        recipientOwnsReview: false,
+        text: "Carly also replied to Alice's review.",
+        type: "review_replied",
+      },
+    ]);
+  });
+
+  it("groups reply likes and excludes the group after all source likes disappear", async () => {
+    const replyAuthor = await createTestUser(testDb);
+    const firstActor = await createTestUser(testDb, { displayUsername: "Carly" });
+    const secondActor = await createTestUser(testDb, { displayUsername: "Drew" });
+    const reply = await createTestReviewReply(testDb, { userId: replyAuthor.id });
+
+    for (const actor of [firstActor, secondActor]) {
+      await createTestReviewReplyLike(testDb, { replyId: reply.id, userId: actor.id });
+      await createReplyLikedNotification({ actorUserId: actor.id, replyId: reply.id }, testDb);
+    }
+
+    const page = await getNotificationsService({}, createAuthenticatedContext(testDb, replyAuthor));
+    expect(page.items).toMatchObject([
+      {
+        actorCount: 2,
+        replyId: reply.id,
+        text: expect.stringContaining("liked your reply"),
+        type: "reply_liked",
+      },
+    ]);
+
+    await testDb
+      .delete(reviewReplyLikes)
+      .where(and(eq(reviewReplyLikes.replyId, reply.id), eq(reviewReplyLikes.userId, firstActor.id)));
+
+    const pageAfterUnlike = await getNotificationsService({}, createAuthenticatedContext(testDb, replyAuthor));
+    const [itemAfterUnlike] = pageAfterUnlike.items;
+
+    expect(itemAfterUnlike).toMatchObject({ actorCount: 1, type: "reply_liked" });
+    expect(itemAfterUnlike?.type === "reply_liked" ? itemAfterUnlike.actors.map((actor) => actor.id) : []).toEqual([
+      secondActor.id,
+    ]);
+
+    await testDb.delete(reviewReplyLikes);
+    await expect(getNotificationsService({}, createAuthenticatedContext(testDb, replyAuthor))).resolves.toMatchObject({
+      items: [],
+    });
+  });
+
+  it("drops the latest reply notification after its triggering reply is deleted", async () => {
+    const reviewAuthor = await createTestUser(testDb);
+    const actor = await createTestUser(testDb);
+    const review = await createTestReview(testDb, { userId: reviewAuthor.id });
+    const reply = await createTestReviewReply(testDb, { reviewId: review.id, userId: actor.id });
+    const context = createAuthenticatedContext(testDb, reviewAuthor);
+
+    await createReviewRepliedNotifications({ actorUserId: actor.id, replyId: reply.id, reviewId: review.id }, testDb);
+    await expect(getUnseenNotificationCountService(context)).resolves.toEqual({ count: 1 });
+
+    await testDb.delete(reviewReplies).where(eq(reviewReplies.id, reply.id));
+
+    await expect(testDb.select().from(notifications)).resolves.toEqual([]);
+    await expect(getNotificationsService({}, context)).resolves.toMatchObject({ items: [] });
+    await expect(getUnseenNotificationCountService(context)).resolves.toEqual({ count: 0 });
+  });
+
+  it("does not render a review reply notification whose reply does not match its review", async () => {
+    const recipient = await createTestUser(testDb);
+    const actor = await createTestUser(testDb);
+    const targetReview = await createTestReview(testDb, { userId: recipient.id });
+    const otherReview = await createTestReview(testDb);
+    const otherReply = await createTestReviewReply(testDb, { reviewId: otherReview.id, userId: actor.id });
+    await createTestNotification(testDb, {
+      actorUserId: actor.id,
+      recipientUserId: recipient.id,
+      replyId: otherReply.id,
+      reviewId: targetReview.id,
+      type: "review_replied",
+    });
+
+    await expect(getNotificationsService({}, createAuthenticatedContext(testDb, recipient))).resolves.toMatchObject({
+      items: [],
+    });
   });
 });
 

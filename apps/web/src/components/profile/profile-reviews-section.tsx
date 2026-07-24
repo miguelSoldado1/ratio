@@ -73,7 +73,7 @@ export function ProfileReviewsSection({
               album={review.album}
               rating={review.rating}
               reviewBody={review.review}
-              reviewCode={review.shareCode}
+              reviewId={review.id}
               userDisplayName={profileUser.displayUsername}
             />
             <ProfileReviewManagementMenu
@@ -89,6 +89,17 @@ export function ProfileReviewsSection({
           </>
         )}
         renderMeta={(review) => (review.pinned ? <ProfileReviewPinnedBadge /> : null)}
+        renderReplies={(review) => (
+          <ReviewCard.Replies
+            replyCount={review.replyCount}
+            reviewAuthorName={profileUser.displayUsername}
+            reviewId={review.id}
+          />
+        )}
+        resolvePermalink={(review) => ({
+          reviewAuthorName: profileUser.displayUsername,
+          reviewId: review.id,
+        })}
         resolveUser={() => ({
           avatarUrl: profileUser.avatarUrl,
           displayUsername: profileUser.displayUsername,

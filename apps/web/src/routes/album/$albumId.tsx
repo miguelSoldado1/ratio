@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { AlbumPage } from "@/components/album-page/album-page";
 import { createCanonicalLink, createSeoMeta, siteName } from "@/lib/seo";
 
@@ -21,10 +21,5 @@ export const Route = createFileRoute("/album/$albumId")({
 function AlbumRoute() {
   const { albumId } = Route.useParams();
 
-  return (
-    <>
-      <AlbumPage albumId={albumId} />
-      <Outlet />
-    </>
-  );
+  return <AlbumPage albumId={albumId} />;
 }

@@ -60,9 +60,7 @@ export function ReviewDetailsDialog({ review, open, onOpenChange }: ReviewDetail
             <div className="min-w-0 flex-1">
               <a
                 className="group inline-flex max-w-full items-center gap-1.5 rounded-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                href={getWebAppHref(
-                  `/album/${encodeURIComponent(review.albumId)}/r/${encodeURIComponent(review.shareCode)}`
-                )}
+                href={getWebAppHref(`/review/${encodeURIComponent(review.id)}`)}
                 rel="noreferrer"
                 target="_blank"
               >

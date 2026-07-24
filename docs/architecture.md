@@ -38,6 +38,20 @@ Admin user deletion intentionally does not give the admin Worker R2 bindings or 
 
 Future admin scope may include bounded dashboard metrics, reviews, and reports. Under the free-hosting constraint, prefer bounded indexed queries, no polling, and no new infrastructure by default.
 
+## Review Conversation Boundary
+
+`routes/album/$albumId.tsx` owns the full album page, while `routes/review/$reviewId.tsx` owns the standalone
+conversation page. The routes are independent, so a direct review permalink does not mount or fetch `AlbumPage`.
+`ReviewConversation` owns query and mutation behavior while
+`ReviewConversationContent` and the focused reply components remain independent of page/dialog shells.
+
+Album and feed cards receive scalar reply counts from one batched query over the final visible review IDs.
+Neither For You nor Following reads reply-activity candidates, and no review-list DTO serializes reply bodies,
+reply-author identity, or reply-like state. Following uses the normal `(createdAt, reviewId)` review cursor.
+
+Reply creation uses the native Cloudflare rate-limit binding. Reply reads, likes, and notifications stay
+request-driven; there is no polling, queue, KV thread cache, denormalized counter, or materialized activity table.
+
 ## Cloudflare Git Builds
 
 Connect the same GitHub repository independently to each Worker. Use `apps/web` and `apps/admin` as their respective root directories so each Wrangler file and build output stays app-local. Configure watch paths to include the app directory plus `packages/database`, the root lockfile/workspace manifests, and relevant shared configuration or migrations. Changes that affect only one app should not build the other unless a shared path changed.

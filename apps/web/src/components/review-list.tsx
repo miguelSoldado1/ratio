@@ -5,7 +5,7 @@ import { ReviewLikesDialog } from "@/components/review-likes-dialog";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
 import type { ReactNode, RefObject } from "react";
-import type { ReviewAlbum, ReviewUser } from "@/components/review-card";
+import type { ReviewAlbum, ReviewPermalink, ReviewUser } from "@/components/review-card";
 
 export interface ReviewListViewer {
   hasSession: boolean;
@@ -19,7 +19,7 @@ export type ReviewLikeToggleHandler = (
 
 /** Minimum shape a review needs to render as a row. The author is supplied by
  * `resolveUser` (the profile page derives it from the profile, not the review),
- * and site-specific fields (shareCode, canDelete, pinned, …) are read inside
+ * and site-specific fields (canDelete, pinned, …) are read inside
  * the caller-provided `renderMeta` / `renderActions` closures. */
 export interface ReviewListItem {
   album?: ReviewAlbum;
@@ -37,6 +37,8 @@ interface ReviewRowProps<TReview extends ReviewListItem> {
   onShowLikes?: () => void;
   renderActions?: (review: TReview) => ReactNode;
   renderMeta?: (review: TReview) => ReactNode;
+  renderReplies?: (review: TReview) => ReactNode;
+  resolvePermalink?: (review: TReview) => ReviewPermalink;
   resolveUser: (review: TReview) => ReviewUser;
   review: TReview;
   showAlbum?: boolean;
@@ -52,14 +54,23 @@ export function ReviewRow<TReview extends ReviewListItem>({
   onShowLikes,
   renderActions,
   renderMeta,
+  renderReplies,
+  resolvePermalink,
   resolveUser,
   review,
   showAlbum = true,
   viewer,
 }: ReviewRowProps<TReview>) {
+  const permalink = resolvePermalink?.(review);
+
   return (
     <ReviewCard.Root className={className}>
-      <ReviewCard.Header createdAt={review.createdAt} meta={renderMeta?.(review)} user={resolveUser(review)} />
+      <ReviewCard.Header
+        createdAt={review.createdAt}
+        meta={renderMeta?.(review)}
+        permalink={permalink}
+        user={resolveUser(review)}
+      />
       {showAlbum && review.album ? (
         <div className="flex items-start gap-3">
           <ReviewCard.Album album={review.album} className="flex-1" linked />
@@ -68,7 +79,7 @@ export function ReviewRow<TReview extends ReviewListItem>({
       ) : (
         <ReviewCard.Rating value={review.rating} />
       )}
-      {review.review ? <ReviewCard.Review>{review.review}</ReviewCard.Review> : null}
+      {review.review ? <ReviewCard.Review permalink={permalink}>{review.review}</ReviewCard.Review> : null}
       <ReviewCard.Footer>
         <ReviewCard.Likes
           count={review.likes}
@@ -77,6 +88,7 @@ export function ReviewRow<TReview extends ReviewListItem>({
           onShowLikes={onShowLikes}
           onToggle={viewer.hasSession ? (liked) => onReviewLikeToggle(review.id, liked) : undefined}
         />
+        {renderReplies?.(review)}
         {renderActions?.(review)}
       </ReviewCard.Footer>
     </ReviewCard.Root>
@@ -90,6 +102,8 @@ interface ReviewListProps<TReview extends ReviewListItem> {
   onReviewLikeToggle: ReviewLikeToggleHandler;
   renderActions?: (review: TReview) => ReactNode;
   renderMeta?: (review: TReview) => ReactNode;
+  renderReplies?: (review: TReview) => ReactNode;
+  resolvePermalink?: (review: TReview) => ReviewPermalink;
   resolveUser: (review: TReview) => ReviewUser;
   reviews: TReview[];
   rowClassName?: string;
@@ -107,13 +121,15 @@ export function ReviewList<TReview extends ReviewListItem>({
   onReviewLikeToggle,
   renderActions,
   renderMeta,
+  renderReplies,
+  resolvePermalink,
   resolveUser,
   reviews,
   rowClassName = "border-border/80",
   showAlbum = true,
   viewer,
 }: ReviewListProps<TReview>) {
-  const [likesReviewId, setLikesReviewId] = useState<string>();
+  const [reviewLikesId, setReviewLikesId] = useState<string>();
 
   if (reviews.length === 0) {
     return <>{emptyState}</>;
@@ -126,9 +142,11 @@ export function ReviewList<TReview extends ReviewListItem>({
           className={rowClassName}
           key={review.id}
           onReviewLikeToggle={onReviewLikeToggle}
-          onShowLikes={() => setLikesReviewId(review.id)}
+          onShowLikes={() => setReviewLikesId(review.id)}
           renderActions={renderActions}
           renderMeta={renderMeta}
+          renderReplies={renderReplies}
+          resolvePermalink={resolvePermalink}
           resolveUser={resolveUser}
           review={review}
           showAlbum={showAlbum}
@@ -139,10 +157,9 @@ export function ReviewList<TReview extends ReviewListItem>({
       {isFetchingNextPage ? <LoadingMoreReviews /> : null}
       <ReviewLikesDialog
         onOpenChange={(open) => {
-          if (!open) setLikesReviewId(undefined);
+          if (!open) setReviewLikesId(undefined);
         }}
-        open={Boolean(likesReviewId)}
-        reviewId={likesReviewId}
+        reviewId={reviewLikesId}
         viewer={viewer}
       />
     </>

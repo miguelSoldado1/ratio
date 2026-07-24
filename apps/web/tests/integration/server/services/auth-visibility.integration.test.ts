@@ -3,7 +3,7 @@ import { createTestAlbum, createTestReview, createTestReviewLike, createTestUser
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getAlbumReviewsService,
-  getReviewByShareCodeService,
+  getReviewByIdService,
   getUserLikedReviewsService,
   getUserProfileService,
   getUserReviewsService,
@@ -71,9 +71,7 @@ describe("public banned-user visibility", () => {
     const album = await createTestAlbum(testDb);
     const review = await createTestReview(testDb, { albumId: album.id, userId: bannedUser.id });
 
-    await expect(getReviewByShareCodeService({ albumId: album.id, reviewCode: review.shareCode })).rejects.toThrow(
-      "Review not found"
-    );
+    await expect(getReviewByIdService({ reviewId: review.id })).resolves.toBeNull();
   });
 
   it("hides banned users from public album review reads", async () => {
@@ -167,9 +165,7 @@ describe("admin banned-user visibility", () => {
     const review = await createTestReview(testDb, { albumId: album.id, userId: bannedUser.id });
     mockState.currentUser = { id: admin.id, isAdmin: true };
 
-    await expect(
-      getReviewByShareCodeService({ albumId: album.id, reviewCode: review.shareCode })
-    ).resolves.toMatchObject({
+    await expect(getReviewByIdService({ reviewId: review.id })).resolves.toMatchObject({
       id: review.id,
     });
   });

@@ -2,7 +2,6 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback } from "react";
 import { toast } from "sonner";
-import { userQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { setUserFollow } from "@/server/functions/follow-functions";
 import { tryCatch } from "@/try-catch";
 import type { QueryKey } from "@tanstack/react-query";
@@ -14,12 +13,10 @@ interface UseUserFollowToggleParams {
 }
 
 export function useSetUserFollowMutation() {
-  const queryClient = useQueryClient();
   const setUserFollowFn = useServerFn(setUserFollow);
 
   return useMutation({
     mutationFn: setUserFollowFn,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: userQueryKeys.all() }),
   });
 }
 

@@ -1,4 +1,4 @@
-import { Heart, UserPlus } from "lucide-react";
+import { Heart, MessageCircle, UserPlus } from "lucide-react";
 import { UserAvatar } from "@/components/user-avatar";
 import { cn } from "@/lib/utils";
 import type { NotificationItem } from "@/server/services/notification-service";
@@ -8,11 +8,11 @@ interface NotificationVisualProps {
 }
 
 export function NotificationVisual({ item }: NotificationVisualProps) {
-  if (item.type === "review_liked" && item.actors.length > 1) {
+  if ((item.type === "review_liked" || item.type === "reply_liked") && item.actors.length > 1) {
     return <NotificationActorStack item={item} />;
   }
 
-  const actor = item.type === "user_followed" ? item.actor : item.actors[0];
+  const actor = item.type === "user_followed" || item.type === "review_replied" ? item.actor : item.actors[0];
   const displayName = actor?.displayUsername ?? actor?.username ?? "User";
 
   return (
@@ -24,7 +24,7 @@ export function NotificationVisual({ item }: NotificationVisualProps) {
 }
 
 interface NotificationActorStackProps {
-  item: Extract<NotificationItem, { type: "review_liked" }>;
+  item: Extract<NotificationItem, { type: "reply_liked" | "review_liked" }>;
 }
 
 function NotificationActorStack({ item }: NotificationActorStackProps) {
@@ -47,7 +47,7 @@ function NotificationActorStack({ item }: NotificationActorStackProps) {
           />
         );
       })}
-      <NotificationTypeBadge type="review_liked" />
+      <NotificationTypeBadge type={item.type} />
     </span>
   );
 }
@@ -57,7 +57,9 @@ interface NotificationTypeBadgeProps {
 }
 
 function NotificationTypeBadge({ type }: NotificationTypeBadgeProps) {
-  const Icon = type === "review_liked" ? Heart : UserPlus;
+  let Icon = Heart;
+  if (type === "review_replied") Icon = MessageCircle;
+  if (type === "user_followed") Icon = UserPlus;
 
   return (
     <span className="absolute right-0 bottom-0 flex size-5 items-center justify-center rounded-full bg-muted text-muted-foreground shadow-sm ring-2 ring-popover">

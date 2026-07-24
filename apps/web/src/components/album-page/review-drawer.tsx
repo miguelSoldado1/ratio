@@ -30,6 +30,8 @@ const reviewFormIds = {
   reviewDescription: "review-body-description",
 } as const;
 
+const maxReviewLength = 2000;
+
 interface ReviewDrawerProps {
   albumArtist?: string;
   albumId: string;
@@ -39,6 +41,7 @@ interface ReviewDrawerProps {
 export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerProps) {
   const queryClient = useQueryClient();
   const ratingInputRef = useRef<HTMLDivElement>(null);
+  const reviewBodyRef = useRef<HTMLTextAreaElement>(null);
   const reviewTriggerDescriptionId = useId();
   const [open, setOpen] = useState(false);
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
@@ -70,12 +73,18 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
 
     if (!canSaveReview) return;
 
+    const trimmedBody = reviewForm.body.trim();
+    if (trimmedBody.length > maxReviewLength) {
+      return shakeReviewComposer();
+    }
+
     setIsSubmittingReview(true);
 
     const data = { albumId, body: reviewForm.body, rating: Math.round(reviewForm.rating * 2) };
     const { error } = await tryCatch(createReviewMutation.mutateAsync({ data }));
     if (error) {
       setIsSubmittingReview(false);
+      shakeReviewComposer();
       return toast.error("Couldn't save review", {
         description: error instanceof Error ? error.message : "Something went wrong. Try again.",
       });
@@ -86,6 +95,14 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
     setOpen(false);
     setReviewForm({ body: "", rating: 0 });
     setIsSubmittingReview(false);
+  }
+
+  function shakeReviewComposer() {
+    const textarea = reviewBodyRef.current;
+    if (!textarea) return;
+
+    textarea.classList.remove("animate-input-shake");
+    window.requestAnimationFrame(() => textarea.classList.add("animate-input-shake"));
   }
 
   function handleReviewTriggerClick(event: MouseEvent<HTMLButtonElement>) {
@@ -103,7 +120,7 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
   return (
     <>
       <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} />
-      <Drawer direction="bottom" handleOnly onOpenChange={setOpen} open={open}>
+      <Drawer direction="bottom" handleOnly onOpenChange={(nextOpen) => setOpen(nextOpen)} open={open}>
         <div className="min-w-0">
           <Button
             aria-busy={isCheckingReview || undefined}
@@ -129,7 +146,7 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
             ratingInputRef.current?.focus();
           }}
         >
-          <form className="mx-auto flex min-h-0 w-full max-w-sm flex-1 flex-col sm:max-w-md" onSubmit={handleSubmit}>
+          <form className="mx-auto flex min-h-0 w-full max-w-xl flex-1 flex-col px-2 sm:px-3" onSubmit={handleSubmit}>
             <DrawerHeader className="gap-0 px-4 py-3 sm:gap-0.5 sm:py-4">
               <DrawerTitle className="text-sm sm:text-base">Add a review</DrawerTitle>
               <DrawerDescription className="text-xs sm:text-sm">
@@ -151,19 +168,25 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
                     Click or drag across the stars to set your rating.
                   </FieldDescription>
                 </Field>
-                <Field>
+                <Field className="border-border border-t pt-4">
                   <FieldLabel htmlFor={reviewFormIds.review}>Review</FieldLabel>
                   <Textarea
                     aria-describedby={reviewFormIds.reviewDescription}
-                    className="min-h-40 sm:min-h-32"
+                    className="review-composer-textarea rounded-none border-border border-x-0 border-t-0 border-b bg-transparent px-0 py-3 text-[15px] leading-6 shadow-none outline-none ring-0"
                     id={reviewFormIds.review}
-                    maxLength={2000}
-                    onChange={(event) => setReviewForm((form) => ({ ...form, body: event.target.value }))}
+                    onAnimationEnd={(event) => event.currentTarget.classList.remove("animate-input-shake")}
+                    onChange={(event) => {
+                      setReviewForm((form) => ({ ...form, body: event.target.value }));
+                    }}
                     placeholder="Write your review here..."
+                    ref={reviewBodyRef}
                     value={reviewForm.body}
                   />
-                  <FieldDescription id={reviewFormIds.reviewDescription}>
-                    {reviewForm.body.length}/2000 characters
+                  <FieldDescription
+                    className={reviewForm.body.length > maxReviewLength ? "text-destructive" : undefined}
+                    id={reviewFormIds.reviewDescription}
+                  >
+                    {reviewForm.body.length}/{maxReviewLength} characters
                   </FieldDescription>
                 </Field>
               </FieldGroup>

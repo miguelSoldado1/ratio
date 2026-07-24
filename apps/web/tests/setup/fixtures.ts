@@ -1,4 +1,13 @@
-import { albums, notifications, reviewLikes, reviews, user, userFollows } from "@/lib/db/schema";
+import {
+  albums,
+  notifications,
+  reviewLikes,
+  reviewReplies,
+  reviewReplyLikes,
+  reviews,
+  user,
+  userFollows,
+} from "@/lib/db/schema";
 import type { Db } from "@/lib/db";
 import type { AuthenticatedContext } from "@/server/auth-middleware";
 
@@ -43,7 +52,6 @@ export async function createTestReview(db: Db, overrides: Partial<typeof reviews
     albumId: overrides.albumId ?? (await createTestAlbum(db)).id,
     body: `Test review ${next}`,
     rating: 8,
-    shareCode: `Share${next.toString().padStart(5, "0")}`,
     userId: overrides.userId ?? (await createTestUser(db)).id,
     ...overrides,
   } satisfies typeof reviews.$inferInsert;
@@ -57,6 +65,26 @@ export async function createTestReviewLike(db: Db, overrides: typeof reviewLikes
   const [createdReviewLike] = await db.insert(reviewLikes).values(overrides).returning();
 
   return createdReviewLike;
+}
+
+export async function createTestReviewReply(db: Db, overrides: Partial<typeof reviewReplies.$inferInsert> = {}) {
+  const next = nextSequence();
+  const values = {
+    body: `Test reply ${next}`,
+    reviewId: overrides.reviewId ?? (await createTestReview(db)).id,
+    userId: overrides.userId ?? (await createTestUser(db)).id,
+    ...overrides,
+  } satisfies typeof reviewReplies.$inferInsert;
+
+  const [createdReply] = await db.insert(reviewReplies).values(values).returning();
+
+  return createdReply;
+}
+
+export async function createTestReviewReplyLike(db: Db, overrides: typeof reviewReplyLikes.$inferInsert) {
+  const [createdReplyLike] = await db.insert(reviewReplyLikes).values(overrides).returning();
+
+  return createdReplyLike;
 }
 
 export async function createTestNotification(db: Db, overrides: typeof notifications.$inferInsert) {

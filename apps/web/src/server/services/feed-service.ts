@@ -4,6 +4,7 @@ import z from "zod";
 import { getDb } from "@/lib/db";
 import { albums, reviewLikes, reviews, user, userFollows } from "@/lib/db/schema";
 import { decodeCursor, encodeCursor, getCreatedAtIdCursorFilter, getOptionalCurrentUserId } from "../server-utils";
+import { getReviewReplyCounts } from "./review-reply-service";
 import type { SQL } from "drizzle-orm";
 import type { Db } from "@/lib/db";
 import type { AuthenticatedContext } from "../auth-middleware";
@@ -167,7 +168,13 @@ export async function getFeedService(data: FeedInput): Promise<FeedPage> {
         reviewCreatedCutoff,
       });
 
-  return mapFeedPage(rankAndFilterCandidates(candidates, { now, viewerUserId }), cursor?.seenReviewIds ?? []);
+  const pageCandidates = rankAndFilterCandidates(candidates, { now, viewerUserId });
+  const replyCounts = await getReviewReplyCounts(
+    db,
+    pageCandidates.map((candidate) => candidate.review.id)
+  );
+
+  return mapFeedPage(pageCandidates, cursor?.seenReviewIds ?? [], replyCounts);
 }
 
 export async function getFollowingFeedService(data: FeedInput, context: AuthenticatedContext): Promise<FeedPage> {
@@ -203,6 +210,10 @@ export async function getFollowingFeedService(data: FeedInput, context: Authenti
     mergeCandidateRows(pageRows),
     subDays(new Date(), recentLikeWindowDays)
   );
+  const replyCounts = await getReviewReplyCounts(
+    context.db,
+    candidates.map((candidate) => candidate.review.id)
+  );
   const lastCandidate = candidates.at(-1);
 
   return {
@@ -213,7 +224,7 @@ export async function getFollowingFeedService(data: FeedInput, context: Authenti
             id: lastCandidate.review.id,
           })
         : null,
-    reviews: candidates.map(mapFeedReview),
+    reviews: candidates.map((candidate) => mapFeedReview(candidate, replyCounts)),
   };
 }
 
@@ -503,16 +514,16 @@ function getSourceRank(source: FeedCandidateSource) {
 
 // Mappers
 
-function mapFeedPage(candidates: FeedCandidate[], seenReviewIds: string[]): FeedPage {
+function mapFeedPage(candidates: FeedCandidate[], seenReviewIds: string[], replyCounts: Map<string, number>) {
   const nextSeenReviewIds = getNextSeenReviewIds(seenReviewIds, candidates);
 
   return {
     nextCursor: candidates.length ? encodeCursor({ seenReviewIds: nextSeenReviewIds }) : null,
-    reviews: candidates.map(mapFeedReview),
+    reviews: candidates.map((candidate) => mapFeedReview(candidate, replyCounts)),
   };
 }
 
-function mapFeedReview(candidate: FeedCandidate) {
+function mapFeedReview(candidate: FeedCandidate, replyCounts: Map<string, number>) {
   return {
     album: {
       artist: candidate.album.artistNames.join(", "),
@@ -527,8 +538,8 @@ function mapFeedReview(candidate: FeedCandidate) {
     liked: candidate.liked,
     likes: candidate.likes,
     rating: candidate.review.rating / 2,
+    replyCount: replyCounts.get(candidate.review.id) ?? 0,
     review: candidate.review.body ?? undefined,
-    shareCode: candidate.review.shareCode,
     user: {
       avatarUrl: candidate.user.avatarUrl ?? undefined,
       displayUsername: candidate.user.displayUsername ?? candidate.user.username ?? candidate.user.id,
