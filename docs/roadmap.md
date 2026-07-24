@@ -44,7 +44,7 @@ Do not block the first production release on these unless the product direction 
 ```text
 - Advanced feed algorithm
 - Anonymous feed caching through a separate cached Hyperdrive binding or app-level cache
-- Feed indexes and denormalized counters once usage data justifies them
+- Feed denormalized counters once usage data justifies them (the two feed candidate indexes shipped in `0004`)
 - Spotify-personalized feed
 - Further personal-Spotify-token features beyond the shipped recent-listening shelf
   (top tracks/artists via user-top-read, Liked Songs via user-library-read)

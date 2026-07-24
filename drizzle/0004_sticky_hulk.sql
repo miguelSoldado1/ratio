@@ -1,0 +1,2 @@
+CREATE INDEX "review_likes_created_review_idx" ON "review_like" USING btree ("created_at","review_id");--> statement-breakpoint
+CREATE INDEX "reviews_created_id_idx" ON "review" USING btree ("created_at","id");

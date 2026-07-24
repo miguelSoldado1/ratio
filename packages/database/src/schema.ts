@@ -53,6 +53,7 @@ export const reviews = pgTable(
   (table) => [
     index("reviews_album_id_idx").on(table.albumId),
     index("reviews_album_created_id_idx").on(table.albumId, table.createdAt, table.id),
+    index("reviews_created_id_idx").on(table.createdAt, table.id),
     index("reviews_user_id_idx").on(table.userId),
     uniqueIndex("reviews_user_album_unique_idx").on(table.userId, table.albumId),
     check("reviews_ratings_range_check", sql`${table.rating} >= 1 AND ${table.rating} <= 10`),
@@ -72,6 +73,7 @@ export const reviewLikes = pgTable(
   },
   (table) => [
     primaryKey({ columns: [table.reviewId, table.userId], name: "review_likes_review_user_pk" }),
+    index("review_likes_created_review_idx").on(table.createdAt, table.reviewId),
     index("review_likes_review_created_user_idx").on(table.reviewId, table.createdAt, table.userId),
     index("review_likes_review_id_idx").on(table.reviewId),
     index("review_likes_user_created_review_idx").on(table.userId, table.createdAt, table.reviewId),
