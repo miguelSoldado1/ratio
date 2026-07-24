@@ -1,22 +1,25 @@
 const CLOUDFLARE_WORKERS_MODULE = "cloudflare:workers";
-const ADMIN_AUTH_RATE_LIMITER_BINDING = "ADMIN_AUTH_RATE_LIMITER";
+const ADMIN_REQUEST_RATE_LIMITER_BINDING = "ADMIN_REQUEST_RATE_LIMITER";
 const RATE_LIMIT_RETRY_AFTER_SECONDS = 60;
 
 type CloudflareWorkersModule = typeof import("cloudflare:workers");
 
-export async function enforceAdminAuthRateLimit(request: Request): Promise<Response | null> {
-  const rateLimiter = await getAdminAuthRateLimiter();
+export async function enforceAdminRequestRateLimit(request: Request): Promise<Response | null> {
+  const rateLimiter = await getAdminRequestRateLimiter();
   if (!rateLimiter) return null;
 
-  return await applyAdminAuthRateLimit(request, rateLimiter);
+  return await applyAdminRequestRateLimit(request, rateLimiter);
 }
 
-export async function applyAdminAuthRateLimit(request: Request, rateLimiter: RateLimit): Promise<Response | null> {
+export async function applyAdminRequestRateLimit(request: Request, rateLimiter: RateLimit): Promise<Response | null> {
   const { success } = await rateLimiter.limit({ key: await createIdentityKey(request.headers) });
   if (success) return null;
 
   return new Response("Too many requests. Try again shortly.", {
-    headers: { "Retry-After": String(RATE_LIMIT_RETRY_AFTER_SECONDS) },
+    headers: {
+      "Retry-After": String(RATE_LIMIT_RETRY_AFTER_SECONDS),
+      "X-Content-Type-Options": "nosniff",
+    },
     status: 429,
   });
 }
@@ -41,13 +44,13 @@ async function sha256(value: string) {
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-async function getAdminAuthRateLimiter() {
+async function getAdminRequestRateLimiter() {
   const cloudflareWorkers = await getCloudflareWorkersModule();
   if (!cloudflareWorkers) return null;
 
   const workerEnv = cloudflareWorkers.env as unknown as Record<string, RateLimit | undefined>;
 
-  return workerEnv[ADMIN_AUTH_RATE_LIMITER_BINDING] ?? null;
+  return workerEnv[ADMIN_REQUEST_RATE_LIMITER_BINDING] ?? null;
 }
 
 async function getCloudflareWorkersModule(): Promise<CloudflareWorkersModule | null> {

@@ -17,10 +17,10 @@
   },
   "ratelimits": [
     {
-      "name": "ADMIN_AUTH_RATE_LIMITER",
+      "name": "ADMIN_REQUEST_RATE_LIMITER",
       "namespace_id": "3001",
       "simple": {
-        "limit": 30,
+        "limit": 120,
         "period": 60
       }
     }
@@ -47,10 +47,10 @@
       },
       "ratelimits": [
         {
-          "name": "ADMIN_AUTH_RATE_LIMITER",
+          "name": "ADMIN_REQUEST_RATE_LIMITER",
           "namespace_id": "4001",
           "simple": {
-            "limit": 30,
+            "limit": 120,
             "period": 60
           }
         }
