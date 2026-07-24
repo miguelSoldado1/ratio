@@ -54,7 +54,52 @@ describe("createAuth Spotify contract", () => {
     expect(options.socialProviders?.spotify).toEqual(expect.objectContaining({ scope: ["user-read-recently-played"] }));
     expect(options.account?.encryptOAuthTokens).toBe(true);
   });
+
+  it("derives identity from the Spotify display name when one is set", async () => {
+    expect(await mapSpotifyProfileToUser({ display_name: "Maya Chen" })).toEqual({
+      displayUsername: "Maya Chen",
+      username: "maya_chen",
+    });
+  });
+
+  it("falls back to the account id when Spotify returns no display name", async () => {
+    expect(await mapSpotifyProfileToUser({ display_name: null })).toEqual({
+      displayUsername: "user_1234abcd",
+      username: "user_1234abcd",
+    });
+
+    expect(await mapSpotifyProfileToUser({ display_name: "   " })).toEqual({
+      displayUsername: "user_1234abcd",
+      username: "user_1234abcd",
+    });
+  });
 });
+
+async function mapSpotifyProfileToUser({ display_name }: { display_name: null | string }) {
+  createAuth(createAvailableUsernameDbStub());
+  const spotifyProvider = getCapturedOptions().socialProviders?.spotify;
+
+  if (typeof spotifyProvider === "function" || !spotifyProvider?.mapProfileToUser) {
+    throw new Error("Spotify mapProfileToUser was not configured");
+  }
+
+  const { mapProfileToUser } = spotifyProvider;
+
+  const profile = {
+    display_name,
+    email: "listener@ratio.test",
+    id: "spotifyuser1234abcd",
+    images: [],
+  };
+
+  return await mapProfileToUser(profile as unknown as Parameters<typeof mapProfileToUser>[0]);
+}
+
+function createAvailableUsernameDbStub() {
+  return {
+    select: () => ({ from: () => ({ where: () => ({ limit: () => Promise.resolve([]) }) }) }),
+  } as unknown as Db;
+}
 
 function getCapturedOptions() {
   const options = mockBetterAuth.mock.calls.at(-1)?.[0];
