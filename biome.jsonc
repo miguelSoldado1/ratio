@@ -9,6 +9,14 @@
   "formatter": {
     "lineWidth": 120
   },
+  "overrides": [
+    {
+      "includes": ["**/drizzle/meta/**"],
+      "assist": { "enabled": false },
+      "formatter": { "enabled": false },
+      "linter": { "enabled": false }
+    }
+  ],
   "assist": {
     "actions": {
       "source": {
