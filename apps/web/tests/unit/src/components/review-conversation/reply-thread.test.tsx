@@ -21,9 +21,9 @@ beforeEach(() => {
 describe("ReplyThread", () => {
   it("renders a labelled ordered list with entity-specific like controls", () => {
     const onLikeToggle = vi.fn();
-    renderThread({ onLikeToggle, replies: [createReply({ liked: true, likes: 2 })], totalCount: 1 });
+    renderThread({ onLikeToggle, replies: [createReply({ liked: true, likes: 2 })] });
 
-    expect(screen.getByRole("heading", { name: "Discussion (1)" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Discussion" })).toBeTruthy();
     expect(screen.getByRole("list")).toBeTruthy();
     expect(screen.getByRole("article")).toBeTruthy();
     expect(screen.getByText("A thoughtful reply")).toBeTruthy();
@@ -47,7 +47,6 @@ describe("ReplyThread", () => {
       hasNextPage: true,
       localTail: [createReply({ body: "Posted locally", id: "reply-z" })],
       replies: [createReply()],
-      totalCount: 2,
     });
 
     expect(screen.queryByRole("button", { name: "Load more replies" })).toBeNull();
@@ -100,7 +99,7 @@ describe("ReplyThread", () => {
   it("moves focus to the next reply after deletion", async () => {
     const first = createReply({ canDelete: true });
     const second = createReply({ canDelete: true, id: "reply-b" });
-    renderThread({ onDelete: vi.fn().mockResolvedValue(true), replies: [first, second], totalCount: 2 });
+    renderThread({ onDelete: vi.fn().mockResolvedValue(true), replies: [first, second] });
 
     fireEvent.click(screen.getAllByRole("button", { name: "Open reply actions" })[0] as HTMLButtonElement);
     fireEvent.click(await screen.findByRole("menuitem", { name: "Delete reply" }));
@@ -132,7 +131,6 @@ function renderThread(overrides: Partial<React.ComponentProps<typeof ReplyThread
       onShowLikes={vi.fn()}
       replies={[]}
       replyToRevealId={undefined}
-      totalCount={0}
       {...overrides}
     />
   );

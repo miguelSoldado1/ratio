@@ -22,45 +22,42 @@ describe("review reply cache helpers", () => {
     const sameTimeB = createReply({ createdAt: new Date("2026-01-01T00:00:00.000Z"), id: "reply-b" });
     const sameTimeA = createReply({ createdAt: new Date("2026-01-01T00:00:00.000Z"), id: "reply-a" });
     const data = createData([
-      createPage({ nextCursor: "next", replies: [sameTimeB, later], totalCount: 3 }),
-      createPage({ replies: [sameTimeA, later], totalCount: null }),
+      createPage({ nextCursor: "next", replies: [sameTimeB, later] }),
+      createPage({ replies: [sameTimeA, later] }),
     ]);
 
     expect(flattenReviewReplies(data).map((reply) => reply.id)).toEqual(["reply-a", "reply-b", "reply-c"]);
   });
 
-  it("appends a reply to a fully loaded thread and increments the retained total", () => {
+  it("appends a reply to a fully loaded thread", () => {
     const first = createReply({ id: "reply-a" });
     const created = createReply({ createdAt: new Date("2026-01-02T00:00:00.000Z"), id: "reply-b" });
-    const data = createData([createPage({ replies: [first], totalCount: 1 })]);
+    const data = createData([createPage({ replies: [first] })]);
 
     const updated = addReviewReply(data, created, { appendToLoadedPages: true });
 
     expect(updated?.pages[0]?.replies.map((reply) => reply.id)).toEqual(["reply-a", "reply-b"]);
-    expect(updated?.pages[0]?.totalCount).toBe(2);
   });
 
   it("keeps a created reply in a deduplicated local tail while later pages remain", () => {
     const loaded = createReply({ id: "reply-a" });
     const created = createReply({ id: "reply-z" });
-    const data = createData([createPage({ nextCursor: "next", replies: [loaded], totalCount: 4 })]);
+    const data = createData([createPage({ nextCursor: "next", replies: [loaded] })]);
     const updated = addReviewReply(data, created, { appendToLoadedPages: false });
 
     expect(updated?.pages[0]?.replies).toEqual([loaded]);
-    expect(updated?.pages[0]?.totalCount).toBe(5);
     expect(reconcileReviewReplyLocalTail([created], [loaded])).toEqual([created]);
     expect(reconcileReviewReplyLocalTail([created], [loaded, created])).toEqual([]);
   });
 
-  it("removes a reply with the authoritative total and patches like state narrowly", () => {
+  it("removes a reply and patches like state narrowly", () => {
     const first = createReply({ id: "reply-a" });
     const second = createReply({ id: "reply-b" });
-    const data = createData([createPage({ replies: [first, second], totalCount: 2 })]);
+    const data = createData([createPage({ replies: [first, second] })]);
     const liked = updateReviewReplyLike(data, { liked: true, likes: 1, replyId: second.id });
-    const removed = removeReviewReply(liked, first.id, 1);
+    const removed = removeReviewReply(liked, first.id);
 
     expect(removed?.pages[0]?.replies).toEqual([{ ...second, liked: true, likes: 1 }]);
-    expect(removed?.pages[0]?.totalCount).toBe(1);
   });
 });
 
@@ -98,12 +95,8 @@ function createData(pages: ReviewRepliesPage[]): ReviewRepliesData {
   return { pageParams: pages.map((_, index) => (index === 0 ? null : `cursor-${index}`)), pages };
 }
 
-function createPage({
-  nextCursor = null,
-  replies = [],
-  totalCount = 0,
-}: Partial<ReviewRepliesPage> = {}): ReviewRepliesPage {
-  return { nextCursor, replies, totalCount };
+function createPage({ nextCursor = null, replies = [] }: Partial<ReviewRepliesPage> = {}): ReviewRepliesPage {
+  return { nextCursor, replies };
 }
 
 function createReply(overrides: Partial<ReviewReply> = {}): ReviewReply {

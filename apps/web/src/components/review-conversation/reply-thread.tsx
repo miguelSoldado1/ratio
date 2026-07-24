@@ -26,7 +26,6 @@ interface ReplyThreadProps {
   onShowLikes: (replyId: string) => void;
   replies: ReviewReply[];
   replyToRevealId?: string;
-  totalCount: number;
 }
 
 export function ReplyThread({
@@ -48,7 +47,6 @@ export function ReplyThread({
   onRetryNextPage,
   replyToRevealId,
   replies,
-  totalCount,
 }: ReplyThreadProps) {
   const headingId = useId();
   const newlyPostedLabelId = `${headingId}-newly-posted`;
@@ -98,12 +96,6 @@ export function ReplyThread({
     <section aria-labelledby={headingId} className="pt-7 sm:pt-8">
       <h2 className="font-semibold text-base text-foreground sm:text-lg" id={headingId} ref={headingRef} tabIndex={-1}>
         Discussion
-        {isInitialLoading || isInitialError ? null : (
-          <>
-            {" "}
-            <span className="font-medium text-muted-foreground">({totalCount})</span>
-          </>
-        )}
       </h2>
       {composer ? <div className="mt-4 border-border/80 border-y py-4">{composer}</div> : null}
       {localTail.length > 0 ? (
