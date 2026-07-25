@@ -7,6 +7,8 @@ const RATE_LIMIT_KEY_PREFIX = "rate-limit";
 const BETTER_AUTH_RATE_LIMIT_KEY_PREFIX = `${RATE_LIMIT_KEY_PREFIX}:auth`;
 const BETTER_AUTH_RATE_LIMIT_TTL_SECONDS = 2 * 60;
 
+const warnedMissingRateLimitBindings = new Set<string>();
+
 type CloudflareWorkersModule = typeof import("cloudflare:workers");
 
 export interface CloudflareRateLimitRule {
@@ -120,7 +122,11 @@ export function createBetterAuthRateLimitStorage() {
   return {
     async get(key: string) {
       const cache = await getCloudflareCache();
-      if (!cache) return null;
+
+      if (!cache) {
+        warnMissingRateLimitBinding("CACHE");
+        return null;
+      }
 
       try {
         return await cache.get<BetterAuthRateLimitRecord>(getBetterAuthRateLimitKey(key), "json");
@@ -170,7 +176,11 @@ function defineFixedWindowRateLimitRule(rule: FixedWindowRateLimitRule) {
 
 async function enforceCloudflareRateLimit({ headers, rule, userId }: EnforceRateLimitOptions<CloudflareRateLimitRule>) {
   const rateLimiter = await getCloudflareRateLimiter(rule.bindingName);
-  if (!rateLimiter) return;
+
+  if (!rateLimiter) {
+    warnMissingRateLimitBinding(rule.bindingName);
+    return;
+  }
 
   const { success } = await rateLimiter.limit({
     key: await createIdentityKey(headers, userId),
@@ -187,7 +197,11 @@ async function enforceFixedWindowRateLimit({
   userId,
 }: EnforceRateLimitOptions<FixedWindowRateLimitRule>) {
   const cache = await getCloudflareCache();
-  if (!cache) return;
+
+  if (!cache) {
+    warnMissingRateLimitBinding("CACHE");
+    return;
+  }
 
   const now = Date.now();
   const resetAt = getWindowResetAt(now, rule.windowSeconds);
@@ -294,6 +308,15 @@ async function getCloudflareWorkersModule(): Promise<CloudflareWorkersModule | n
 
 function isCloudflareWorkersRuntime() {
   return typeof navigator !== "undefined" && navigator.userAgent === "Cloudflare-Workers";
+}
+
+// Missing bindings fail open, which is indistinguishable from a limit that never trips. Warn once per
+// isolate so a misconfigured binding surfaces in Worker logs instead of silently allowing everything.
+function warnMissingRateLimitBinding(bindingName: string) {
+  if (!isCloudflareWorkersRuntime() || warnedMissingRateLimitBindings.has(bindingName)) return;
+
+  warnedMissingRateLimitBindings.add(bindingName);
+  console.warn(`Rate limit binding ${bindingName} is unavailable; requests using it are not being limited`);
 }
 
 function getContextUserId(context: unknown) {
