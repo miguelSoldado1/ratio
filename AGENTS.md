@@ -10,6 +10,7 @@
 ## Implementation Conventions
 
 - Route files should prefer TanStack Router's folder-style organization for nested/path segments, e.g. `src/routes/album/$albumId.tsx` for `/album/:albumId`, instead of flattened names such as `album.$albumId.tsx`.
+- Keep username URLs first-class, but use stable IDs internally.
 - In React components, call TanStack Start server functions through `useServerFn(serverFn)` before passing them to `useQuery` or `useMutation`.
 - Keep query keys in `src/lib/tanstack-query/query-keys.ts` and prefer hierarchical prefixes for related data. Album review data shares `albumQueryKeys.review(albumId)`, so create/delete review mutations can invalidate that review group with one TanStack Query prefix match.
 - Keep shared TanStack Query defaults in `src/lib/tanstack-query/root-provider.tsx` instead of repeating options at individual call sites.
@@ -23,4 +24,3 @@
 - `docs/architecture.md`: current stack and major infrastructure choices.
 - `docs/database.md`: schema ownership, Drizzle migration workflow, Better Auth schema changes, Worker compatibility, and table design.
 - `docs/spotify.md`: attribution, token behavior, album caching, and search rules.
-- `docs/roadmap.md`: build order and open product decisions.

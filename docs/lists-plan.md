@@ -365,7 +365,6 @@ Run `pnpm check:all` and `pnpm test:all`.
   and how to add one later, the second album-materialization path, and the "albums with zero reviews are
   normal" consequence. Replace the stale `lists` / `listItems` sketch at the bottom of the file with a
   pointer to the real schema.
-- `docs/roadmap.md` — move `Lists` out of Post-Launch Work.
 
 ## After Shipping
 

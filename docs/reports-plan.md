@@ -481,8 +481,8 @@ of the work.
   feature list; describe the report action's placement and the silent-to-the-reported-user rule. Add
   edge-case table rows: `Report on content whose author is later banned`, `Reported content deleted by
   admin`, `Duplicate report from same user`, `Self-report attempt`.
-- `docs/roadmap.md` — line 56 (`User reports and moderation queue in the separate admin app`) moves to
-  shipped; line 32 already anticipates reports as bounded admin scope, so no change there.
+- `docs/architecture.md` — the Admin Boundary section already anticipates reports as bounded admin scope, so
+  only the shipped/not-shipped wording needs checking.
 
 ## Deploy Order
 

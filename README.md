@@ -16,7 +16,6 @@ packages/database  Shared Drizzle schema and database client primitives
 - [Architecture](docs/architecture.md): stack and major infrastructure choices.
 - [Database](docs/database.md): Drizzle schema ownership, migration workflow, Better Auth schema changes, Worker compatibility, and table design.
 - [Spotify](docs/spotify.md): attribution, login/linking behavior, token strategy, album caching, and search.
-- [Roadmap](docs/roadmap.md): build order, feed algorithm, rating display, and open decisions.
 
 ## Development
 
@@ -118,7 +117,7 @@ DATABASE_TEST_URL="postgres://$(whoami)@localhost:5432/ratio_test" pnpm test
 
 ## Cloudflare deployment
 
-Both apps are configured for Cloudflare Workers through the Cloudflare Vite plugin and app-local Wrangler files. The public app remains `ratio`; the admin app is `ratio-admin`. See `docs/architecture.md` and `docs/roadmap.md` for the separate Git Builds and manual admin-domain setup.
+Both apps are configured for Cloudflare Workers through the Cloudflare Vite plugin and app-local Wrangler files. The public app remains `ratio`; the admin app is `ratio-admin`. See `docs/architecture.md` for the separate Git Builds and manual admin-domain setup.
 
 1. Log in with `pnpm wrangler login`.
 2. Confirm the public `CACHE` KV namespace binding in `apps/web/wrangler.jsonc`. If you need to recreate it, run the public Wrangler command from `apps/web` and replace the binding `id` with the generated value.
@@ -131,6 +130,20 @@ Both apps are configured for Cloudflare Workers through the Cloudflare Vite plug
 9. Run `pnpm run build` to validate the Worker bundle.
 10. Deploy with `pnpm run deploy`.
 11. Smoke-test the OAuth callback path after deploy.
+
+### Admin app deployment
+
+The admin Worker deploys independently of the public app. Each item below is one-time setup per environment, so
+confirm rather than assume when adding or rebuilding an environment.
+
+- Connect `ratio-admin` and `ratio-admin-dev` in Cloudflare, each pointed at `apps/admin` as its root directory,
+  with watch paths covering `apps/admin`, `packages/database`, and the root workspace manifests and lockfile.
+- Set the shared `BETTER_AUTH_SECRET` and every OAuth client secret separately in both admin Worker environments.
+- Register the admin callback URLs in each provider dashboard, for both admin domains:
+  - `https://admin.ratiomusic.live/api/auth/callback/{spotify,google,discord}`
+  - `https://admin-dev.ratiomusic.live/api/auth/callback/{spotify,google,discord}`
+- Configure the custom domains for `admin.ratiomusic.live` and `admin-dev.ratiomusic.live`.
+- Smoke-test every admin OAuth callback after deploying, per provider and per domain.
 
 ### R2 avatar uploads and CORS
 

@@ -94,6 +94,9 @@ Search is a global command/dialog experience in v1, not a standalone route. Sepa
 - Popular this week as a rolling album-level aggregation
 - Suggested users or onboarding recommendations
 - User reports and moderation queue
+- Realtime notifications; notification delivery stays request-driven
+- Notification preferences, thread muting, and per-type settings
+- Profanity and slur filtering for review and reply bodies; only usernames and display names are filtered
 
 ## Feed Algorithm
 
@@ -204,3 +207,9 @@ Set `min_votes` to something like 5. Tune `global_mean` from actual data over ti
 | Self-follow attempt | Guard in the follow/unfollow endpoint |
 | Reply created while older pages remain unloaded | Keep it in a labelled local tail until pagination reaches and deduplicates it |
 | Banned reply author | Exclude the reply from threads, counts, and notifications |
+
+## Open Decisions
+
+- **Additional OAuth providers**: Spotify, Google, and Discord are the shipped providers; whether more belong in the product is undecided.
+- **Review editing**: review deletion is implemented, but editing or updating a posted review remains out of scope.
+- **Username policy**: usernames are editable from profile settings, so change cooldowns and whether a renamed profile's old URL should redirect are both still open.
