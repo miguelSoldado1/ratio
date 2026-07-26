@@ -116,7 +116,6 @@ export function ReviewConversation({ reviewId: routeReviewId }: ReviewConversati
 
   const loadedReplies = flattenReviewReplies(repliesQuery.data);
   const visibleLocalReplyTail = reconcileReviewReplyLocalTail(localReplyTail, loadedReplies);
-  const replyTotalCount = repliesQuery.data?.pages[0]?.totalCount ?? 0;
   const loadMoreRepliesRef = useLoadMoreOnIntersect({
     enabled: Boolean(repliesQuery.hasNextPage) && !repliesQuery.isFetchNextPageError,
     isLoading: repliesQuery.isFetchingNextPage,
@@ -173,9 +172,7 @@ export function ReviewConversation({ reviewId: routeReviewId }: ReviewConversati
         return false;
       }
 
-      queryClient.setQueryData<ReviewRepliesData>(repliesQueryKey, (data) =>
-        removeReviewReply(data, replyId, deletedReply.replyCount)
-      );
+      queryClient.setQueryData<ReviewRepliesData>(repliesQueryKey, (data) => removeReviewReply(data, replyId));
       setLocalReplyTail((tail) => tail.filter((reply) => reply.id !== replyId));
       setReplyToRevealId((currentReplyId) => (currentReplyId === replyId ? undefined : currentReplyId));
       patchReplyCountCaches(deletedReply.reviewId, () => deletedReply.replyCount);
@@ -260,7 +257,6 @@ export function ReviewConversation({ reviewId: routeReviewId }: ReviewConversati
         onShowReviewLikes={() => setReviewLikesId(review.id)}
         replies={loadedReplies}
         replyToRevealId={replyToRevealId}
-        replyTotalCount={replyTotalCount}
         review={review}
         viewer={viewer}
       />

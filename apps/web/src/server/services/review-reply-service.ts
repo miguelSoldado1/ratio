@@ -95,7 +95,6 @@ export async function getReviewRepliesService(data: GetReviewRepliesInput) {
       liked: likedByViewer,
       likes: getVisibleReplyLikeCountSql(reviewReplies.id),
       reply: getTableColumns(reviewReplies),
-      totalCount: cursor ? sql<number>`0` : sql<number>`count(*) over()::int`,
       user: {
         avatarUrl: replyAuthor.image,
         displayUsername: replyAuthor.displayUsername,
@@ -125,7 +124,6 @@ export async function getReviewRepliesService(data: GetReviewRepliesInput) {
           })
         : null,
     replies: mappedReplies,
-    totalCount: cursor ? null : (rows[0]?.totalCount ?? 0),
   };
 }
 

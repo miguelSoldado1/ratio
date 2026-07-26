@@ -154,8 +154,8 @@
 
   .review-composer-textarea:focus-visible {
     outline: none;
-    box-shadow: none;
     border-color: var(--ring);
+    box-shadow: none;
   }
 
   .feed-tabs-enter,

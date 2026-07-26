@@ -90,7 +90,7 @@ describe("review reply schema", () => {
 });
 
 describe("getReviewRepliesService", () => {
-  it("returns 12 oldest replies, a stable keyset cursor, and the initial visible total", async () => {
+  it("returns 12 oldest replies and a stable keyset cursor", async () => {
     const review = await createTestReview(testDb);
     const author = await createTestUser(testDb);
     const createdAt = new Date("2026-01-01T00:00:00.000Z");
@@ -110,11 +110,9 @@ describe("getReviewRepliesService", () => {
     });
 
     expect(firstPage.replies.map((reply) => reply.id)).toEqual(replyIds.slice(0, 12));
-    expect(firstPage.totalCount).toBe(13);
     expect(firstPage.nextCursor).not.toBeNull();
     expect(secondPage.replies.map((reply) => reply.id)).toEqual(replyIds.slice(12));
     expect(secondPage.nextCursor).toBeNull();
-    expect(secondPage.totalCount).toBeNull();
   });
 
   it("does not repeat the boundary reply across pages for service-created replies", async () => {
@@ -151,7 +149,6 @@ describe("getReviewRepliesService", () => {
 
     await expect(getReviewRepliesService({ reviewId: review.id })).resolves.toMatchObject({
       replies: [expect.objectContaining({ id: visibleReply.id })],
-      totalCount: 1,
     });
 
     await testDb.update(user).set({ banned: true }).where(eq(user.id, rootAuthor.id));
@@ -159,7 +156,6 @@ describe("getReviewRepliesService", () => {
     await expect(getReviewRepliesService({ reviewId: review.id })).resolves.toEqual({
       nextCursor: null,
       replies: [],
-      totalCount: 0,
     });
   });
 

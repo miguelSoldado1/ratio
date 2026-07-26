@@ -94,6 +94,9 @@ Search is a global command/dialog experience in v1, not a standalone route. Sepa
 - Popular this week as a rolling album-level aggregation
 - Suggested users or onboarding recommendations
 - User reports and moderation queue
+- Realtime notifications; notification delivery stays request-driven
+- Notification preferences, thread muting, and per-type settings
+- Profanity and slur filtering for review and reply bodies; only usernames and display names are filtered
 
 ## Feed Algorithm
 
@@ -142,7 +145,7 @@ Do not block the first production release on these:
 
 - Add anonymous/public feed caching through a separate cached Hyperdrive binding or app-level cache; the main Hyperdrive binding keeps query caching disabled for freshness.
 - Replace seen-ID cursor pagination when feed scale justifies it, likely with cached anonymous candidate IDs, a materialized feed/ranking table, or another indexed candidate-store design.
-- Add global indexes if feed latency grows, especially `review(created_at, id)` and `review_like(created_at, review_id)`.
+- ~~Add global indexes if feed latency grows~~. Shipped in `0004`: `review(created_at, id)` and `review_like(created_at, review_id)` back the candidate lookback reads, which are uncached and run on every anonymous home request.
 - Add denormalized counters only when measured load justifies the write/storage cost, e.g. `review.likeCount`, `review.lastActivityAt`, or rolling aggregates.
 - Add album-level trend signals such as recent album review counts.
 - Add Spotify-personalized candidate sources once Spotify account linking and personal token usage are in scope.
@@ -204,3 +207,9 @@ Set `min_votes` to something like 5. Tune `global_mean` from actual data over ti
 | Self-follow attempt | Guard in the follow/unfollow endpoint |
 | Reply created while older pages remain unloaded | Keep it in a labelled local tail until pagination reaches and deduplicates it |
 | Banned reply author | Exclude the reply from threads, counts, and notifications |
+
+## Open Decisions
+
+- **Additional OAuth providers**: Spotify, Google, and Discord are the shipped providers; whether more belong in the product is undecided.
+- **Review editing**: review deletion is implemented, but editing or updating a posted review remains out of scope.
+- **Username policy**: usernames are editable from profile settings, so change cooldowns and whether a renamed profile's old URL should redirect are both still open.

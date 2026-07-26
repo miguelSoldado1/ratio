@@ -44,7 +44,6 @@ export function addReviewReply(
 ) {
   if (!data) return data;
 
-  const firstPage = data.pages[0];
   const lastPageIndex = data.pages.length - 1;
 
   return {
@@ -55,10 +54,6 @@ export function addReviewReply(
         appendToLoadedPages && pageIndex === lastPageIndex
           ? sortAndDedupeReviewReplies([...page.replies, reply])
           : page.replies,
-      totalCount:
-        pageIndex === 0 && firstPage?.totalCount !== null && firstPage?.totalCount !== undefined
-          ? firstPage.totalCount + 1
-          : page.totalCount,
     })),
   };
 }
@@ -69,19 +64,14 @@ export function reconcileReviewReplyLocalTail(localTail: ReviewReply[], loadedRe
   return sortAndDedupeReviewReplies(localTail).filter((reply) => !loadedReplyIds.has(reply.id));
 }
 
-export function removeReviewReply(
-  data: ReviewRepliesData | undefined,
-  replyId: string,
-  authoritativeTotalCount: number
-) {
+export function removeReviewReply(data: ReviewRepliesData | undefined, replyId: string) {
   if (!data) return data;
 
   return {
     ...data,
-    pages: data.pages.map((page, pageIndex) => ({
+    pages: data.pages.map((page) => ({
       ...page,
       replies: page.replies.filter((reply) => reply.id !== replyId),
-      totalCount: pageIndex === 0 ? authoritativeTotalCount : page.totalCount,
     })),
   };
 }

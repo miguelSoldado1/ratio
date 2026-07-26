@@ -141,12 +141,14 @@ export function createAuth(db: Db) {
         clientSecret: env.SPOTIFY_CLIENT_SECRET,
         scope: [SPOTIFY_RECENTLY_PLAYED_SCOPE],
         mapProfileToUser: async (profile) => {
-          const baseUsername = profile.display_name.toLowerCase().replace(/\s+/g, "_") || "user";
+          // Spotify sends a null display_name even though Better Auth types it as a string.
+          const displayName = profile.display_name?.trim() ?? "";
+          const baseUsername = displayName.toLowerCase().replace(/\s+/g, "_") || `user_${profile.id.slice(-8)}`;
           const finalUsername = await generateUniqueUsername(db, baseUsername);
 
           return {
             username: finalUsername,
-            displayUsername: getAllowedDisplayUsername(limitDisplayUsername(profile.display_name || baseUsername)),
+            displayUsername: getAllowedDisplayUsername(limitDisplayUsername(displayName || baseUsername)),
           };
         },
       },

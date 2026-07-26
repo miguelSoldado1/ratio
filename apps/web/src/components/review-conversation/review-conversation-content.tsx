@@ -50,7 +50,6 @@ interface ReviewConversationContentProps {
   onShowReviewLikes: () => void;
   replies: ReviewReply[];
   replyToRevealId?: string;
-  replyTotalCount: number;
   review: ReviewDetail;
   viewer: ReviewListViewer;
 }
@@ -82,7 +81,6 @@ export function ReviewConversationContent({
   onShowReviewLikes,
   replyToRevealId,
   replies,
-  replyTotalCount,
   review,
   viewer,
 }: ReviewConversationContentProps) {
@@ -278,7 +276,6 @@ export function ReviewConversationContent({
         onShowLikes={onShowReplyLikes}
         replies={replies}
         replyToRevealId={replyToRevealId}
-        totalCount={replyTotalCount}
       />
     </div>
   );
