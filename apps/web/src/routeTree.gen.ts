@@ -13,6 +13,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as UserUsernameRouteImport } from './routes/user/$username'
 import { Route as ReviewReviewIdRouteImport } from './routes/review/$reviewId'
+import { Route as ListListIdRouteImport } from './routes/list/$listId'
 import { Route as ApiUploadRouteImport } from './routes/api/upload'
 import { Route as AlbumAlbumIdRouteImport } from './routes/album/$albumId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
@@ -37,6 +38,11 @@ const ReviewReviewIdRoute = ReviewReviewIdRouteImport.update({
   path: '/review/$reviewId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ListListIdRoute = ListListIdRouteImport.update({
+  id: '/list/$listId',
+  path: '/list/$listId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiUploadRoute = ApiUploadRouteImport.update({
   id: '/api/upload',
   path: '/api/upload',
@@ -58,6 +64,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/album/$albumId': typeof AlbumAlbumIdRoute
   '/api/upload': typeof ApiUploadRoute
+  '/list/$listId': typeof ListListIdRoute
   '/review/$reviewId': typeof ReviewReviewIdRoute
   '/user/$username': typeof UserUsernameRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -67,6 +74,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/album/$albumId': typeof AlbumAlbumIdRoute
   '/api/upload': typeof ApiUploadRoute
+  '/list/$listId': typeof ListListIdRoute
   '/review/$reviewId': typeof ReviewReviewIdRoute
   '/user/$username': typeof UserUsernameRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -77,6 +85,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/album/$albumId': typeof AlbumAlbumIdRoute
   '/api/upload': typeof ApiUploadRoute
+  '/list/$listId': typeof ListListIdRoute
   '/review/$reviewId': typeof ReviewReviewIdRoute
   '/user/$username': typeof UserUsernameRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -88,6 +97,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/album/$albumId'
     | '/api/upload'
+    | '/list/$listId'
     | '/review/$reviewId'
     | '/user/$username'
     | '/api/auth/$'
@@ -97,6 +107,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/album/$albumId'
     | '/api/upload'
+    | '/list/$listId'
     | '/review/$reviewId'
     | '/user/$username'
     | '/api/auth/$'
@@ -106,6 +117,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/album/$albumId'
     | '/api/upload'
+    | '/list/$listId'
     | '/review/$reviewId'
     | '/user/$username'
     | '/api/auth/$'
@@ -116,6 +128,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   AlbumAlbumIdRoute: typeof AlbumAlbumIdRoute
   ApiUploadRoute: typeof ApiUploadRoute
+  ListListIdRoute: typeof ListListIdRoute
   ReviewReviewIdRoute: typeof ReviewReviewIdRoute
   UserUsernameRoute: typeof UserUsernameRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
@@ -151,6 +164,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReviewReviewIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/list/$listId': {
+      id: '/list/$listId'
+      path: '/list/$listId'
+      fullPath: '/list/$listId'
+      preLoaderRoute: typeof ListListIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/upload': {
       id: '/api/upload'
       path: '/api/upload'
@@ -180,6 +200,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   AlbumAlbumIdRoute: AlbumAlbumIdRoute,
   ApiUploadRoute: ApiUploadRoute,
+  ListListIdRoute: ListListIdRoute,
   ReviewReviewIdRoute: ReviewReviewIdRoute,
   UserUsernameRoute: UserUsernameRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,

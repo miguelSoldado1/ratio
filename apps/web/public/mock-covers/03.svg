@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300">
+  <defs>
+    <pattern id="p3" width="28" height="28" patternUnits="userSpaceOnUse" patternTransform="rotate(38)">
+      <rect width="28" height="28" fill="#f2f0ea" />
+      <rect width="14" height="28" fill="#16171a" />
+    </pattern>
+  </defs>
+  <rect width="300" height="300" fill="url(#p3)" />
+  <rect x="46" y="126" width="208" height="48" fill="#c8342a" />
+</svg>
