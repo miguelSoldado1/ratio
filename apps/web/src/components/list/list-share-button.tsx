@@ -2,6 +2,7 @@ import { Share2 } from "lucide-react";
 import { useRef } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { tryCatch } from "@/try-catch";
 
 interface ListShareButtonProps {
@@ -36,9 +37,16 @@ export function ListShareButton({ authorDisplayName, className, itemCount, listI
   }
 
   return (
-    <Button aria-label="Share list" className={className} onClick={handleShareClick} type="button" variant="outline">
-      <Share2 data-icon="inline-start" />
-      Share
+    // Glyph-only, matching the album header's icon-only Spotify action.
+    <Button
+      aria-label="Share list"
+      className={cn("text-muted-foreground hover:text-foreground", className)}
+      onClick={handleShareClick}
+      size="icon-lg"
+      type="button"
+      variant="outline"
+    >
+      <Share2 />
     </Button>
   );
 }

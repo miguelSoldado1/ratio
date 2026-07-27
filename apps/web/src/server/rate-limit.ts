@@ -60,6 +60,12 @@ export const reviewCreateHourlyRateLimit = defineFixedWindowRateLimitRule({
   windowSeconds: 60 * 60,
 });
 
+export const listCreateHourlyRateLimit = defineFixedWindowRateLimitRule({
+  limit: 15,
+  scope: "list-create-hourly",
+  windowSeconds: 60 * 60,
+});
+
 export const replyCreateRateLimit = defineCloudflareRateLimitRule({
   bindingName: "REPLY_CREATE_RATE_LIMITER",
 });

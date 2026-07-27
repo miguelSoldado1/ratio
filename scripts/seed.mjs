@@ -219,6 +219,99 @@ const replyBodies = [
   "The restraint matters. A louder master would have erased half of what makes these arrangements breathe.",
 ];
 
+const listTemplates = [
+  {
+    albumIndexes: [0, 2, 4, 10, 12, 13],
+    description: "Records where the smallest production details are half the point.",
+    title: "Albums that reward headphones",
+  },
+  {
+    albumIndexes: [3, 14, 15, 7],
+    description: "Slow starts, open windows, and nowhere urgent to be.",
+    title: "Sunday morning records",
+  },
+  {
+    albumIndexes: [0, 1, 6, 9, 11],
+    description: "The rare albums where skipping one track breaks the whole argument.",
+    title: "No-skip, front to back",
+  },
+  {
+    albumIndexes: [2, 4, 5, 8],
+    description: "For long walks after everyone else has gone home.",
+    title: "Late-night city lights",
+  },
+  {
+    albumIndexes: [3, 6, 7, 8, 15],
+    description: "Five records that make the decade feel much bigger than nostalgia.",
+    title: "Start here: the 70s",
+  },
+  {
+    albumIndexes: [0, 1, 2, 4, 12, 13],
+    description: "Albums where the sound of the record tells as much of the story as the lyrics.",
+    title: "Production as storytelling",
+  },
+  {
+    albumIndexes: [5, 6, 8, 9, 11],
+    description: "Big enough for the motorway, detailed enough for the quiet stretches.",
+    title: "Road-trip records that survive the whole drive",
+  },
+  {
+    albumIndexes: [1, 4, 7, 9, 15],
+    description: "The bass parts you remember before you remember the chorus.",
+    title: "Basslines doing the heavy lifting",
+  },
+  {
+    albumIndexes: [0, 2, 6, 10, 14],
+    description: "Not necessarily the best ever, but the first listen changed something.",
+    title: "Albums I wish I could hear for the first time",
+  },
+  {
+    albumIndexes: [3, 6, 7, 14, 15],
+    description: "Consensus classics that still feel like personal discoveries.",
+    title: "The canon, but personal",
+  },
+  {
+    albumIndexes: [1, 2, 7, 13],
+    description: "Too many ideas, somehow exactly enough room for all of them.",
+    title: "Beautifully overstuffed",
+  },
+  {
+    albumIndexes: [0, 4, 8, 10, 11],
+    description: "Opening halves that make stopping at the turn impossible.",
+    title: "Perfect first-side runs",
+  },
+  {
+    albumIndexes: [0, 1, 4, 10, 11, 13],
+    description: "When the rhythm section quietly becomes the main character.",
+    title: "When the drums are the hook",
+  },
+  {
+    albumIndexes: [3, 7, 8, 15],
+    description: "Soft edges, deep grooves, and enough warmth to change the room.",
+    title: "Warm records for cold rooms",
+  },
+  {
+    albumIndexes: [1, 4, 12],
+    description: "Big ideas without needing a reading list beside the turntable.",
+    title: "Concept albums without homework",
+  },
+  {
+    albumIndexes: [0, 3, 6, 14, 15],
+    description: "Five records, no diplomatic picks, nothing to cut.",
+    title: "Five albums, zero filler",
+  },
+  {
+    albumIndexes: [2, 5, 10, 12, 13],
+    description: "Restless, strange, and better once the rest of the world is quiet.",
+    title: "After midnight",
+  },
+  {
+    albumIndexes: [4, 5, 6, 8, 9],
+    description: "Songs built with the precision of rooms you want to live inside.",
+    title: "Pop architecture",
+  },
+];
+
 const options = getOptions();
 const databaseUrl = requireEnv("DATABASE_URL");
 const db = postgres(databaseUrl, { max: 1, prepare: false });
@@ -253,6 +346,8 @@ async function seedDatabase() {
 
     await insertUsers(transaction, seedUsers);
     await insertAlbums(transaction);
+    await insertLists(transaction, fixture.lists);
+    await insertListItems(transaction, fixture.listItems);
     await insertReviews(transaction, fixture.reviews);
     await insertLikes(transaction, fixture.reviewLikes);
     await insertFollows(transaction, fixture.follows);
@@ -264,6 +359,8 @@ async function seedDatabase() {
       albums: albums.length,
       follows: fixture.follows.length,
       likes: fixture.reviewLikes.length,
+      listItems: fixture.listItems.length,
+      lists: fixture.lists.length,
       notifications: fixture.notifications.length,
       replies: fixture.replies.length,
       replyLikes: fixture.replyLikes.length,
@@ -273,7 +370,7 @@ async function seedDatabase() {
   });
 
   console.log(
-    `Done. Reset the database and seeded ${summary.users} users, ${summary.albums} albums, ${summary.reviews} reviews, ${summary.likes} review likes, ${summary.replies} replies, ${summary.replyLikes} reply likes, ${summary.follows} follows, and ${summary.notifications} unread notifications.`
+    `Done. Reset the database and seeded ${summary.users} users, ${summary.albums} albums, ${summary.lists} lists with ${summary.listItems} list items, ${summary.reviews} reviews, ${summary.likes} review likes, ${summary.replies} replies, ${summary.replyLikes} reply likes, ${summary.follows} follows, and ${summary.notifications} unread notifications.`
   );
 }
 
@@ -362,6 +459,7 @@ function buildFixture(targetUserId, seedUsers) {
 
   const reviewLikes = buildReviewLikes(reviews, seedUsers, targetUserId);
   const follows = buildFollows(seedUsers, targetUserId);
+  const { listItems, lists } = buildLists(seedUsers, targetUserId);
   const replies = buildReplies(reviews, targetReviews, seedUsers, targetUserId);
   const replyLikes = buildReplyLikes(replies, seedUsers, targetUserId);
   const notifications = buildNotifications({
@@ -374,7 +472,50 @@ function buildFixture(targetUserId, seedUsers) {
     targetUserId,
   });
 
-  return { follows, notifications, replies, replyLikes, reviewLikes, reviews };
+  return { follows, listItems, lists, notifications, replies, replyLikes, reviewLikes, reviews };
+}
+
+function buildLists(seedUsers, targetUserId) {
+  const lists = [];
+  const listItems = [];
+  const assignments = [
+    ...listTemplates.slice(0, 6).map((template, index) => ({
+      authorId: targetUserId,
+      hoursAgo: 5 + index * 29,
+      template,
+    })),
+    ...listTemplates.map((template, index) => ({
+      authorId: seedUsers[index].id,
+      hoursAgo: 12 + index * 17,
+      template,
+    })),
+  ];
+
+  for (const { authorId, hoursAgo, template } of assignments) {
+    const id = uuidFor("list", `${authorId}:${template.title}`);
+    const createdAt = hoursFromNow(hoursAgo);
+    const updatedAt = hoursFromNow(Math.max(1, hoursAgo - 2));
+
+    lists.push({
+      authorId,
+      createdAt,
+      description: template.description,
+      id,
+      title: template.title,
+      updatedAt,
+    });
+
+    for (const [position, albumIndex] of template.albumIndexes.entries()) {
+      listItems.push({
+        albumId: albums[albumIndex].id,
+        createdAt,
+        listId: id,
+        position,
+      });
+    }
+  }
+
+  return { listItems, lists };
 }
 
 function buildReviewLikes(reviews, seedUsers, targetUserId) {
@@ -597,6 +738,8 @@ async function resetDatabase(transaction, targetUserId) {
   await transaction`delete from review_reply`;
   await transaction`delete from review_like`;
   await transaction`delete from user_follow`;
+  await transaction`delete from list_item`;
+  await transaction`delete from "list"`;
   await transaction`delete from review`;
   await transaction`delete from album`;
   await transaction`delete from verification`;
@@ -627,6 +770,24 @@ async function insertAlbums(transaction) {
     await transaction`
       insert into album (id, title, artist_names, cover_url, release_date, total_tracks, updated_at)
       values (${album.id}, ${album.title}, ${album.artistNames}, ${album.coverUrl}, ${album.releaseDate}, ${album.totalTracks}, now())
+    `;
+  }
+}
+
+async function insertLists(transaction, lists) {
+  for (const list of lists) {
+    await transaction`
+      insert into "list" (id, user_id, title, description, created_at, updated_at)
+      values (${list.id}, ${list.authorId}, ${list.title}, ${list.description}, ${list.createdAt}, ${list.updatedAt})
+    `;
+  }
+}
+
+async function insertListItems(transaction, listItems) {
+  for (const item of listItems) {
+    await transaction`
+      insert into list_item (list_id, album_id, position, created_at)
+      values (${item.listId}, ${item.albumId}, ${item.position}, ${item.createdAt})
     `;
   }
 }
@@ -701,7 +862,7 @@ function printPlan(targetUser, fixture) {
     `Will preserve 1 target user and recreate ${syntheticUserCount} synthetic users (${syntheticUserCount + 1} total users).`
   );
   console.log(
-    `Will recreate ${albums.length} albums, ${fixture.reviews.length} reviews, ${fixture.reviewLikes.length} review likes, ${fixture.replies.length} replies, ${fixture.replyLikes.length} reply likes, ${fixture.follows.length} follows, and ${fixture.notifications.length} unread notifications.`
+    `Will recreate ${albums.length} albums, ${fixture.lists.length} lists with ${fixture.listItems.length} list items, ${fixture.reviews.length} reviews, ${fixture.reviewLikes.length} review likes, ${fixture.replies.length} replies, ${fixture.replyLikes.length} reply likes, ${fixture.follows.length} follows, and ${fixture.notifications.length} unread notifications.`
   );
 
   if (!options.dryRun) {

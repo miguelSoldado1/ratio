@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,9 +12,10 @@ import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/c
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { FormEvent } from "react";
+import type { ListDetailsInput } from "@/server/services/list-service";
 
-export const listTitleMaxLength = 100;
-export const listDescriptionMaxLength = 500;
+const listTitleMaxLength = 100;
+const listDescriptionMaxLength = 200;
 
 const fieldIds = {
   description: "list-description",
@@ -30,22 +31,22 @@ const listDetailsCopy = {
     title: "New list",
   },
   edit: {
-    description: "Only the title and description change here.",
+    description: "Only the title and subtitle change here.",
     submitLabel: "Save changes",
     title: "Edit list",
   },
 } as const;
 
-export interface ListDetailsValues {
+interface ListDetailsInitialValues {
   description: string;
   title: string;
 }
 
 interface ListDetailsDialogProps {
-  initialValues?: ListDetailsValues;
+  initialValues?: ListDetailsInitialValues;
   isSubmitting?: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (values: ListDetailsValues) => void;
+  onSubmit: (values: ListDetailsInput) => void;
   open: boolean;
   variant: "create" | "edit";
 }
@@ -61,6 +62,7 @@ export function ListDetailsDialog({
   const [title, setTitle] = useState(initialValues?.title ?? "");
   const [description, setDescription] = useState(initialValues?.description ?? "");
   const [titleError, setTitleError] = useState<string | undefined>(undefined);
+  const descriptionRef = useRef<HTMLTextAreaElement>(null);
 
   const copy = listDetailsCopy[variant];
 
@@ -75,13 +77,29 @@ export function ListDetailsDialog({
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmedTitle = title.trim();
+    const trimmedDescription = description.trim();
 
     if (!trimmedTitle) {
       return setTitleError("Give the list a title.");
     }
 
+    if (trimmedDescription.length > listDescriptionMaxLength) {
+      return shakeDescription();
+    }
+
     setTitleError(undefined);
-    onSubmit({ description: description.trim(), title: trimmedTitle });
+    onSubmit({
+      description: trimmedDescription || null,
+      title: trimmedTitle,
+    });
+  }
+
+  function shakeDescription() {
+    const textarea = descriptionRef.current;
+    if (!textarea) return;
+
+    textarea.classList.remove("animate-input-shake");
+    window.requestAnimationFrame(() => textarea.classList.add("animate-input-shake"));
   }
 
   return (
@@ -96,6 +114,8 @@ export function ListDetailsDialog({
             <Field data-invalid={Boolean(titleError)}>
               <FieldLabel htmlFor={fieldIds.title}>Title</FieldLabel>
               <Input
+                aria-describedby={titleError ? fieldIds.titleError : undefined}
+                aria-invalid={Boolean(titleError)}
                 autoComplete="off"
                 id={fieldIds.title}
                 maxLength={listTitleMaxLength}
@@ -106,18 +126,26 @@ export function ListDetailsDialog({
               <FieldError id={fieldIds.titleError}>{titleError}</FieldError>
             </Field>
             <Field>
-              <FieldLabel htmlFor={fieldIds.description}>Description</FieldLabel>
+              <FieldLabel htmlFor={fieldIds.description}>Subtitle</FieldLabel>
               <Textarea
                 aria-describedby={fieldIds.descriptionHint}
                 id={fieldIds.description}
-                maxLength={listDescriptionMaxLength}
+                onAnimationEnd={(event) => event.currentTarget.classList.remove("animate-input-shake")}
                 onChange={(event) => setDescription(event.target.value)}
                 placeholder="What ties these together?"
-                rows={3}
+                ref={descriptionRef}
+                rows={2}
                 value={description}
               />
-              <FieldDescription id={fieldIds.descriptionHint}>
-                Optional. {listDescriptionMaxLength - description.length} characters left.
+              <FieldDescription
+                className={
+                  description.length > listDescriptionMaxLength
+                    ? "text-destructive text-xs tabular-nums"
+                    : "text-muted-foreground-subtle text-xs tabular-nums"
+                }
+                id={fieldIds.descriptionHint}
+              >
+                {description.length}/{listDescriptionMaxLength} characters
               </FieldDescription>
             </Field>
           </FieldGroup>

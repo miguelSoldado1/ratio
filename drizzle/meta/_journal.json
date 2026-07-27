@@ -36,6 +36,13 @@
       "when": 1784924687165,
       "tag": "0004_sticky_hulk",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1785163927120,
+      "tag": "0005_milky_swordsman",
+      "breakpoints": true
     }
   ]
 }

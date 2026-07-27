@@ -88,9 +88,38 @@ Store the rating as `smallint` from `1` to `10`, where UI stars remain `0.5` to 
 
 Review creation must ensure the referenced album exists through server-trusted metadata before inserting the review. Block duplicate `(userId, albumId)` submissions, allow deleting a review, and do not expose edit/update unless the product decision changes.
 
-Deleting the last review for an album does not delete the album row. Cleanup, if ever needed, should be a separate scheduled/admin process for old unreferenced albums.
+Deleting the last review for an album does not delete the album row. Lists are another durable source of album rows, so
+albums with zero reviews are normal. Cleanup, if ever needed, should be a separate scheduled/admin process for old
+albums that are no longer referenced by reviews or lists.
 
 When adding the `review.albumId -> album.id` foreign key to a database with existing reviews, choose the migration path explicitly. Disposable or empty databases can apply the final schema directly. Databases with reviews that matter should do it in phases: create `album`, backfill distinct existing review album IDs from Spotify, then add the foreign key.
+
+## Lists
+
+`list` stores a public collection owned by one user, with a required title, optional description, and creation and
+update timestamps. Database checks enforce a non-whitespace title of 1–100 characters and, when present, a
+non-whitespace description of 1–200 characters. Deleting the owner cascades to their lists. The
+`(user_id, created_at, id)` index supports stable newest-first profile pagination.
+
+`list_item` joins a list to an album using `(list_id, album_id)` as its primary key, making duplicate album additions
+an indexed lookup and an idempotent no-op. Its album foreign key does not cascade, matching reviews: album rows outlive
+the activity that references them. The separate `album_id` index supports reverse lookups and foreign-key maintenance.
+
+Every item has a zero-based, nonnegative `position`, with a unique `(list_id, position)` index. V1 displays list items
+by addition time, newest first, with position as the deterministic tie-breaker; neither value is displayed as a rank.
+Removing an item leaves a position gap and does not rewrite unaffected rows. Future manual sorting can switch the read
+order to position and rewrite one bounded list into dense `0..N-1` positions inside a transaction without another schema
+migration.
+
+List detail reads are deliberately unpaginated and therefore capped at 100 items in the service. Adds lock the parent
+list row before checking the cap and choosing `max(position) + 1`, so concurrent requests cannot reuse a position or
+exceed the cap. Profile list reads use keyset pagination and fetch the item count plus only the first four added album
+covers in chronological addition order in the paginated query. Detail reads derive the same cover set from their
+already-loaded bounded item rows, so choosing covers requires no additional query.
+
+Reviews and list additions share the album-materialization path. Missing Spotify metadata is fetched before opening a
+database transaction, then the album and list item are persisted together. A list can therefore create an album row
+without any review; deleting the list or its last item does not delete that album row.
 
 ## Review Replies
 
@@ -169,24 +198,7 @@ export const follows = pgTable("follows", {
 }, (t) => ({
   pk: primaryKey({ columns: [t.followerId, t.followingId] }),
 }))
-
-// lists: user-curated album collections
-export const lists = pgTable("lists", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  userId: text("user_id").notNull().references(() => user.id, { onDelete: "cascade" }),
-  title: text("title").notNull(),
-  description: text("description"),
-  ranked: boolean("ranked").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-})
-
-export const listItems = pgTable("list_items", {
-  listId: uuid("list_id").notNull().references(() => lists.id, { onDelete: "cascade" }),
-  albumId: text("album_id").notNull().references(() => albums.id),
-  position: integer("position"),
-  note: text("note"),
-}, (t) => ({
-  pk: primaryKey({ columns: [t.listId, t.albumId] }),
-}))
 ```
+
+Lists are intentionally not repeated in this historical sketch. See [`packages/database/src/schema.ts`](../packages/database/src/schema.ts)
+and the [Lists](#lists) section above for the current schema and invariants.

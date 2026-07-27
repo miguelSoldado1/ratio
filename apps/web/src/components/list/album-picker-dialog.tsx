@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { AlbumResultItem } from "@/components/global-search/album-result-item";
 import { SearchResultSkeletonRows } from "@/components/global-search/search-result-skeleton";
+import { SpotifySourceAttribution } from "@/components/spotify-source-attribution";
 import { Button } from "@/components/ui/button";
 import { Command, CommandDialog, CommandEmpty, CommandGroup, CommandInput, CommandList } from "@/components/ui/command";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -16,17 +17,21 @@ const searchDebounceMs = 500;
 
 interface AlbumPickerDialogProps {
   addedAlbumIds: Set<string>;
+  failedAlbumIds?: Set<string>;
   onOpenChange: (open: boolean) => void;
-  onSelect: (album: AlbumResult) => void;
+  onSelect: (album: AlbumResult) => Promise<boolean>;
   open: boolean;
+  pendingAlbumIds?: Set<string>;
   remainingSlots: number;
 }
 
 export function AlbumPickerDialog({
   addedAlbumIds,
+  failedAlbumIds = new Set(),
   onOpenChange,
   onSelect,
   open,
+  pendingAlbumIds = new Set(),
   remainingSlots,
 }: AlbumPickerDialogProps) {
   const [inputValue, setInputValue] = useState("");
@@ -59,11 +64,11 @@ export function AlbumPickerDialog({
     inputRef.current?.focus();
   }, [open]);
 
-  function handleSelect(album: AlbumResult) {
-    if (addedAlbumIds.has(album.id) || remainingSlots <= 0) return;
+  async function handleSelect(album: AlbumResult) {
+    if (addedAlbumIds.has(album.id) || pendingAlbumIds.has(album.id) || remainingSlots <= 0) return;
 
-    onSelect(album);
-    setAddedThisSession((count) => count + 1);
+    const added = await onSelect(album);
+    if (added) setAddedThisSession((count) => count + 1);
     inputRef.current?.focus();
   }
 
@@ -112,8 +117,11 @@ export function AlbumPickerDialog({
             albumResults={albumResults}
             albumSearchError={albumSearchError}
             debouncedQuery={debouncedQuery}
+            failedAlbumIds={failedAlbumIds}
             isFetching={isFetching}
             onSelect={handleSelect}
+            pendingAlbumIds={pendingAlbumIds}
+            remainingSlots={remainingSlots}
             trimmedInput={trimmedInput}
           />
         </CommandList>
@@ -155,8 +163,11 @@ interface AlbumPickerResultsProps {
   albumResults: AlbumResult[];
   albumSearchError: Error | null;
   debouncedQuery: string;
+  failedAlbumIds: Set<string>;
   isFetching: boolean;
   onSelect: (album: AlbumResult) => void;
+  pendingAlbumIds: Set<string>;
+  remainingSlots: number;
   trimmedInput: string;
 }
 
@@ -165,8 +176,11 @@ function AlbumPickerResults({
   albumResults,
   albumSearchError,
   debouncedQuery,
+  failedAlbumIds,
   isFetching,
   onSelect,
+  pendingAlbumIds,
+  remainingSlots,
   trimmedInput,
 }: AlbumPickerResultsProps) {
   const hasResults = albumResults.length > 0;
@@ -188,16 +202,30 @@ function AlbumPickerResults({
   }
 
   return (
-    <CommandGroup className="pt-1">
-      {albumResults.map((album) => (
-        <AlbumResultItem
-          added={addedAlbumIds.has(album.id)}
-          album={album}
-          dimmed={isFetching}
-          key={album.id}
-          onSelect={onSelect}
+    <>
+      <div className="flex shrink-0 items-center justify-between px-4 pt-3 pb-1">
+        <span className="font-medium text-2xs text-muted-foreground uppercase tracking-widest">Albums</span>
+        <SpotifySourceAttribution
+          ariaLabel="Open search results on Spotify"
+          className="-mr-2"
+          href={`https://open.spotify.com/search/${encodeURIComponent(debouncedQuery.trim())}/albums`}
+          label="Results from"
         />
-      ))}
-    </CommandGroup>
+      </div>
+      <CommandGroup className="pt-0">
+        {albumResults.map((album) => (
+          <AlbumResultItem
+            added={addedAlbumIds.has(album.id)}
+            album={album}
+            dimmed={isFetching}
+            disabled={remainingSlots <= 0}
+            error={failedAlbumIds.has(album.id)}
+            key={album.id}
+            onSelect={onSelect}
+            pending={pendingAlbumIds.has(album.id)}
+          />
+        ))}
+      </CommandGroup>
+    </>
   );
 }

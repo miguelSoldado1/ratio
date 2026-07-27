@@ -7,6 +7,7 @@ import { InlineError } from "@/components/inline-error";
 import { PageContainer, PageContainerContent } from "@/components/page-container";
 import { ProfileHeader, ProfileHeaderSkeleton } from "@/components/profile/profile-header";
 import { ProfileLikedReviewsTab } from "@/components/profile/profile-liked-reviews-tab";
+import { ProfileListsTab } from "@/components/profile/profile-lists-tab";
 import { ProfileReviewsTab } from "@/components/profile/profile-reviews-tab";
 import { ProfileTabsSkeleton } from "@/components/profile/profile-tabs-skeleton";
 import {
@@ -25,7 +26,7 @@ import { albumQueryKeys, userQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { getUserProfile } from "@/server/functions/review-functions";
 import type { UserReviewsPage } from "@/server/services/review-service";
 
-type ProfileTab = "likes" | "reviews";
+type ProfileTab = "likes" | "lists" | "reviews";
 
 export const Route = createFileRoute("/user/$username")({
   component: UserPage,
@@ -108,7 +109,7 @@ function UserPage() {
   });
 
   function handleTabChange(value: string) {
-    if (value === "likes" || value === "reviews") setActiveTab(value);
+    if (value === "likes" || value === "lists" || value === "reviews") setActiveTab(value);
   }
 
   if (userProfileQuery.isPending) {
@@ -162,6 +163,7 @@ function UserPage() {
               className="bg-background p-0 group-data-horizontal/tabs:h-12"
             >
               <SwipeableTabsTrigger value="reviews">Reviews</SwipeableTabsTrigger>
+              <SwipeableTabsTrigger value="lists">Lists</SwipeableTabsTrigger>
               <SwipeableTabsTrigger value="likes">Likes</SwipeableTabsTrigger>
             </SwipeableTabsList>
             <SwipeableTabsViewport className="mx-0">
@@ -175,6 +177,11 @@ function UserPage() {
                     profileUser={profile}
                     viewer={viewer}
                   />
+                </PageContainerContent>
+              </SwipeableTabsContent>
+              <SwipeableTabsContent className="px-0 pb-8 lg:pb-12" value="lists">
+                <PageContainerContent className="py-0">
+                  <ProfileListsTab active={activeTab === "lists"} profileUser={profile} viewerUserId={viewerUserId} />
                 </PageContainerContent>
               </SwipeableTabsContent>
               <SwipeableTabsContent className="px-0 pb-8 lg:pb-12" value="likes">

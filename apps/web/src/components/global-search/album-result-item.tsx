@@ -1,4 +1,4 @@
-import { Check } from "lucide-react";
+import { AlertCircle, Check } from "lucide-react";
 import { AlbumArtwork } from "@/components/album-artwork";
 import { CommandItem } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
@@ -8,15 +8,19 @@ interface AlbumResultItemProps {
   added?: boolean;
   album: AlbumResult;
   dimmed?: boolean;
+  disabled?: boolean;
+  error?: boolean;
   onSelect: (album: AlbumResult) => void;
+  pending?: boolean;
 }
 
-export function AlbumResultItem({ added = false, album, dimmed = false, onSelect }: AlbumResultItemProps) {
+export function AlbumResultItem({ added, album, dimmed, disabled, error, onSelect, pending }: AlbumResultItemProps) {
   const artists = album.artists.map((artist) => artist.name).join(", ");
 
   return (
     <CommandItem
       className={cn("items-center gap-3 py-2.5 transition-opacity", dimmed && "opacity-55")}
+      disabled={added || disabled || pending}
       onSelect={() => onSelect(album)}
       value={`album:${album.id}`}
     >
@@ -36,8 +40,14 @@ export function AlbumResultItem({ added = false, album, dimmed = false, onSelect
       </div>
       {added ? (
         <span className="flex shrink-0 items-center gap-1 font-medium text-primary text-xs">
-          <Check className="size-3.5" />
+          <Check />
           Added
+        </span>
+      ) : null}
+      {error ? (
+        <span className="flex shrink-0 items-center gap-1 font-medium text-destructive text-xs">
+          <AlertCircle />
+          Retry
         </span>
       ) : null}
     </CommandItem>

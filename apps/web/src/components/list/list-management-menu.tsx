@@ -36,7 +36,7 @@ export function ListManagementMenu({ isDeleting = false, onDelete, onRename }: L
     <>
       <DropdownMenu>
         <DropdownMenuTrigger
-          render={<Button aria-label="Open list actions" size="icon" type="button" variant="ghost" />}
+          render={<Button aria-label="Open list actions" size="icon-lg" type="button" variant="ghost" />}
         >
           <MoreHorizontal />
         </DropdownMenuTrigger>

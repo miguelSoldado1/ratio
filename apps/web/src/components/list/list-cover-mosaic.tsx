@@ -1,13 +1,17 @@
 import { AlbumArtwork } from "@/components/album-artwork";
 import { cn } from "@/lib/utils";
-import type { ListAlbum } from "./types";
+import type { ListCoverAlbum } from "@/server/services/list-service";
 
 // Below four covers a mosaic would have to crop each one to a non-square slice, which
 // looks worse than simply showing the first cover whole.
 const mosaicMinAlbums = 4;
 
+export function getFirstAddedCoverAlbums<T extends ListCoverAlbum>(newestFirstAlbums: T[]) {
+  return newestFirstAlbums.slice(-mosaicMinAlbums).reverse();
+}
+
 interface ListCoverMosaicProps {
-  albums: ListAlbum[];
+  albums: ListCoverAlbum[];
   className?: string;
   size: number;
 }
