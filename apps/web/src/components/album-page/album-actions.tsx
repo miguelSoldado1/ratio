@@ -1,5 +1,6 @@
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { AddAlbumToListAction } from "./add-album-to-list-action";
 import { getAlbumArtistNames } from "./album-format.ts";
 import { ReviewDrawer } from "./review-drawer";
 import type { getAlbumDetails } from "@/server/functions/spotify-functions";
@@ -19,11 +20,12 @@ export function AlbumActions({ album, className }: AlbumActionsProps) {
     <div
       className={cn(
         "grid gap-2 lg:flex lg:flex-wrap lg:items-center lg:gap-3",
-        album.spotifyUrl ? "grid-cols-[1fr_auto]" : "grid-cols-1",
+        album.spotifyUrl ? "grid-cols-[minmax(0,1fr)_auto_auto]" : "grid-cols-[minmax(0,1fr)_auto]",
         className
       )}
     >
       <ReviewDrawer albumArtist={albumArtist} albumId={album.id} albumTitle={album.title} />
+      <AddAlbumToListAction albumId={album.id} albumTitle={album.title} />
       {album.spotifyUrl ? (
         <a
           aria-label="Open album on Spotify"

@@ -150,7 +150,7 @@ interface ProfileHeaderSkeletonProps {
 
 export function ProfileHeaderSkeleton({ className }: ProfileHeaderSkeletonProps) {
   return (
-    <div className={cn("pb-2 sm:pb-3", className)}>
+    <div className={cn("pb-2 sm:pb-0", className)}>
       <div className="flex flex-col items-center sm:grid sm:grid-cols-[5.5rem_minmax(0,1fr)] sm:items-center sm:gap-x-5 md:grid-cols-[7rem_minmax(0,1fr)] lg:gap-x-6">
         <div className="size-18 rounded-full bg-muted sm:size-22 md:size-28" />
         <div className="mt-2 flex min-w-0 flex-1 flex-col items-center gap-2 sm:mt-0 sm:items-start">
@@ -158,9 +158,9 @@ export function ProfileHeaderSkeleton({ className }: ProfileHeaderSkeletonProps)
           <div className="h-4 w-40 rounded-sm bg-muted" />
         </div>
         <div className="mt-4 grid w-full grid-cols-3 gap-4 sm:col-span-1 sm:col-start-2 sm:mt-4 sm:flex">
-          <div className="h-9 rounded-sm bg-muted sm:h-5 sm:w-20" />
-          <div className="h-9 rounded-sm bg-muted sm:h-5 sm:w-22" />
-          <div className="h-9 rounded-sm bg-muted sm:h-5 sm:w-22" />
+          <div className="h-9 rounded-sm bg-muted sm:h-5 sm:w-20 md:h-6" />
+          <div className="h-9 rounded-sm bg-muted sm:h-5 sm:w-22 md:h-6" />
+          <div className="h-9 rounded-sm bg-muted sm:h-5 sm:w-22 md:h-6" />
         </div>
       </div>
     </div>

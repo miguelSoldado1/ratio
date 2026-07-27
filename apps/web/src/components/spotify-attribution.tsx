@@ -29,7 +29,7 @@ export function SpotifyAttribution({
       {variant === "full" ? (
         <img alt="" className="h-5 w-auto" height={225} src="/brand/spotify-full-logo-white.svg" width={823} />
       ) : (
-        <img alt="" className="size-5" height={225} src="/brand/spotify-logo-icon-white.svg" width={236} />
+        <img alt="" className="size-5.25" height={225} src="/brand/spotify-logo-icon-white.svg" width={236} />
       )}
     </a>
   );

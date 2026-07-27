@@ -45,12 +45,14 @@ All album pages (`/album/:spotifyId`) are publicly accessible and shareable. Rev
 ```text
 /                          Public home - For You feed + signed-in Following feed
 /album/:spotifyId          Album page - metadata, community rating, reviews
+/list/:listId              Public album list
 /review/:reviewId          Standalone review conversation page
-/user/:username            Profile - ratings, reviews, followers
+/user/:username            Profile - reviews, lists, likes, followers
 /settings                  Account settings and linked sign-in methods
 ```
 
-Search is a global command/dialog experience in v1, not a standalone route. Separate `/search`, `/feed`, and `/lists/:id` routes are deferred until the product needs those dedicated surfaces.
+Search is a global command/dialog experience in v1, not a standalone route. Separate `/search` and `/feed` routes are
+deferred until the product needs those dedicated surfaces.
 
 ## Features
 
@@ -64,7 +66,13 @@ Search is a global command/dialog experience in v1, not a standalone route. Sepa
 - Liked-by dialog for reviews
 - Follow users
 - User profiles with rating history
-- Profile Reviews and Likes use the shared independently scrollable tab behavior beneath one profile header. A collapsed header preserves each tab's deeper position when switching; once the header is revealed, it stays revealed across tabs. The tab bar sits directly against the profile header and spans the full viewport width, while its visual controls become compact and centered on desktop
+- Profile Reviews, Lists, and Likes use the shared independently scrollable tab behavior beneath one profile header. A
+  collapsed header preserves each tab's deeper position when switching; once the header is revealed, it stays revealed
+  across tabs. The tab bar sits directly against the profile header and spans the full viewport width, while its visual
+  controls become compact and centered on desktop
+- Public album lists with a title, optional description, newest additions displayed first, and each album's exact
+  addition date shown as subdued metadata. Lists are visually unranked in v1; owners create them from their profile and
+  add, remove, rename, or delete content inline on the public list page
 - Album pages with community score and reviews
 - Search albums via Spotify API and users by username/display username from the global search dialog
 - Link/unlink sign-in methods in settings
@@ -86,7 +94,7 @@ Search is a global command/dialog experience in v1, not a standalone route. Sepa
 ### Deferred
 
 - Spotify-personalized feed sources from top artists or saved albums; feed ranking from listening history
-- Lists: curated ranked or unranked album collections
+- Manual list sorting; ranked and private lists; per-item notes; list likes, comments, and feed integration
 - Dedicated `/search` route
 - Dedicated `/feed` route
 - Activity feed entries beyond review-card feed ranking, e.g. "X followed Y"
@@ -190,13 +198,18 @@ Set `min_votes` to something like 5. Tune `global_mean` from actual data over ti
 - Use subdued metadata hierarchy. Secondary facts should be available but visually quiet, and repeated labels should be removed when nearby context already explains the content.
 - Empty states should preserve the layout and communicate the absence clearly without turning into a separate promotional panel.
 - Keep visual references to Spotify as mood and interaction inspiration, not direct imitation.
-- When a surface uses Spotify-fetched content, include the required Spotify logo attribution in the quietest viable placement and avoid unnecessary repeated logos.
+- When a surface uses Spotify-fetched content, include the required Spotify logo attribution in the quietest viable
+  placement and avoid unnecessary repeated logos. Profile list summaries intentionally omit it; the opened list owns
+  the album-level Spotify links.
 
 ## Edge Cases
 
 | Case | Handling |
 |---|---|
 | Album removed from Spotify | Keep cached metadata in existing local rows; hide or disable Spotify links when live lookup fails |
+| Album in a list removed from Spotify | Keep the list item and render its cached album metadata even when live Spotify lookup fails |
+| Duplicate album added to a list | Treat the add as an idempotent no-op; preserve its position and the list's `updatedAt` |
+| List by banned or incomplete author | Return not found to public and non-admin viewers. Admins may inspect a banned author's list, but lists by authors without a username remain hidden |
 | Duplicate review attempt | Enforced at DB level via unique constraint on `(userId, albumId)`; block duplicate creates; delete may come later, no edit/update flow planned |
 | Low vote count rating display | Bayesian average until threshold is met, show raw score + count after |
 | Empty Following feed (new user) | Show a quiet empty state directly beneath the tab bar; the For You tab remains fully usable |

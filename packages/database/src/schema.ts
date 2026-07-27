@@ -32,6 +32,55 @@ export const albums = pgTable("album", {
     .notNull(),
 });
 
+export const lists = pgTable(
+  "list",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    description: text("description"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at")
+      .defaultNow()
+      .$onUpdate(() => new Date())
+      .notNull(),
+  },
+  (table) => [
+    index("lists_user_created_id_idx").on(table.userId, table.createdAt, table.id),
+    check(
+      "lists_title_length_check",
+      sql`char_length(${table.title}) between 1 and 100 and ${table.title} ~ '[^[:space:]]'`
+    ),
+    check(
+      "lists_description_length_check",
+      sql`${table.description} is null
+        or (char_length(${table.description}) between 1 and 200 and ${table.description} ~ '[^[:space:]]')`
+    ),
+  ]
+);
+
+export const listItems = pgTable(
+  "list_item",
+  {
+    listId: uuid("list_id")
+      .notNull()
+      .references(() => lists.id, { onDelete: "cascade" }),
+    albumId: text("album_id")
+      .notNull()
+      .references(() => albums.id),
+    position: integer("position").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.listId, table.albumId], name: "list_items_list_album_pk" }),
+    uniqueIndex("list_items_list_position_unique_idx").on(table.listId, table.position),
+    index("list_items_album_id_idx").on(table.albumId),
+    check("list_items_position_nonnegative_check", sql`${table.position} >= 0`),
+  ]
+);
+
 export const reviews = pgTable(
   "review",
   {
@@ -207,7 +256,27 @@ export const notifications = pgTable(
 );
 
 export const albumRelations = relations(albums, ({ many }) => ({
+  listItems: many(listItems),
   reviews: many(reviews),
+}));
+
+export const listRelations = relations(lists, ({ many, one }) => ({
+  items: many(listItems),
+  user: one(user, {
+    fields: [lists.userId],
+    references: [user.id],
+  }),
+}));
+
+export const listItemRelations = relations(listItems, ({ one }) => ({
+  album: one(albums, {
+    fields: [listItems.albumId],
+    references: [albums.id],
+  }),
+  list: one(lists, {
+    fields: [listItems.listId],
+    references: [lists.id],
+  }),
 }));
 
 export const reviewRelations = relations(reviews, ({ many, one }) => ({
