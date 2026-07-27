@@ -27,6 +27,21 @@ export const reviewQueryKeys = {
       : reviewQueryKeys.repliesRoot(reviewId),
 };
 
+export const listQueryKeys = {
+  all: () => ["list"] as const,
+  album: (albumId: string) => [...listQueryKeys.albums(), albumId] as const,
+  albums: () => [...listQueryKeys.all(), "album"] as const,
+  forAlbum: (albumId: string, viewerUserId: string) => [...listQueryKeys.album(albumId), viewerUserId] as const,
+  byUser: (profileUserId: string, viewerUserId?: string) =>
+    viewerUserId
+      ? ([...listQueryKeys.all(), "user", profileUserId, viewerUserId] as const)
+      : ([...listQueryKeys.all(), "user", profileUserId] as const),
+  detail: (listId: string, viewerUserId?: string) =>
+    viewerUserId
+      ? ([...listQueryKeys.all(), listId, "detail", viewerUserId] as const)
+      : ([...listQueryKeys.all(), listId, "detail"] as const),
+};
+
 export const feedQueryKeys = {
   all: () => ["feed"] as const,
   following: (viewerUserId: string) => [...feedQueryKeys.root(viewerUserId), "following"] as const,

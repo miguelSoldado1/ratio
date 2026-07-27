@@ -8,6 +8,12 @@ Use an official Spotify logo asset as the minimum visible attribution for that s
 
 For item-level content such as search results, album pages, tracks, and feed cards, keep the mapped `spotifyUrl` available so users can open the applicable album, artist, track, or search result on Spotify.
 
+Profile list summaries are the intentional exception: the profile Lists tab does not render a Spotify wordmark or
+icon around list-cover artwork. Opening a list exposes the item-level Spotify links described below.
+
+Public list rows use a quiet Spotify icon per album. The icon links directly to that album on Spotify, providing both
+item-level attribution and the applicable Spotify destination without changing the row's primary Ratio navigation.
+
 ## Spotify Login and Linking
 
 Spotify is registered as a full social provider in Better Auth for sign-in. Every new Spotify sign-in and link additionally requests the `user-read-recently-played` scope, which powers the private recent-listening shelf on the homepage.

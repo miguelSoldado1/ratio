@@ -1,5 +1,7 @@
 import {
   albums,
+  listItems,
+  lists,
   notifications,
   reviewLikes,
   reviewReplies,
@@ -44,6 +46,34 @@ export async function createTestAlbum(db: Db, overrides: Partial<typeof albums.$
   const [createdAlbum] = await db.insert(albums).values(values).returning();
 
   return createdAlbum;
+}
+
+export async function createTestList(db: Db, overrides: Partial<typeof lists.$inferInsert> = {}) {
+  const next = nextSequence();
+  const values = {
+    description: `Test list description ${next}`,
+    title: `Test List ${next}`,
+    userId: overrides.userId ?? (await createTestUser(db)).id,
+    ...overrides,
+  } satisfies typeof lists.$inferInsert;
+
+  const [createdList] = await db.insert(lists).values(values).returning();
+
+  return createdList;
+}
+
+export async function createTestListItem(db: Db, overrides: Partial<typeof listItems.$inferInsert> = {}) {
+  const next = nextSequence();
+  const values = {
+    albumId: overrides.albumId ?? (await createTestAlbum(db)).id,
+    listId: overrides.listId ?? (await createTestList(db)).id,
+    position: overrides.position ?? next,
+    ...overrides,
+  } satisfies typeof listItems.$inferInsert;
+
+  const [createdListItem] = await db.insert(listItems).values(values).returning();
+
+  return createdListItem;
 }
 
 export async function createTestReview(db: Db, overrides: Partial<typeof reviews.$inferInsert> = {}) {
