@@ -114,9 +114,9 @@ function UserPage() {
 
   if (userProfileQuery.isPending) {
     return (
-      <main className="min-h-screen bg-background text-foreground">
-        <PageContainer>
-          <PageContainerContent className="flex flex-col lg:py-12">
+      <main className="h-[calc(100dvh-4.0625rem)] bg-background text-foreground">
+        <PageContainer className="flex h-full min-h-0 flex-col">
+          <PageContainerContent className="flex flex-col pt-5 pb-0 lg:pt-8">
             <ProfileHeaderSkeleton />
             <ProfileTabsSkeleton />
           </PageContainerContent>
