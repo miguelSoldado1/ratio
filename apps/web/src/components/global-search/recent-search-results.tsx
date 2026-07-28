@@ -4,16 +4,26 @@ import { CommandGroup, CommandItem, CommandShortcut } from "@/components/ui/comm
 import type { RecentSearch } from "./recent-searches";
 
 interface RecentSearchResultsProps {
+  onClear: () => void;
   onRemove: (normalizedQuery: string) => void;
   onSelect: (query: string) => void;
   recentSearches: RecentSearch[];
 }
 
-export function RecentSearchResults({ onRemove, onSelect, recentSearches }: RecentSearchResultsProps) {
+export function RecentSearchResults({ onClear, onRemove, onSelect, recentSearches }: RecentSearchResultsProps) {
   return (
     <>
       <div className="flex shrink-0 items-center justify-between px-4 pt-3 pb-1">
         <span className="font-medium text-2xs text-muted-foreground uppercase tracking-widest">Recent searches</span>
+        <Button
+          className="font-normal text-muted-foreground opacity-70 hover:text-foreground hover:opacity-100"
+          onClick={onClear}
+          size="xs"
+          type="button"
+          variant="ghost"
+        >
+          Clear
+        </Button>
       </div>
       <CommandGroup className="pt-0">
         {recentSearches.map((search) => (
@@ -25,7 +35,7 @@ export function RecentSearchResults({ onRemove, onSelect, recentSearches }: Rece
           >
             <History className="text-muted-foreground" />
             <span className="truncate text-left font-medium text-foreground text-sm">{search.query}</span>
-            <CommandShortcut>
+            <CommandShortcut className="flex w-12 shrink-0 justify-center">
               <Button
                 aria-label={`Remove ${search.query} from recent searches`}
                 className="text-muted-foreground opacity-70 hover:text-foreground hover:opacity-100"

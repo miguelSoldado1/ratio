@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  clearRecentSearches,
   getRecentSearches,
   recentSearchesStorageKey,
   removeRecentSearch,
@@ -102,5 +103,14 @@ describe("recent searches", () => {
 
     expect(removeRecentSearch("radiohead").map((search) => search.query)).toEqual(["Beyonce"]);
     expect(getRecentSearches().map((search) => search.query)).toEqual(["Beyonce"]);
+  });
+
+  it("clears all recent searches", () => {
+    saveRecentSearch("Radiohead");
+    saveRecentSearch("Beyonce");
+
+    expect(clearRecentSearches()).toEqual([]);
+    expect(getRecentSearches()).toEqual([]);
+    expect(localStorage.getItem(recentSearchesStorageKey)).toBeNull();
   });
 });
