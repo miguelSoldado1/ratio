@@ -48,6 +48,8 @@ All album pages (`/album/:spotifyId`) are publicly accessible and shareable. Rev
 /review/:reviewId          Standalone review conversation page
 /user/:username            Profile - reviews, lists, likes, followers
 /settings                  Account settings and linked sign-in methods
+/privacy                   Privacy policy
+/terms                     Terms of use
 ```
 
 Search is a global command/dialog experience in v1, not a standalone route. Separate `/search` and `/feed` routes are

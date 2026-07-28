@@ -1,4 +1,5 @@
 import { authProviders } from "@ratio/auth-providers/icons";
+import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -77,6 +78,25 @@ export function AuthDialog({ onOpenChange, open }: AuthDialogProps) {
             </Button>
           ))}
         </div>
+        <p className="text-center text-muted-foreground text-xs leading-relaxed">
+          By continuing, you agree to the{" "}
+          <Link
+            className="text-foreground underline decoration-border underline-offset-4 hover:decoration-foreground"
+            onClick={() => onOpenChange(false)}
+            to="/terms"
+          >
+            Terms
+          </Link>{" "}
+          and acknowledge the{" "}
+          <Link
+            className="text-foreground underline decoration-border underline-offset-4 hover:decoration-foreground"
+            onClick={() => onOpenChange(false)}
+            to="/privacy"
+          >
+            Privacy Policy
+          </Link>
+          .
+        </p>
       </DialogContent>
     </Dialog>
   );
