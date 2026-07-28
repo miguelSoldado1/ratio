@@ -72,7 +72,9 @@ database password. See Cloudflare's
 
 Do not introduce a module-scoped Worker DB singleton. `packages/database/src/index.ts` exposes a database accessor factory: local development can reuse a singleton client inside the accessor, while every Cloudflare Worker request creates a request-scoped `postgres`/Drizzle client from that app's `HYPERDRIVE` binding. Hyperdrive owns the underlying origin pool and Worker invocation cleanup, so server functions should not carry explicit `client.end()` boilerplate.
 
-The admin app performs no product/admin queries in this milestone. Better Auth still performs the session, user, account, and OAuth reads/writes necessary to authenticate and authorize requests.
+The admin app performs protected, request-driven product and aggregate queries for its overview, users, and reviews
+surfaces. Better Auth also performs the session, user, account, and OAuth reads/writes necessary to authenticate and
+authorize requests.
 
 Hyperdrive query caching is currently disabled on the main `HYPERDRIVE` config so fresh review and like reads stay visible as quickly as possible. Hyperdrive caching is configured per Hyperdrive config, not toggled inside individual Drizzle queries. If future public read endpoints need Hyperdrive query caching, add a separate cached Hyperdrive config/binding and route only those public reads through that binding, or use an app-level cache such as KV/Cache API. Avoid cached Hyperdrive reads for auth/session reads, viewer-specific booleans such as `likedByViewer` and `followedByViewer`, and mutation-adjacent checks where users expect immediate freshness.
 
