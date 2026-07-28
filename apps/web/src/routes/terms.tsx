@@ -58,6 +58,24 @@ function TermsPage() {
         </p>
       </LegalSection>
 
+      <LegalSection id="terms-copyright" title="Copyright complaints">
+        <p>
+          Ratio respects copyright and may remove content that infringes someone else&apos;s rights. To report content,
+          email{" "}
+          <a className={legalLinkClassName} href="mailto:ratio.music.dev@gmail.com">
+            ratio.music.dev@gmail.com
+          </a>{" "}
+          with your contact details, the work you believe is being infringed, the location of the reported content on
+          Ratio, and enough information to understand why you believe its use is not authorized.
+        </p>
+        <p>
+          Reports should be made in good faith and should confirm that the information supplied is accurate and that you
+          are the rights holder or authorized to act for them. Ratio may ask for more information, remove or disable
+          access to reported content, and suspend or terminate accounts that repeatedly infringe other people&apos;s
+          rights. If your content was removed by mistake, contact the same address and explain why.
+        </p>
+      </LegalSection>
+
       <LegalSection id="terms-conduct" title="Community rules">
         <p>Do not use Ratio to:</p>
         <ul className={legalListClassName}>
@@ -86,6 +104,29 @@ function TermsPage() {
         <p>
           Features and data that come from these services can change or stop working, and that is outside Ratio&apos;s
           control.
+        </p>
+      </LegalSection>
+
+      <LegalSection id="terms-spotify" title="Spotify-specific terms">
+        <p>
+          Ratio, not Spotify, is responsible for Ratio and its operation. Ratio does not make warranties or
+          representations on Spotify&apos;s behalf, and Spotify is not responsible or liable for Ratio or for your use
+          of Ratio.
+        </p>
+        <p>
+          To the fullest extent permitted by law, all implied warranties relating to the Spotify Platform, Spotify
+          Service, and Spotify Content—including merchantability, fitness for a particular purpose, and
+          non-infringement—are disclaimed.
+        </p>
+        <p>
+          You must not modify or create derivative works based on the Spotify Platform, Spotify Service, or Spotify
+          Content. To the fullest extent permitted by law, you must not decompile, reverse-engineer, disassemble, or
+          otherwise reduce any of them to source code or another human-perceivable form.
+        </p>
+        <p>
+          Spotify is a third-party beneficiary of these Terms and Ratio&apos;s Privacy Policy. Spotify is entitled to
+          enforce these Terms directly where they relate to Spotify, the Spotify Platform, Spotify Service, or Spotify
+          Content.
         </p>
       </LegalSection>
 
