@@ -6,7 +6,6 @@ const mockUseSession = vi.hoisted(() => vi.fn());
 
 vi.mock("@/lib/auth/auth-client", () => ({
   authClient: {
-    getLastUsedLoginMethod: vi.fn(() => null),
     signIn: { social: vi.fn() },
     useSession: mockUseSession,
   },
@@ -23,6 +22,8 @@ describe("AuthDialog", () => {
     render(<AuthDialog onOpenChange={vi.fn()} open />);
 
     expect(screen.getByRole("dialog", { name: "Continue to Ratio" })).toBeTruthy();
+    expect(screen.queryByText("Last used")).toBeNull();
+    expect(screen.queryByText("Recommended")).toBeNull();
   });
 
   it("stays closed while the session is pending", () => {

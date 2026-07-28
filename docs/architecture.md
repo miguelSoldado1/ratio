@@ -32,7 +32,9 @@ Each app owns its routes, shadcn components, authentication UI and behavior, dep
 
 Admin v1 supports sign-in for existing Ratio accounts, rejects OAuth user creation, verifies sessions and comma-separated admin roles through server functions, and exposes strict authorization middleware for protected server functions. Admin UI routes disable SSR and fetch access state and table data from the client through `useServerFn` and TanStack Query. Unauthenticated protected routes redirect through `/sign-in` with a validated internal return path; authenticated non-admin users go to `/access-denied`. The users route provides a paginated, sortable, filterable table backed by bounded database queries, and its shared table scaffold is intended for future admin resources. The app has no analytics, reviews, reports, or polling yet.
 
-The admin cookie uses its own `ratio-admin` prefix, does not enable cross-subdomain cookies, and therefore remains host-only. The public and admin hosts do not share browser sessions or last-used-login history even though Better Auth uses the same database schema and relevant secret/provider configuration.
+The admin cookie uses its own `ratio-admin` prefix, does not enable cross-subdomain cookies, and therefore remains
+host-only. The public and admin hosts do not share browser sessions even though Better Auth uses the same database
+schema and relevant secret/provider configuration.
 
 Admin user deletion intentionally does not give the admin Worker R2 bindings or S3-compatible avatar credentials. Better Auth and the database cascades remove the account data, while a custom avatar may remain orphaned in R2. Self-service account deletion in the public app still removes its avatar. If admin-deletion orphans become material, prefer a bounded reconciliation script run with the public app's existing storage credentials instead of duplicating R2 secrets across admin environments.
 

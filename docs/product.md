@@ -20,9 +20,8 @@ No email/password. OAuth only; removing the email flow eliminates forgotten pass
 
 Additional OAuth providers beyond these are not part of v1.
 
-When there is no last-used login method, the authentication dialog recommends Spotify so new users can access the
-recent-listening shelf without linking another account later. Returning users see their last-used method instead and
-are not shown a recommendation.
+The authentication dialog presents every provider equally. Ratio does not persist or highlight the user's last-used
+login method.
 
 ### Auth Tiers
 
