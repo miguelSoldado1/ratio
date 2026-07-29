@@ -25,7 +25,7 @@ export function ListCoverMosaic({ albums, className, size }: ListCoverMosaicProp
     <span
       aria-hidden="true"
       className={cn(
-        "grid aspect-square shrink-0 overflow-hidden bg-muted",
+        "pointer-events-none grid aspect-square shrink-0 select-none overflow-hidden bg-muted",
         isMosaic && "grid-cols-2 grid-rows-2",
         className
       )}
