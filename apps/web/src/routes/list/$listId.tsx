@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { InlineError } from "@/components/inline-error";
 import { AlbumPickerDialog } from "@/components/list/album-picker-dialog";
 import { createListAlbumAddQueue } from "@/components/list/list-album-add-queue";
-import { getFirstAddedCoverAlbums } from "@/components/list/list-cover-mosaic";
+import { getLeadingCoverAlbums } from "@/components/list/list-cover-mosaic";
 import { ListDetailsDialog } from "@/components/list/list-details-dialog";
 import { ListPage, ListPageSkeleton } from "@/components/list/list-page";
 import { NotFoundPage } from "@/components/not-found-page";
@@ -14,7 +14,14 @@ import { PageContainer, PageContainerContent } from "@/components/page-container
 import { authClient } from "@/lib/auth/auth-client";
 import { createCanonicalLink, createSeoMeta, siteName } from "@/lib/seo";
 import { listQueryKeys } from "@/lib/tanstack-query/query-keys";
-import { addListItem, deleteList, getList, removeListItem, updateList } from "@/server/functions/list-functions";
+import {
+  addListItem,
+  deleteList,
+  getList,
+  removeListItem,
+  reorderListItems,
+  updateList,
+} from "@/server/functions/list-functions";
 import { tryCatch } from "@/try-catch";
 import type { AlbumResult } from "@/components/global-search/types";
 import type { ListDetails, ListDetailsInput } from "@/server/services/list-service";
@@ -98,6 +105,9 @@ function ListRouteContent({ listId, sessionPending, viewerUserId }: ListRouteCon
   const removeListItemFn = useServerFn(removeListItem);
   const removeListItemMutation = useMutation({ mutationFn: removeListItemFn });
 
+  const reorderListItemsFn = useServerFn(reorderListItems);
+  const reorderListItemsMutation = useMutation({ mutationFn: reorderListItemsFn });
+
   const list = listQuery.data;
 
   function invalidateListMetadata(authorId: string) {
@@ -154,7 +164,7 @@ function ListRouteContent({ listId, sessionPending, viewerUserId }: ListRouteCon
   }
 
   async function handleAlbumSelect(album: AlbumResult) {
-    if (!list) return false;
+    if (!list || reorderListItemsMutation.isPending) return false;
 
     const currentList = queryClient.getQueryData<ListDetails | null>(listQueryKey);
     const alreadyAdded = currentList?.albums.some((currentAlbum) => currentAlbum.id === album.id);
@@ -194,7 +204,7 @@ function ListRouteContent({ listId, sessionPending, viewerUserId }: ListRouteCon
         return {
           ...current,
           albums,
-          coverAlbums: getFirstAddedCoverAlbums(albums),
+          coverAlbums: getLeadingCoverAlbums(albums),
           updatedAt: addedItem.updatedAt,
         };
       });
@@ -208,7 +218,7 @@ function ListRouteContent({ listId, sessionPending, viewerUserId }: ListRouteCon
   }
 
   async function handleRemoveAlbum(albumId: string) {
-    if (!list || removingAlbumIds.has(albumId)) return;
+    if (!list || removingAlbumIds.has(albumId) || reorderListItemsMutation.isPending) return;
 
     setRemovingAlbumIds((currentIds) => withAlbumId(currentIds, albumId));
     const { data, error } = await tryCatch(removeListItemMutation.mutateAsync({ data: { albumId, listId } }));
@@ -232,11 +242,69 @@ function ListRouteContent({ listId, sessionPending, viewerUserId }: ListRouteCon
       return {
         ...current,
         albums,
-        coverAlbums: getFirstAddedCoverAlbums(albums),
+        coverAlbums: getLeadingCoverAlbums(albums),
         updatedAt: data.updatedAt,
       };
     });
     await invalidateListMembership(list.author.id, data.albumId);
+  }
+
+  async function handleReorderAlbums(albumIds: string[]) {
+    if (
+      !list ||
+      addListItemMutation.isPending ||
+      removeListItemMutation.isPending ||
+      reorderListItemsMutation.isPending
+    ) {
+      return false;
+    }
+
+    const previousList = queryClient.getQueryData<ListDetails | null>(listQueryKey);
+    if (!previousList) return false;
+
+    const albumsById = new Map(previousList.albums.map((album) => [album.id, album]));
+    const reorderedAlbums = albumIds.flatMap((albumId) => {
+      const album = albumsById.get(albumId);
+      return album ? [album] : [];
+    });
+
+    if (reorderedAlbums.length !== previousList.albums.length) {
+      await queryClient.invalidateQueries({ queryKey: listQueryKey });
+      return false;
+    }
+
+    queryClient.setQueryData<ListDetails | null>(listQueryKey, () => ({
+      ...previousList,
+      albums: reorderedAlbums,
+      coverAlbums: getLeadingCoverAlbums(reorderedAlbums),
+    }));
+
+    const { data, error } = await tryCatch(
+      reorderListItemsMutation.mutateAsync({
+        data: {
+          albumIds,
+          listId,
+        },
+      })
+    );
+
+    if (error) {
+      queryClient.setQueryData<ListDetails | null>(listQueryKey, () => previousList);
+      await queryClient.invalidateQueries({ queryKey: listQueryKey });
+      toast.error("Couldn't reorder albums", { description: getErrorMessage(error) });
+      return false;
+    }
+
+    queryClient.setQueryData<ListDetails | null>(listQueryKey, (current) =>
+      current
+        ? {
+            ...current,
+            updatedAt: data.updatedAt,
+          }
+        : current
+    );
+    await invalidateListMetadata(list.author.id);
+    return true;
   }
 
   function handlePickerOpenChange(open: boolean) {
@@ -276,15 +344,17 @@ function ListRouteContent({ listId, sessionPending, viewerUserId }: ListRouteCon
       <main className="min-h-screen bg-background text-foreground">
         <PageContainer>
           <ListPage
-            canAddAlbum={remainingSlots > 0}
+            canAddAlbum={remainingSlots > 0 && !reorderListItemsMutation.isPending}
             editing={editing}
             isDeleting={deleteListMutation.isPending}
+            isReordering={addListItemMutation.isPending || reorderListItemsMutation.isPending}
             list={list}
             onAddAlbum={() => setPickerOpen(true)}
             onDelete={handleDelete}
             onEditDetails={() => setDetailsOpen(true)}
             onEditingChange={setEditing}
             onRemoveAlbum={handleRemoveAlbum}
+            onReorderAlbums={handleReorderAlbums}
             removingAlbumIds={removingAlbumIds}
           />
         </PageContainer>

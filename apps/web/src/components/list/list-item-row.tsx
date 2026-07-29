@@ -1,42 +1,60 @@
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Link } from "@tanstack/react-router";
-import { Minus } from "lucide-react";
+import { GripVertical, Minus } from "lucide-react";
 import { AlbumArtwork } from "@/components/album-artwork";
 import { SpotifyAttribution } from "@/components/spotify-attribution";
 import { Button } from "@/components/ui/button";
 import { formatCalendarDate } from "@/lib/date-format";
 import { cn } from "@/lib/utils";
+import { listRowClassName } from "./list-row-styles";
 import type { ListAlbum } from "@/server/services/list-service";
 
 // Keeps a long list from taking half a second to flip into edit mode.
 const removeStaggerMaxSteps = 6;
 const removeStaggerStepMs = 22;
 
-// Shared with the empty-list add row so both keep the same rhythm.
-export const listRowClassName = "flex items-center gap-3 border-border border-b last:border-b-0 sm:gap-4";
-
 interface ListItemRowProps {
   album: ListAlbum;
-  className?: string;
-  editing?: boolean;
+  editing: boolean;
   // Not displayed — only sets this row's stagger delay when edit mode opens.
   index: number;
-  isRemoving?: boolean;
-  onRemove?: (albumId: string) => void;
+  isRemoving: boolean;
+  onRemove: (albumId: string) => void;
+  sortingDisabled: boolean;
 }
 
-export function ListItemRow({
-  album,
-  className,
-  editing = false,
-  index,
-  isRemoving = false,
-  onRemove,
-}: ListItemRowProps) {
+export function ListItemRow({ album, editing, index, isRemoving, onRemove, sortingDisabled }: ListItemRowProps) {
+  const { attributes, isDragging, listeners, setActivatorNodeRef, setNodeRef, transform } = useSortable({
+    id: album.id,
+    disabled: !editing || sortingDisabled,
+    transition: null,
+  });
+
   const staggerDelayMs = Math.min(index, removeStaggerMaxSteps) * removeStaggerStepMs;
   const addedAtLabel = `Added ${formatCalendarDate(album.addedAt)}`;
 
   return (
-    <li className={cn("group/list-row", listRowClassName, className)}>
+    <li
+      className={cn("group/list-row relative", listRowClassName, isDragging && "z-10 bg-background shadow-md")}
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform) }}
+    >
+      {editing ? (
+        <Button
+          {...attributes}
+          {...listeners}
+          aria-label={`Drag ${album.title} to reorder`}
+          className="shrink-0 cursor-grab touch-none text-muted-foreground active:cursor-grabbing"
+          ref={setActivatorNodeRef}
+          shape="pill"
+          size="icon-sm"
+          type="button"
+          variant="ghost"
+        >
+          <GripVertical />
+        </Button>
+      ) : null}
       <Link
         className="focus-ring flex min-w-0 flex-1 items-center gap-3 rounded-sm py-3 outline-none [transition:opacity_150ms_ease] hover:opacity-80"
         params={{ albumId: album.id }}
@@ -65,7 +83,7 @@ export function ListItemRow({
         <Button
           aria-label={`Remove ${album.title} from this list`}
           className="shrink-0 starting:scale-90 text-muted-foreground starting:opacity-0 [transition:opacity_160ms_cubic-bezier(0.23,1,0.32,1),transform_160ms_cubic-bezier(0.23,1,0.32,1),color_150ms_ease,background-color_150ms_ease] hover:bg-destructive/10 hover:text-destructive"
-          disabled={isRemoving}
+          disabled={sortingDisabled || isRemoving}
           onClick={() => onRemove(album.id)}
           shape="pill"
           size="icon-sm"

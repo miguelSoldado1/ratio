@@ -107,17 +107,20 @@ non-whitespace description of 1–200 characters. Deleting the owner cascades to
 an indexed lookup and an idempotent no-op. Its album foreign key does not cascade, matching reviews: album rows outlive
 the activity that references them. The separate `album_id` index supports reverse lookups and foreign-key maintenance.
 
-Every item has a zero-based, nonnegative `position`, with a unique `(list_id, position)` index. V1 displays list items
-by addition time, newest first, with position as the deterministic tie-breaker; neither value is displayed as a rank.
-Removing an item leaves a position gap and does not rewrite unaffected rows. Future manual sorting can switch the read
-order to position and rewrite one bounded list into dense `0..N-1` positions inside a transaction without another schema
-migration.
+Every item has a zero-based, nonnegative `position`, with a unique `(list_id, position)` index. Detail reads order by
+position descending, so `max(position) + 1` additions appear at the top while the number remains an internal sort key,
+not a displayed rank. Removing an item leaves a position gap and does not rewrite unaffected rows.
+
+Manual reordering accepts the complete top-to-bottom album ID sequence for the bounded list. The service locks the
+parent list, verifies that the submitted IDs exactly match the current items, temporarily moves all positions above
+their existing range to avoid collisions with the non-deferrable unique index, and then rewrites dense positions in
+one transaction. Concurrent adds, removes, and reorders therefore serialize on the same parent row.
 
 List detail reads are deliberately unpaginated and therefore capped at 100 items in the service. Adds lock the parent
 list row before checking the cap and choosing `max(position) + 1`, so concurrent requests cannot reuse a position or
-exceed the cap. Profile list reads use keyset pagination and fetch the item count plus only the first four added album
-covers in chronological addition order in the paginated query. Detail reads derive the same cover set from their
-already-loaded bounded item rows, so choosing covers requires no additional query.
+exceed the cap. Profile list reads use keyset pagination and fetch the item count plus only the first four positioned
+album covers in the paginated query. Detail reads derive the same leading cover set from their already-loaded bounded
+item rows, so choosing covers requires no additional query.
 
 Reviews and list additions share the album-materialization path. Missing Spotify metadata is fetched before opening a
 database transaction, then the album and list item are persisted together. A list can therefore create an album row

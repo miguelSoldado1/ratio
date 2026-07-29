@@ -6,8 +6,8 @@ import type { ListCoverAlbum } from "@/server/services/list-service";
 // looks worse than simply showing the first cover whole.
 const mosaicMinAlbums = 4;
 
-export function getFirstAddedCoverAlbums<T extends ListCoverAlbum>(newestFirstAlbums: T[]) {
-  return newestFirstAlbums.slice(-mosaicMinAlbums).reverse();
+export function getLeadingCoverAlbums<T extends ListCoverAlbum>(albums: T[]) {
+  return albums.slice(0, mosaicMinAlbums);
 }
 
 interface ListCoverMosaicProps {

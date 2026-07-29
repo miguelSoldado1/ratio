@@ -1,23 +1,51 @@
+import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { restrictToParentElement, restrictToVerticalAxis } from "@dnd-kit/modifiers";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { Plus } from "lucide-react";
+import { useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { PageContainerContent } from "@/components/page-container";
 import { Skeleton } from "@/components/ui/skeleton";
+import { tryCatch } from "@/try-catch";
 import { ListCoverMosaic } from "./list-cover-mosaic";
 import { ListHeader } from "./list-header";
-import { ListItemRow, listRowClassName } from "./list-item-row";
+import { ListItemRow } from "./list-item-row";
 import { ListManagementMenu } from "./list-management-menu";
+import { listRowClassName } from "./list-row-styles";
+import type { AutoScrollOptions, DragEndEvent } from "@dnd-kit/core";
 import type { ListDetails } from "@/server/services/list-service";
+
+const screenReaderInstructions = {
+  draggable:
+    "To pick up an album, press Space or Enter. While sorting, use the arrow keys to move it. Press Space or Enter again to drop it, or Escape to cancel.",
+};
+
+const listAutoScroll: AutoScrollOptions = {
+  acceleration: 4,
+  interval: 12,
+  threshold: {
+    x: 0.08,
+    y: 0.08,
+  },
+};
 
 interface ListPageProps {
   canAddAlbum: boolean;
   editing: boolean;
   isDeleting?: boolean;
+  isReordering: boolean;
   list: ListDetails;
   onAddAlbum: () => void;
   onDelete: () => void;
   onEditDetails: () => void;
   onEditingChange: (editing: boolean) => void;
   onRemoveAlbum: (albumId: string) => void;
+  onReorderAlbums: (albumIds: string[]) => Promise<boolean>;
   removingAlbumIds?: Set<string>;
 }
 
@@ -25,15 +53,63 @@ export function ListPage({
   canAddAlbum,
   editing,
   isDeleting = false,
+  isReordering,
   list,
   onAddAlbum,
   onDelete,
   onEditDetails,
   onEditingChange,
   onRemoveAlbum,
+  onReorderAlbums,
   removingAlbumIds = new Set(),
 }: ListPageProps) {
+  const [pendingAlbumIds, setPendingAlbumIds] = useState<string[] | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 6,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
   const isEditing = editing && list.canEdit;
+  const hasAlbums = list.albums.length > 0;
+  const sortingDisabled = isReordering || removingAlbumIds.size > 0;
+  const albumsById = new Map(list.albums.map((album) => [album.id, album]));
+  const orderedAlbums = (pendingAlbumIds ?? list.albums.map((album) => album.id)).flatMap((albumId) => {
+    const album = albumsById.get(albumId);
+    return album ? [album] : [];
+  });
+  const displayedAlbums = orderedAlbums.length === list.albums.length ? orderedAlbums : list.albums;
+  const albumIds = displayedAlbums.map((album) => album.id);
+
+  function getAlbumTitle(id: string | number) {
+    return displayedAlbums.find((album) => album.id === String(id))?.title ?? "album";
+  }
+
+  async function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const activeIndex = albumIds.indexOf(String(active.id));
+    const overIndex = albumIds.indexOf(String(over.id));
+    if (activeIndex < 0 || overIndex < 0) return;
+
+    const nextAlbumIds = arrayMove(albumIds, activeIndex, overIndex);
+
+    // dnd-kit clears the dragged row's transform in the same React batch as this handler. Keep the
+    // rendered order locally so that batch already contains the final slot; the cache update then
+    // becomes persistence rather than a second-frame visual update.
+    setPendingAlbumIds(nextAlbumIds);
+    await tryCatch(onReorderAlbums(nextAlbumIds));
+    setPendingAlbumIds((currentAlbumIds) =>
+      currentAlbumIds && haveSameOrder(currentAlbumIds, nextAlbumIds) ? null : currentAlbumIds
+    );
+  }
 
   return (
     // Unlike the album page, nothing here spans the content column — the rows stay at the
@@ -59,26 +135,54 @@ export function ListPage({
         />
         {/* Matches the description's max width so the row rules align with the text above them. */}
         <div className="mt-6 max-w-2xl border-border border-t pt-1 lg:mt-8">
-          {list.albums.length === 0 ? (
-            <ListPageEmpty canEdit={list.canEdit} onAddAlbum={onAddAlbum} />
+          {hasAlbums ? (
+            <DndContext
+              accessibility={{
+                announcements: {
+                  onDragCancel: ({ active }) => `Reordering ${getAlbumTitle(active.id)} was cancelled.`,
+                  onDragEnd: ({ active, over }) =>
+                    over
+                      ? `${getAlbumTitle(active.id)} was moved to the position of ${getAlbumTitle(over.id)}.`
+                      : `${getAlbumTitle(active.id)} was returned to its original position.`,
+                  onDragOver: ({ active, over }) =>
+                    over ? `${getAlbumTitle(active.id)} is over ${getAlbumTitle(over.id)}.` : undefined,
+                  onDragStart: ({ active }) => `Picked up ${getAlbumTitle(active.id)}.`,
+                },
+                screenReaderInstructions,
+              }}
+              autoScroll={listAutoScroll}
+              collisionDetection={closestCenter}
+              modifiers={[restrictToVerticalAxis, restrictToParentElement]}
+              onDragEnd={handleDragEnd}
+              sensors={sensors}
+            >
+              <SortableContext items={albumIds} strategy={verticalListSortingStrategy}>
+                <ul>
+                  {displayedAlbums.map((album, albumIndex) => (
+                    <ListItemRow
+                      album={album}
+                      editing={isEditing}
+                      index={albumIndex}
+                      isRemoving={removingAlbumIds.has(album.id)}
+                      key={album.id}
+                      onRemove={onRemoveAlbum}
+                      sortingDisabled={sortingDisabled}
+                    />
+                  ))}
+                </ul>
+              </SortableContext>
+            </DndContext>
           ) : (
-            <ul>
-              {list.albums.map((album, albumIndex) => (
-                <ListItemRow
-                  album={album}
-                  editing={isEditing}
-                  index={albumIndex}
-                  isRemoving={removingAlbumIds.has(album.id)}
-                  key={album.id}
-                  onRemove={onRemoveAlbum}
-                />
-              ))}
-            </ul>
+            <ListPageEmpty canEdit={list.canEdit} onAddAlbum={onAddAlbum} />
           )}
         </div>
       </section>
     </PageContainerContent>
   );
+}
+
+function haveSameOrder(firstIds: string[], secondIds: string[]) {
+  return firstIds.length === secondIds.length && firstIds.every((albumId, index) => albumId === secondIds[index]);
 }
 
 export function ListPageSkeleton() {
