@@ -4,9 +4,16 @@ import { AuthDialog } from "@/components/auth/auth-dialog";
 
 const mockUseSession = vi.hoisted(() => vi.fn());
 
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({ children, onClick, to }: { children: string; onClick?: () => void; to: string }) => (
+    <a href={to} onClick={onClick}>
+      {children}
+    </a>
+  ),
+}));
+
 vi.mock("@/lib/auth/auth-client", () => ({
   authClient: {
-    getLastUsedLoginMethod: vi.fn(() => null),
     signIn: { social: vi.fn() },
     useSession: mockUseSession,
   },
@@ -23,6 +30,10 @@ describe("AuthDialog", () => {
     render(<AuthDialog onOpenChange={vi.fn()} open />);
 
     expect(screen.getByRole("dialog", { name: "Continue to Ratio" })).toBeTruthy();
+    expect(screen.queryByText("Last used")).toBeNull();
+    expect(screen.queryByText("Recommended")).toBeNull();
+    expect(screen.getByRole("link", { name: "Terms" }).getAttribute("href")).toBe("/terms");
+    expect(screen.getByRole("link", { name: "Privacy Policy" }).getAttribute("href")).toBe("/privacy");
   });
 
   it("stays closed while the session is pending", () => {

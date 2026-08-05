@@ -20,9 +20,8 @@ No email/password. OAuth only; removing the email flow eliminates forgotten pass
 
 Additional OAuth providers beyond these are not part of v1.
 
-When there is no last-used login method, the authentication dialog recommends Spotify so new users can access the
-recent-listening shelf without linking another account later. Returning users see their last-used method instead and
-are not shown a recommendation.
+The authentication dialog presents every provider equally. Ratio does not persist or highlight the user's last-used
+login method.
 
 ### Auth Tiers
 
@@ -49,6 +48,8 @@ All album pages (`/album/:spotifyId`) are publicly accessible and shareable. Rev
 /review/:reviewId          Standalone review conversation page
 /user/:username            Profile - reviews, lists, likes, followers
 /settings                  Account settings and linked sign-in methods
+/privacy                   Privacy policy
+/terms                     Terms of use
 ```
 
 Search is a global command/dialog experience in v1, not a standalone route. Separate `/search` and `/feed` routes are
@@ -70,9 +71,10 @@ deferred until the product needs those dedicated surfaces.
   collapsed header preserves each tab's deeper position when switching; once the header is revealed, it stays revealed
   across tabs. The tab bar sits directly against the profile header and spans the full viewport width, while its visual
   controls become compact and centered on desktop
-- Public album lists with a title, optional description, newest additions displayed first, and each album's exact
-  addition date shown as subdued metadata. Lists are visually unranked in v1; owners create them from their profile and
-  add, remove, rename, or delete content inline on the public list page
+- Public album lists with a title, optional description, owner-controlled drag reordering, and each album's exact
+  addition date shown as subdued metadata. New additions start at the top and can then be repositioned. Lists remain
+  visually unranked; owners create them from their profile and add, reorder, remove, rename, or delete content inline
+  on the public list page
 - Album pages with community score and reviews
 - Search albums via Spotify API and users by username/display username from the global search dialog
 - Link/unlink sign-in methods in settings
@@ -94,7 +96,7 @@ deferred until the product needs those dedicated surfaces.
 ### Deferred
 
 - Spotify-personalized feed sources from top artists or saved albums; feed ranking from listening history
-- Manual list sorting; ranked and private lists; per-item notes; list likes, comments, and feed integration
+- Ranked and private lists; per-item notes; list likes, comments, and feed integration
 - Dedicated `/search` route
 - Dedicated `/feed` route
 - Activity feed entries beyond review-card feed ranking, e.g. "X followed Y"

@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, isNotNull, max, sql } from "drizzle-orm";
+import { and, count, desc, eq, isNotNull, max, sql } from "drizzle-orm";
 import z from "zod";
 import { getDb } from "@/lib/db";
 import { albums, listItems, lists, user } from "@/lib/db/schema";
@@ -104,6 +104,10 @@ export interface ListItemInput extends ListIdInput {
   albumId: string;
 }
 
+export interface ReorderListItemsInput extends ListIdInput {
+  albumIds: string[];
+}
+
 // Services
 
 export async function getListService(data: ListIdInput) {
@@ -147,7 +151,7 @@ export async function getListService(data: ListIdInput) {
     .from(listItems)
     .innerJoin(albums, eq(listItems.albumId, albums.id))
     .where(eq(listItems.listId, data.listId))
-    .orderBy(desc(listItems.createdAt), desc(listItems.position));
+    .orderBy(desc(listItems.position));
 
   const listAlbums = itemRows.map((item) => mapListAlbum(item, item.addedAt));
 
@@ -156,8 +160,7 @@ export async function getListService(data: ListIdInput) {
     author: mapListAuthor(listRow.author),
     canEdit: currentUser?.id === listRow.list.userId,
     coverAlbums: itemRows
-      .slice(-listCoverAlbumLimit)
-      .reverse()
+      .slice(0, listCoverAlbumLimit)
       .map(({ coverUrl, id }) => ({ coverUrl: coverUrl ?? undefined, id })),
     description: listRow.list.description ?? undefined,
     id: listRow.list.id,
@@ -179,13 +182,12 @@ export async function getUserListsService(data: UserListsInput) {
   const firstItems = db
     .select({
       albumId: listItems.albumId,
-      createdAt: listItems.createdAt,
       itemCount: sql<number>`count(*) over()`.as("item_count"),
       position: listItems.position,
     })
     .from(listItems)
     .where(eq(listItems.listId, lists.id))
-    .orderBy(asc(listItems.createdAt), asc(listItems.position))
+    .orderBy(desc(listItems.position))
     .limit(listCoverAlbumLimit)
     .as("first_items");
 
@@ -193,7 +195,7 @@ export async function getUserListsService(data: UserListsInput) {
     .select({
       coverAlbums: sql<
         ListCoverAlbum[]
-      >`coalesce(json_agg(json_build_object('id', ${firstItems.albumId}, 'coverUrl', ${albums.coverUrl}) order by ${firstItems.createdAt} asc, ${firstItems.position} asc), '[]'::json)`.as(
+      >`coalesce(json_agg(json_build_object('id', ${firstItems.albumId}, 'coverUrl', ${albums.coverUrl}) order by ${firstItems.position} desc), '[]'::json)`.as(
         "cover_albums"
       ),
       itemCount: sql<number>`coalesce(max(${firstItems.itemCount}), 0)::int`.as("item_count"),
@@ -442,6 +444,61 @@ export async function removeListItemService(data: ListItemInput, context: Authen
   });
 }
 
+export async function reorderListItemsService(data: ReorderListItemsInput, context: AuthenticatedContext) {
+  return await context.db.transaction(async (transaction) => {
+    const lockedList = await lockOwnedList(data.listId, context.user.id, transaction);
+    const storedItems = await transaction
+      .select({
+        albumId: listItems.albumId,
+        position: listItems.position,
+      })
+      .from(listItems)
+      .where(eq(listItems.listId, data.listId))
+      .orderBy(desc(listItems.position));
+
+    const storedAlbumIds = storedItems.map((item) => item.albumId);
+
+    if (!haveSameValues(storedAlbumIds, data.albumIds)) {
+      throw new Error("The list changed while you were reordering it. Refresh and try again.");
+    }
+
+    if (storedAlbumIds.every((albumId, index) => albumId === data.albumIds[index])) {
+      return {
+        albumIds: storedAlbumIds,
+        reordered: false,
+        updatedAt: lockedList.updatedAt,
+      };
+    }
+
+    const maxPosition = Math.max(...storedItems.map((item) => item.position));
+    const temporaryOffset = maxPosition + 1;
+
+    // The position index is unique per list and is not deferrable. Move every row outside the
+    // current range first so assigning the final dense positions cannot collide mid-update.
+    await transaction
+      .update(listItems)
+      .set({ position: sql`${listItems.position} + ${temporaryOffset}` })
+      .where(eq(listItems.listId, data.listId));
+
+    const positionCases = data.albumIds.map(
+      (albumId, index) => sql`when ${listItems.albumId} = ${albumId} then ${data.albumIds.length - index - 1}`
+    );
+
+    await transaction
+      .update(listItems)
+      .set({
+        position: sql`case ${sql.join(positionCases, sql.raw(" "))} else null::integer end`,
+      })
+      .where(eq(listItems.listId, data.listId));
+
+    return {
+      albumIds: data.albumIds,
+      reordered: true,
+      updatedAt: await touchList(data.listId, transaction),
+    };
+  });
+}
+
 // Helpers
 
 async function assertListCanAcceptAlbum(data: ListItemInput, userId: string, db: ListMutationDb) {
@@ -542,6 +599,13 @@ async function touchList(listId: string, transaction: DbTransaction) {
 
 function getListAuthorVisibilityFilter(isAdmin: boolean) {
   return and(isNotNull(user.username), isAdmin ? undefined : sql`${user.banned} is not true`);
+}
+
+function haveSameValues(firstValues: string[], secondValues: string[]) {
+  if (firstValues.length !== secondValues.length) return false;
+
+  const secondValueSet = new Set(secondValues);
+  return firstValues.every((value) => secondValueSet.has(value));
 }
 
 // Mappers

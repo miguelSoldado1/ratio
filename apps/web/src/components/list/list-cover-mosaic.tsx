@@ -6,8 +6,8 @@ import type { ListCoverAlbum } from "@/server/services/list-service";
 // looks worse than simply showing the first cover whole.
 const mosaicMinAlbums = 4;
 
-export function getFirstAddedCoverAlbums<T extends ListCoverAlbum>(newestFirstAlbums: T[]) {
-  return newestFirstAlbums.slice(-mosaicMinAlbums).reverse();
+export function getLeadingCoverAlbums<T extends ListCoverAlbum>(albums: T[]) {
+  return albums.slice(0, mosaicMinAlbums);
 }
 
 interface ListCoverMosaicProps {
@@ -25,7 +25,7 @@ export function ListCoverMosaic({ albums, className, size }: ListCoverMosaicProp
     <span
       aria-hidden="true"
       className={cn(
-        "grid aspect-square shrink-0 overflow-hidden bg-muted",
+        "pointer-events-none grid aspect-square shrink-0 select-none overflow-hidden bg-muted",
         isMosaic && "grid-cols-2 grid-rows-2",
         className
       )}

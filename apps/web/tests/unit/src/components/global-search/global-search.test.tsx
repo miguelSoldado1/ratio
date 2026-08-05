@@ -86,6 +86,24 @@ describe("GlobalSearch", () => {
     expect((screen.getByPlaceholderText("Search...") as HTMLInputElement).value).toBe("");
     expect(localStorage.getItem(recentSearchesStorageKey)).toBe("[]");
   });
+
+  it("clears all recent searches", () => {
+    localStorage.setItem(
+      recentSearchesStorageKey,
+      JSON.stringify([
+        { normalizedQuery: "kid a", query: "Kid A", searchedAt: 2000 },
+        { normalizedQuery: "in rainbows", query: "In Rainbows", searchedAt: 1000 },
+      ])
+    );
+
+    renderGlobalSearch();
+    fireEvent.click(screen.getByRole("button", { name: "Clear" }));
+
+    expect(screen.queryByText("Kid A")).toBeNull();
+    expect(screen.queryByText("In Rainbows")).toBeNull();
+    expect(screen.getByText("Search for albums or users")).toBeTruthy();
+    expect(localStorage.getItem(recentSearchesStorageKey)).toBeNull();
+  });
 });
 
 function renderGlobalSearch() {

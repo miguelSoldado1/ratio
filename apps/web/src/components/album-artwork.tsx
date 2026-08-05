@@ -22,6 +22,7 @@ export function AlbumArtwork({ alt, className, height, src, width, ...imageProps
           alt=""
           aria-hidden="true"
           className="absolute inset-0 size-full object-cover"
+          draggable={false}
           height={height}
           ref={handleArtworkImageRef}
           referrerPolicy="no-referrer"

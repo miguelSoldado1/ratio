@@ -11,7 +11,13 @@ import { albumQueryKeys, userQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { searchUsers } from "@/server/functions/review-functions";
 import { searchAlbums } from "@/server/functions/spotify-functions";
 import { RecentSearchResults } from "./recent-search-results";
-import { getRecentSearches, type RecentSearch, removeRecentSearch, saveRecentSearch } from "./recent-searches";
+import {
+  clearRecentSearches,
+  getRecentSearches,
+  type RecentSearch,
+  removeRecentSearch,
+  saveRecentSearch,
+} from "./recent-searches";
 import { SearchResults } from "./search-results";
 import type { AlbumResult, UserResult } from "./types";
 
@@ -104,6 +110,11 @@ export function GlobalSearch({ onOpenChange, open }: GlobalSearchProps) {
     inputRef.current?.focus();
   }
 
+  function handleRecentSearchesClear() {
+    setRecentSearches(clearRecentSearches());
+    inputRef.current?.focus();
+  }
+
   function handleClearSearch() {
     setInputValue("");
     inputRef.current?.focus();
@@ -164,6 +175,7 @@ export function GlobalSearch({ onOpenChange, open }: GlobalSearchProps) {
           ) : null}
           {!trimmedInput && recentSearches.length > 0 ? (
             <RecentSearchResults
+              onClear={handleRecentSearchesClear}
               onRemove={handleRecentSearchRemove}
               onSelect={handleRecentSearchSelect}
               recentSearches={recentSearches}

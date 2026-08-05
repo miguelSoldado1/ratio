@@ -2,6 +2,11 @@ export const adminAccessQueryKeys = {
   all: () => ["admin", "access"] as const,
 };
 
+export const adminOverviewQueryKeys = {
+  all: () => ["admin", "overview"] as const,
+  stats: () => [...adminOverviewQueryKeys.all(), "stats"] as const,
+};
+
 export const adminReviewQueryKeys = {
   all: () => ["admin", "review"] as const,
   stats: () => [...adminReviewQueryKeys.all(), "stats"] as const,

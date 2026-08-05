@@ -17,6 +17,8 @@ const testTables = [
   '"review_like"',
   '"user_follow"',
   '"review"',
+  '"list_item"',
+  '"list"',
   '"album"',
   '"session"',
   '"account"',

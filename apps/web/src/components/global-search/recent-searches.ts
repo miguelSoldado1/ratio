@@ -68,6 +68,20 @@ export function removeRecentSearch(normalizedQuery: string) {
   return nextSearches;
 }
 
+export function clearRecentSearches() {
+  const storage = getStorage();
+
+  if (!storage) return [];
+
+  try {
+    storage.removeItem(recentSearchesStorageKey);
+  } catch {
+    // Keep the in-memory result useful for the current render even if persistence fails.
+  }
+
+  return [];
+}
+
 function parseRecentSearches(value: string | null) {
   if (!value) return [];
 

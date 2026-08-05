@@ -6,7 +6,7 @@ import {
   createTestListItem,
   createTestUser,
 } from "@test/fixtures";
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
@@ -20,6 +20,7 @@ import {
   getMyListsForAlbumService,
   getUserListsService,
   removeListItemService,
+  reorderListItemsService,
   updateListService,
 } from "@/server/services/list-service";
 
@@ -190,7 +191,7 @@ describe("list details mutations", () => {
 });
 
 describe("getListService", () => {
-  it("returns newest additions first without exposing position as ranking", async () => {
+  it("returns manual position order without exposing position as ranking", async () => {
     const owner = await createTestUser(testDb);
     const list = await createTestList(testDb, { userId: owner.id });
     const olderAlbum = await createTestAlbum(testDb, { id: "created_older", title: "Older" });
@@ -223,13 +224,13 @@ describe("getListService", () => {
       canEdit: true,
       id: list.id,
     });
-    expect(details?.albums.map((album) => album.id)).toEqual([newerTieAlbum.id, newerAlbum.id, olderAlbum.id]);
-    expect(details?.coverAlbums.map((album) => album.id)).toEqual([olderAlbum.id, newerAlbum.id, newerTieAlbum.id]);
-    expect(details?.albums[0]?.spotifyUrl).toBe(`https://open.spotify.com/album/${newerTieAlbum.id}`);
+    expect(details?.albums.map((album) => album.id)).toEqual([olderAlbum.id, newerTieAlbum.id, newerAlbum.id]);
+    expect(details?.coverAlbums.map((album) => album.id)).toEqual([olderAlbum.id, newerTieAlbum.id, newerAlbum.id]);
+    expect(details?.albums[0]?.spotifyUrl).toBe(`https://open.spotify.com/album/${olderAlbum.id}`);
     expect(details?.albums.map((album) => album.addedAt)).toEqual([
-      new Date("2026-01-02T00:00:00.000Z"),
-      new Date("2026-01-02T00:00:00.000Z"),
       new Date("2026-01-01T00:00:00.000Z"),
+      new Date("2026-01-02T00:00:00.000Z"),
+      new Date("2026-01-02T00:00:00.000Z"),
     ]);
     expect(details?.albums[0]).not.toHaveProperty("position");
   });
@@ -259,7 +260,7 @@ describe("getListService", () => {
 });
 
 describe("getUserListsService", () => {
-  it("returns total item counts and only the first four added cover albums", async () => {
+  it("returns total item counts and only the first four positioned cover albums", async () => {
     const owner = await createTestUser(testDb);
     const list = await createTestList(testDb, { userId: owner.id });
     const testAlbums = await Promise.all(
@@ -286,10 +287,13 @@ describe("getUserListsService", () => {
     expect(page.lists).toHaveLength(1);
     expect(page.lists[0]).toMatchObject({
       author: { id: owner.id },
-      coverAlbums: testAlbums.slice(0, 4).map((album) => ({
-        coverUrl: album.coverUrl,
-        id: album.id,
-      })),
+      coverAlbums: testAlbums
+        .slice(1)
+        .reverse()
+        .map((album) => ({
+          coverUrl: album.coverUrl,
+          id: album.id,
+        })),
       id: list.id,
       itemCount: 5,
     });
@@ -419,6 +423,145 @@ describe("getMyListsForAlbumService", () => {
 });
 
 describe("list item mutations", () => {
+  it("fully reverses densely occupied positions without unique-index collisions", async () => {
+    const owner = await createTestUser(testDb);
+    const list = await createTestList(testDb, { userId: owner.id });
+    const testAlbums = await Promise.all(
+      Array.from({ length: 4 }, (_, index) => createTestAlbum(testDb, { id: `dense_album_${index}` }))
+    );
+    await testDb.insert(listItems).values(
+      testAlbums.map((album, position) => ({
+        albumId: album.id,
+        listId: list.id,
+        position,
+      }))
+    );
+    const desiredOrder = testAlbums.map((album) => album.id);
+
+    const result = await reorderListItemsService(
+      { albumIds: desiredOrder, listId: list.id },
+      createAuthenticatedContext(testDb, owner)
+    );
+    const storedItems = await testDb
+      .select({ albumId: listItems.albumId, position: listItems.position })
+      .from(listItems)
+      .where(eq(listItems.listId, list.id))
+      .orderBy(desc(listItems.position));
+
+    expect(result).toMatchObject({
+      albumIds: desiredOrder,
+      reordered: true,
+    });
+    expect(storedItems).toEqual(
+      desiredOrder.map((albumId, index) => ({
+        albumId,
+        position: desiredOrder.length - index - 1,
+      }))
+    );
+  });
+
+  it("reorders an owned list through collision-safe dense positions", async () => {
+    const owner = await createTestUser(testDb);
+    const initialUpdatedAt = new Date("2020-01-01T00:00:00.000Z");
+    const list = await createTestList(testDb, { updatedAt: initialUpdatedAt, userId: owner.id });
+    const testAlbums = await Promise.all(
+      Array.from({ length: 3 }, (_, index) => createTestAlbum(testDb, { id: `reordered_album_${index}` }))
+    );
+    await testDb.insert(listItems).values([
+      { albumId: testAlbums[0]?.id ?? "", listId: list.id, position: 2 },
+      { albumId: testAlbums[1]?.id ?? "", listId: list.id, position: 7 },
+      { albumId: testAlbums[2]?.id ?? "", listId: list.id, position: 12 },
+    ]);
+    const desiredOrder = [testAlbums[1]?.id ?? "", testAlbums[0]?.id ?? "", testAlbums[2]?.id ?? ""];
+
+    const result = await reorderListItemsService(
+      { albumIds: desiredOrder, listId: list.id },
+      createAuthenticatedContext(testDb, owner)
+    );
+    const storedItems = await testDb
+      .select({ albumId: listItems.albumId, position: listItems.position })
+      .from(listItems)
+      .where(eq(listItems.listId, list.id))
+      .orderBy(desc(listItems.position));
+
+    expect(result).toMatchObject({
+      albumIds: desiredOrder,
+      reordered: true,
+    });
+    expect(result.updatedAt.getTime()).toBeGreaterThan(initialUpdatedAt.getTime());
+    expect(storedItems).toEqual([
+      { albumId: desiredOrder[0], position: 2 },
+      { albumId: desiredOrder[1], position: 1 },
+      { albumId: desiredOrder[2], position: 0 },
+    ]);
+  });
+
+  it("does not rewrite or touch a list when its order is unchanged", async () => {
+    const owner = await createTestUser(testDb);
+    const initialUpdatedAt = new Date("2020-01-01T00:00:00.000Z");
+    const list = await createTestList(testDb, { updatedAt: initialUpdatedAt, userId: owner.id });
+    const firstAlbum = await createTestAlbum(testDb);
+    const secondAlbum = await createTestAlbum(testDb);
+    await testDb.insert(listItems).values([
+      { albumId: firstAlbum.id, listId: list.id, position: 0 },
+      { albumId: secondAlbum.id, listId: list.id, position: 1 },
+    ]);
+
+    const result = await reorderListItemsService(
+      { albumIds: [secondAlbum.id, firstAlbum.id], listId: list.id },
+      createAuthenticatedContext(testDb, owner)
+    );
+
+    expect(result).toEqual({
+      albumIds: [secondAlbum.id, firstAlbum.id],
+      reordered: false,
+      updatedAt: initialUpdatedAt,
+    });
+    await expect(
+      testDb
+        .select({ albumId: listItems.albumId, position: listItems.position })
+        .from(listItems)
+        .where(eq(listItems.listId, list.id))
+        .orderBy(desc(listItems.position))
+    ).resolves.toEqual([
+      { albumId: secondAlbum.id, position: 1 },
+      { albumId: firstAlbum.id, position: 0 },
+    ]);
+  });
+
+  it("rejects stale or foreign reorder requests without changing positions", async () => {
+    const owner = await createTestUser(testDb);
+    const otherUser = await createTestUser(testDb);
+    const list = await createTestList(testDb, { userId: owner.id });
+    const firstAlbum = await createTestAlbum(testDb);
+    const secondAlbum = await createTestAlbum(testDb);
+    await testDb.insert(listItems).values([
+      { albumId: firstAlbum.id, listId: list.id, position: 0 },
+      { albumId: secondAlbum.id, listId: list.id, position: 1 },
+    ]);
+
+    await expect(
+      reorderListItemsService({ albumIds: [firstAlbum.id], listId: list.id }, createAuthenticatedContext(testDb, owner))
+    ).rejects.toThrow("The list changed while you were reordering it");
+    await expect(
+      reorderListItemsService(
+        { albumIds: [firstAlbum.id, secondAlbum.id], listId: list.id },
+        createAuthenticatedContext(testDb, otherUser)
+      )
+    ).rejects.toThrow("List not found");
+
+    await expect(
+      testDb
+        .select({ albumId: listItems.albumId, position: listItems.position })
+        .from(listItems)
+        .where(eq(listItems.listId, list.id))
+        .orderBy(asc(listItems.position))
+    ).resolves.toEqual([
+      { albumId: firstAlbum.id, position: 0 },
+      { albumId: secondAlbum.id, position: 1 },
+    ]);
+  });
+
   it("assigns sequential positions and leaves a gap after removal", async () => {
     const owner = await createTestUser(testDb);
     const list = await createTestList(testDb, { userId: owner.id });

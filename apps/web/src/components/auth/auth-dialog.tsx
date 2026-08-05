@@ -1,7 +1,7 @@
 import { authProviders } from "@ratio/auth-providers/icons";
+import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { AuthMethodBadge } from "@/components/auth/auth-method-badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { authClient } from "@/lib/auth/auth-client";
@@ -13,7 +13,6 @@ interface AuthDialogProps {
 }
 
 export function AuthDialog({ onOpenChange, open }: AuthDialogProps) {
-  const [lastUsedMethod, setLastUsedMethod] = useState<string | null>();
   const [pendingProvider, setPendingProvider] = useState<AuthProviderId | null>(null);
   const session = authClient.useSession();
   const canOpen = !(session.isPending || session.data?.user);
@@ -26,7 +25,6 @@ export function AuthDialog({ onOpenChange, open }: AuthDialogProps) {
   useEffect(() => {
     function syncDialogState() {
       setPendingProvider(null);
-      setLastUsedMethod(authClient.getLastUsedLoginMethod());
     }
 
     if (open) {
@@ -66,25 +64,39 @@ export function AuthDialog({ onOpenChange, open }: AuthDialogProps) {
         </DialogHeader>
         <div className="flex flex-col gap-2">
           {authProviders.map(({ id, label, icon: Icon }) => (
-            <div className="relative" key={id}>
-              <Button
-                aria-label={`Continue with ${label}`}
-                className="w-full"
-                disabled={pendingProvider !== null}
-                onClick={() => continueWithProvider(id)}
-                type="button"
-                variant="outline"
-              >
-                <Icon data-icon="inline-start" />
-                {`Continue with ${label}`}
-              </Button>
-              {id === lastUsedMethod && <AuthMethodBadge variant="secondary">Last used</AuthMethodBadge>}
-              {id === "spotify" && lastUsedMethod === null && (
-                <AuthMethodBadge variant="default">Recommended</AuthMethodBadge>
-              )}
-            </div>
+            <Button
+              aria-label={`Continue with ${label}`}
+              className="w-full"
+              disabled={pendingProvider !== null}
+              key={id}
+              onClick={() => continueWithProvider(id)}
+              type="button"
+              variant="outline"
+            >
+              <Icon data-icon="inline-start" />
+              {`Continue with ${label}`}
+            </Button>
           ))}
         </div>
+        <p className="text-center text-muted-foreground text-xs leading-relaxed">
+          By continuing, you agree to the{" "}
+          <Link
+            className="text-foreground underline decoration-border underline-offset-4 hover:decoration-foreground"
+            onClick={() => onOpenChange(false)}
+            to="/terms"
+          >
+            Terms
+          </Link>{" "}
+          and acknowledge the{" "}
+          <Link
+            className="text-foreground underline decoration-border underline-offset-4 hover:decoration-foreground"
+            onClick={() => onOpenChange(false)}
+            to="/privacy"
+          >
+            Privacy Policy
+          </Link>
+          .
+        </p>
       </DialogContent>
     </Dialog>
   );

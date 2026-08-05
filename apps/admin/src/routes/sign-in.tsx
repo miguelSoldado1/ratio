@@ -3,7 +3,6 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AdminAuthShell } from "@/components/admin-auth-shell";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
@@ -21,7 +20,6 @@ export const Route = createFileRoute("/sign-in")({
 function SignInPage() {
   const accessQuery = useAdminAccess();
   const navigate = useNavigate();
-  const [lastUsedMethod, setLastUsedMethod] = useState<string | null>();
   const [pendingProvider, setPendingProvider] = useState<AuthProviderId | null>(null);
 
   const search = Route.useSearch();
@@ -40,7 +38,6 @@ function SignInPage() {
   useEffect(() => {
     function syncSignInState() {
       setPendingProvider(null);
-      setLastUsedMethod(authClient.getLastUsedLoginMethod());
     }
 
     syncSignInState();
@@ -95,24 +92,18 @@ function SignInPage() {
         </CardHeader>
         <CardContent className="flex flex-col gap-2">
           {authProviders.map(({ id, label, icon: Icon }) => (
-            <div className="relative" key={id}>
-              <Button
-                aria-label={`Continue with ${label}`}
-                className="w-full"
-                disabled={pendingProvider !== null}
-                onClick={() => continueWithProvider(id)}
-                type="button"
-                variant="outline"
-              >
-                {pendingProvider === id ? <Spinner data-icon="inline-start" /> : <Icon data-icon="inline-start" />}
-                Continue with {label}
-              </Button>
-              {id === lastUsedMethod ? (
-                <Badge className="absolute -top-2 right-2" variant="secondary">
-                  Last used
-                </Badge>
-              ) : null}
-            </div>
+            <Button
+              aria-label={`Continue with ${label}`}
+              className="w-full"
+              disabled={pendingProvider !== null}
+              key={id}
+              onClick={() => continueWithProvider(id)}
+              type="button"
+              variant="outline"
+            >
+              {pendingProvider === id ? <Spinner data-icon="inline-start" /> : <Icon data-icon="inline-start" />}
+              Continue with {label}
+            </Button>
           ))}
         </CardContent>
       </Card>

@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import z from "zod";
+import { tryCatch } from "@/try-catch";
 import { authMiddleware } from "../auth-middleware";
 import {
   createCloudflareRateLimitMiddleware,
@@ -30,6 +31,14 @@ const listIdSchema = z.object({
 
 const listItemSchema = listIdSchema.extend({
   albumId: z.string().trim().min(1).max(64),
+});
+
+const reorderListItemsSchema = listIdSchema.extend({
+  albumIds: z
+    .array(z.string().trim().min(1).max(64))
+    .min(1)
+    .max(100)
+    .refine((albumIds) => new Set(albumIds).size === albumIds.length, "Album IDs must be unique"),
 });
 
 const myListsForAlbumSchema = z.object({
@@ -93,3 +102,18 @@ export const removeListItem = createServerFn({ method: "POST" })
   .middleware([authMiddleware, createCloudflareRateLimitMiddleware(userMutationRateLimit)])
   .validator(listItemSchema)
   .handler(({ context, data }) => listService.removeListItemService(data, context));
+
+export const reorderListItems = createServerFn({ method: "POST" })
+  .middleware([authMiddleware, createCloudflareRateLimitMiddleware(userMutationRateLimit)])
+  .validator(reorderListItemsSchema)
+  .handler(async ({ context, data }) => {
+    const { data: reorderedList, error } = await tryCatch(listService.reorderListItemsService(data, context));
+    if (!error) return reorderedList;
+
+    console.error("list_reorder_error", {
+      error,
+      listId: data.listId,
+      userId: context.user.id,
+    });
+    throw new Error("Could not reorder albums. Try again.");
+  });

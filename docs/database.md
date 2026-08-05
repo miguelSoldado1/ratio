@@ -72,7 +72,9 @@ database password. See Cloudflare's
 
 Do not introduce a module-scoped Worker DB singleton. `packages/database/src/index.ts` exposes a database accessor factory: local development can reuse a singleton client inside the accessor, while every Cloudflare Worker request creates a request-scoped `postgres`/Drizzle client from that app's `HYPERDRIVE` binding. Hyperdrive owns the underlying origin pool and Worker invocation cleanup, so server functions should not carry explicit `client.end()` boilerplate.
 
-The admin app performs no product/admin queries in this milestone. Better Auth still performs the session, user, account, and OAuth reads/writes necessary to authenticate and authorize requests.
+The admin app performs protected, request-driven product and aggregate queries for its overview, users, and reviews
+surfaces. Better Auth also performs the session, user, account, and OAuth reads/writes necessary to authenticate and
+authorize requests.
 
 Hyperdrive query caching is currently disabled on the main `HYPERDRIVE` config so fresh review and like reads stay visible as quickly as possible. Hyperdrive caching is configured per Hyperdrive config, not toggled inside individual Drizzle queries. If future public read endpoints need Hyperdrive query caching, add a separate cached Hyperdrive config/binding and route only those public reads through that binding, or use an app-level cache such as KV/Cache API. Avoid cached Hyperdrive reads for auth/session reads, viewer-specific booleans such as `likedByViewer` and `followedByViewer`, and mutation-adjacent checks where users expect immediate freshness.
 
@@ -105,17 +107,20 @@ non-whitespace description of 1–200 characters. Deleting the owner cascades to
 an indexed lookup and an idempotent no-op. Its album foreign key does not cascade, matching reviews: album rows outlive
 the activity that references them. The separate `album_id` index supports reverse lookups and foreign-key maintenance.
 
-Every item has a zero-based, nonnegative `position`, with a unique `(list_id, position)` index. V1 displays list items
-by addition time, newest first, with position as the deterministic tie-breaker; neither value is displayed as a rank.
-Removing an item leaves a position gap and does not rewrite unaffected rows. Future manual sorting can switch the read
-order to position and rewrite one bounded list into dense `0..N-1` positions inside a transaction without another schema
-migration.
+Every item has a zero-based, nonnegative `position`, with a unique `(list_id, position)` index. Detail reads order by
+position descending, so `max(position) + 1` additions appear at the top while the number remains an internal sort key,
+not a displayed rank. Removing an item leaves a position gap and does not rewrite unaffected rows.
+
+Manual reordering accepts the complete top-to-bottom album ID sequence for the bounded list. The service locks the
+parent list, verifies that the submitted IDs exactly match the current items, temporarily moves all positions above
+their existing range to avoid collisions with the non-deferrable unique index, and then rewrites dense positions in
+one transaction. Concurrent adds, removes, and reorders therefore serialize on the same parent row.
 
 List detail reads are deliberately unpaginated and therefore capped at 100 items in the service. Adds lock the parent
 list row before checking the cap and choosing `max(position) + 1`, so concurrent requests cannot reuse a position or
-exceed the cap. Profile list reads use keyset pagination and fetch the item count plus only the first four added album
-covers in chronological addition order in the paginated query. Detail reads derive the same cover set from their
-already-loaded bounded item rows, so choosing covers requires no additional query.
+exceed the cap. Profile list reads use keyset pagination and fetch the item count plus only the first four positioned
+album covers in the paginated query. Detail reads derive the same leading cover set from their already-loaded bounded
+item rows, so choosing covers requires no additional query.
 
 Reviews and list additions share the album-materialization path. Missing Spotify metadata is fetched before opening a
 database transaction, then the album and list item are persisted together. A list can therefore create an album row

@@ -2,7 +2,7 @@ import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { authProviderIds } from "@ratio/auth-providers";
 import * as schema from "@ratio/database/schema";
 import { APIError, betterAuth } from "better-auth";
-import { admin, lastLoginMethod, username } from "better-auth/plugins";
+import { admin, username } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 import { eq } from "drizzle-orm";
 import { env } from "@/env";
@@ -161,7 +161,6 @@ export function createAuth(db: Db) {
         usernameValidator: isUsernameAllowed,
         validationOrder: { username: "post-normalization" },
       }),
-      lastLoginMethod(),
       admin(),
       tanstackStartCookies(),
     ],
