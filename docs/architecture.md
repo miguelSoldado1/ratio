@@ -51,8 +51,9 @@ Album and feed cards receive scalar reply counts from one batched query over the
 Neither For You nor Following reads reply-activity candidates, and no review-list DTO serializes reply bodies,
 reply-author identity, or reply-like state. Following uses the normal `(createdAt, reviewId)` review cursor.
 
-Reply creation uses the native Cloudflare rate-limit binding. Reply reads, likes, and notifications stay
-request-driven; there is no polling, queue, KV thread cache, denormalized counter, or materialized activity table.
+Review, reply, and list creation share the native Cloudflare content-creation rate-limit binding. Reply reads, likes,
+and notifications stay request-driven; there is no polling, queue, KV thread cache, denormalized counter, or
+materialized activity table.
 
 ## Cloudflare Git Builds
 

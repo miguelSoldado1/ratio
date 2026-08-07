@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import z from "zod";
 import { authMiddleware } from "../auth-middleware";
-import { createCloudflareRateLimitMiddleware, replyCreateRateLimit, userMutationRateLimit } from "../rate-limit";
+import { contentCreateRateLimit, createCloudflareRateLimitMiddleware, userMutationRateLimit } from "../rate-limit";
 import * as reviewReplyService from "../services/review-reply-service";
 
 // Schemas
@@ -40,7 +40,7 @@ export const getReviewReplyLikes = createServerFn()
   .handler(({ data }) => reviewReplyService.getReviewReplyLikesService(data));
 
 export const createReviewReply = createServerFn({ method: "POST" })
-  .middleware([authMiddleware, createCloudflareRateLimitMiddleware(replyCreateRateLimit)])
+  .middleware([authMiddleware, createCloudflareRateLimitMiddleware(contentCreateRateLimit)])
   .validator(createReviewReplySchema)
   .handler(({ context, data }) => reviewReplyService.createReviewReplyService(data, context));
 

@@ -37,7 +37,7 @@ describe("rate limit binding availability", () => {
   it("stays quiet outside the Workers runtime so local development is not noisy", async () => {
     const rateLimit = await importRateLimit();
 
-    await rateLimit.enforceCloudflareRateLimitForRequest(createRequest(), rateLimit.spotifySearchRateLimit);
+    await rateLimit.enforceCloudflareRateLimitForRequest(createRequest(), rateLimit.spotifyCatalogRateLimit);
     await rateLimit.enforceFixedWindowRateLimitForRequest(createRequest(), rateLimit.reviewCreateHourlyRateLimit);
 
     expect(getBindingWarnings()).toEqual([]);
@@ -47,10 +47,10 @@ describe("rate limit binding availability", () => {
     const rateLimit = await importRateLimit();
     stubWorkersRuntime();
 
-    await rateLimit.enforceCloudflareRateLimitForRequest(createRequest(), rateLimit.spotifySearchRateLimit);
+    await rateLimit.enforceCloudflareRateLimitForRequest(createRequest(), rateLimit.spotifyCatalogRateLimit);
 
     expect(getBindingWarnings()).toEqual([
-      "Rate limit binding SPOTIFY_SEARCH_RATE_LIMITER is unavailable; requests using it are not being limited",
+      "Rate limit binding SPOTIFY_CATALOG_RATE_LIMITER is unavailable; requests using it are not being limited",
     ]);
   });
 
@@ -69,9 +69,9 @@ describe("rate limit binding availability", () => {
     const rateLimit = await importRateLimit();
     stubWorkersRuntime();
 
-    await rateLimit.enforceCloudflareRateLimitForRequest(createRequest(), rateLimit.spotifySearchRateLimit);
-    await rateLimit.enforceCloudflareRateLimitForRequest(createRequest(), rateLimit.spotifySearchRateLimit);
-    await rateLimit.enforceCloudflareRateLimitForRequest(createRequest(), rateLimit.spotifySearchRateLimit);
+    await rateLimit.enforceCloudflareRateLimitForRequest(createRequest(), rateLimit.spotifyCatalogRateLimit);
+    await rateLimit.enforceCloudflareRateLimitForRequest(createRequest(), rateLimit.spotifyCatalogRateLimit);
+    await rateLimit.enforceCloudflareRateLimitForRequest(createRequest(), rateLimit.spotifyCatalogRateLimit);
 
     expect(getBindingWarnings()).toHaveLength(1);
   });
@@ -80,8 +80,8 @@ describe("rate limit binding availability", () => {
     const rateLimit = await importRateLimit();
     stubWorkersRuntime();
 
-    await rateLimit.enforceCloudflareRateLimitForRequest(createRequest(), rateLimit.spotifySearchRateLimit);
-    await rateLimit.enforceCloudflareRateLimitForRequest(createRequest(), rateLimit.spotifyAlbumDetailsRateLimit);
+    await rateLimit.enforceCloudflareRateLimitForRequest(createRequest(), rateLimit.spotifyCatalogRateLimit);
+    await rateLimit.enforceCloudflareRateLimitForRequest(createRequest(), rateLimit.contentCreateRateLimit);
 
     expect(getBindingWarnings()).toHaveLength(2);
   });
@@ -91,7 +91,7 @@ describe("rate limit binding availability", () => {
     stubWorkersRuntime();
 
     await expect(
-      rateLimit.enforceCloudflareRateLimitForRequest(createRequest(), rateLimit.spotifySearchRateLimit)
+      rateLimit.enforceCloudflareRateLimitForRequest(createRequest(), rateLimit.spotifyCatalogRateLimit)
     ).resolves.toBeUndefined();
     await expect(
       rateLimit.enforceFixedWindowRateLimitForRequest(createRequest(), rateLimit.reviewCreateHourlyRateLimit)

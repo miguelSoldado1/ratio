@@ -42,12 +42,8 @@ class RateLimitError extends Error {
   }
 }
 
-export const spotifySearchRateLimit = defineCloudflareRateLimitRule({
-  bindingName: "SPOTIFY_SEARCH_RATE_LIMITER",
-});
-
-export const spotifyAlbumDetailsRateLimit = defineCloudflareRateLimitRule({
-  bindingName: "SPOTIFY_ALBUM_DETAILS_RATE_LIMITER",
+export const spotifyCatalogRateLimit = defineCloudflareRateLimitRule({
+  bindingName: "SPOTIFY_CATALOG_RATE_LIMITER",
 });
 
 export const spotifyRecentRotationRateLimit = defineCloudflareRateLimitRule({
@@ -66,8 +62,8 @@ export const listCreateHourlyRateLimit = defineFixedWindowRateLimitRule({
   windowSeconds: 60 * 60,
 });
 
-export const replyCreateRateLimit = defineCloudflareRateLimitRule({
-  bindingName: "REPLY_CREATE_RATE_LIMITER",
+export const contentCreateRateLimit = defineCloudflareRateLimitRule({
+  bindingName: "CONTENT_CREATE_RATE_LIMITER",
 });
 
 export const userMutationRateLimit = defineCloudflareRateLimitRule({

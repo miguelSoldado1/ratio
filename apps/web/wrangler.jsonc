@@ -20,18 +20,10 @@
   ],
   "ratelimits": [
     {
-      "name": "SPOTIFY_SEARCH_RATE_LIMITER",
+      "name": "SPOTIFY_CATALOG_RATE_LIMITER",
       "namespace_id": "1001",
       "simple": {
-        "limit": 45,
-        "period": 60
-      }
-    },
-    {
-      "name": "SPOTIFY_ALBUM_DETAILS_RATE_LIMITER",
-      "namespace_id": "1002",
-      "simple": {
-        "limit": 120,
+        "limit": 60,
         "period": 60
       }
     },
@@ -60,7 +52,7 @@
       }
     },
     {
-      "name": "REPLY_CREATE_RATE_LIMITER",
+      "name": "CONTENT_CREATE_RATE_LIMITER",
       "namespace_id": "1008",
       "simple": {
         "limit": 10,
@@ -98,18 +90,10 @@
       ],
       "ratelimits": [
         {
-          "name": "SPOTIFY_SEARCH_RATE_LIMITER",
+          "name": "SPOTIFY_CATALOG_RATE_LIMITER",
           "namespace_id": "2001",
           "simple": {
-            "limit": 45,
-            "period": 60
-          }
-        },
-        {
-          "name": "SPOTIFY_ALBUM_DETAILS_RATE_LIMITER",
-          "namespace_id": "2002",
-          "simple": {
-            "limit": 120,
+            "limit": 60,
             "period": 60
           }
         },
@@ -138,7 +122,7 @@
           }
         },
         {
-          "name": "REPLY_CREATE_RATE_LIMITER",
+          "name": "CONTENT_CREATE_RATE_LIMITER",
           "namespace_id": "2008",
           "simple": {
             "limit": 10,
