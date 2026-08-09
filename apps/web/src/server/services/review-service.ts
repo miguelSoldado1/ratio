@@ -112,6 +112,14 @@ export interface ReviewIdInput {
   reviewId: string;
 }
 
+export interface ReviewHeadMetadata {
+  artistNames: string[];
+  authorDisplayName: string;
+  coverUrl: string | null;
+  rating: number;
+  title: string;
+}
+
 export interface UserReviewsInput {
   cursor?: string;
   userId: string;
@@ -248,6 +256,38 @@ export async function getReviewByIdService(data: ReviewIdInput): Promise<ReviewD
   return mapReviewDetail(review);
 }
 
+export async function getReviewHeadMetadataService(data: ReviewIdInput) {
+  const db = await getDb();
+
+  const [review] = await db
+    .select({
+      artistNames: albums.artistNames,
+      authorDisplayUsername: user.displayUsername,
+      authorName: user.name,
+      authorUsername: user.username,
+      coverUrl: albums.coverUrl,
+      rating: reviews.rating,
+      title: albums.title,
+    })
+    .from(reviews)
+    .innerJoin(albums, eq(reviews.albumId, albums.id))
+    .innerJoin(user, eq(reviews.userId, user.id))
+    .where(and(eq(reviews.id, data.reviewId), getVisibleUserFilter(user)))
+    .limit(1);
+
+  if (!review) return null;
+
+  const metadata: ReviewHeadMetadata = {
+    artistNames: review.artistNames,
+    authorDisplayName: review.authorDisplayUsername ?? review.authorUsername ?? review.authorName,
+    coverUrl: review.coverUrl,
+    rating: review.rating / 2,
+    title: review.title,
+  };
+
+  return metadata;
+}
+
 export async function getUserProfileService(data: UserProfileInput): Promise<UserProfile> {
   const db = await getDb();
   const currentUser = await getOptionalCurrentUser(db);
@@ -270,6 +310,27 @@ export async function getUserProfileService(data: UserProfileInput): Promise<Use
       canEdit: viewerUserId === profile.id,
       followedByViewer: profile.followedByViewer,
     }),
+  };
+}
+
+export async function getProfileHeadMetadataService(data: UserProfileInput) {
+  const db = await getDb();
+  const [profile] = await db
+    .select({
+      avatarUrl: user.image,
+      displayUsername: user.displayUsername,
+      username: user.username,
+    })
+    .from(user)
+    .where(and(eq(user.username, data.username), getVisibleUserFilter(user)))
+    .limit(1);
+
+  if (!profile?.username) return null;
+
+  return {
+    avatarUrl: profile.avatarUrl,
+    displayName: profile.displayUsername ?? profile.username,
+    username: profile.username,
   };
 }
 

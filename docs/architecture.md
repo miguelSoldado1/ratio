@@ -55,6 +55,26 @@ Review, reply, and list creation share the native Cloudflare content-creation ra
 and notifications stay request-driven; there is no polling, queue, KV thread cache, denormalized counter, or
 materialized activity table.
 
+## Public Route Metadata Boundary
+
+Album, review, and profile routes keep their visible page content client-rendered. Their TanStack Start routes use
+`ssr: "data-only"` loaders solely to resolve server-generated head metadata for the initial response and later route
+navigations. Metadata loaders disable intent preloading so hovering links can still preload route code without issuing
+metadata RPCs. The loader result must stay narrow and must not seed or replace the page's TanStack Query data.
+
+`/album/:albumId` resolves title, artists, and cover art from an existing local album row first. Albums without a local
+row use the same server-owned album-details KV key and Spotify fetch as the client album query, removing the separate
+persistence-cache write path and allowing the following client request to reuse the same cached result.
+`/review/:reviewId` performs one public database lookup for the persisted album title, artists, cover,
+reviewer identity, and rating; it does not fetch Spotify or include the review body. `/user/:username` performs a minimal
+public database lookup for display name, username, and avatar only; it does not read session, relationship, review-count,
+or other profile-page state.
+
+Metadata failures return generic head content and never prevent the client page from rendering. That fallback omits the
+`robots` tag rather than emitting `noindex`: a transient lookup failure is indistinguishable from a genuinely missing
+record, and deindexing a live page during a database or Spotify outage costs another crawl to undo. Absent records are
+left to the client-rendered not-found page and search-engine soft-404 handling.
+
 ## Cloudflare Git Builds
 
 Connect the same GitHub repository independently to each Worker. Use `apps/web` and `apps/admin` as their respective root directories so each Wrangler file and build output stays app-local. Configure watch paths to include the app directory plus `packages/database`, the root lockfile/workspace manifests, and relevant shared configuration or migrations. Changes that affect only one app should not build the other unless a shared path changed.

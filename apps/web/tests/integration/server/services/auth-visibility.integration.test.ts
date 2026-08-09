@@ -3,7 +3,9 @@ import { createTestAlbum, createTestReview, createTestReviewLike, createTestUser
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getAlbumReviewsService,
+  getProfileHeadMetadataService,
   getReviewByIdService,
+  getReviewHeadMetadataService,
   getUserLikedReviewsService,
   getUserProfileService,
   getUserReviewsService,
@@ -64,6 +66,7 @@ describe("public banned-user visibility", () => {
     const bannedUser = await createTestUser(testDb, { banned: true, username: "banned_user" });
 
     await expect(getUserProfileService({ username: bannedUser.username ?? "" })).rejects.toThrow("User not found");
+    await expect(getProfileHeadMetadataService({ username: bannedUser.username ?? "" })).resolves.toBeNull();
   });
 
   it("hides banned review details from public review reads", async () => {
@@ -72,6 +75,7 @@ describe("public banned-user visibility", () => {
     const review = await createTestReview(testDb, { albumId: album.id, userId: bannedUser.id });
 
     await expect(getReviewByIdService({ reviewId: review.id })).resolves.toBeNull();
+    await expect(getReviewHeadMetadataService({ reviewId: review.id })).resolves.toBeNull();
   });
 
   it("hides banned users from public album review reads", async () => {

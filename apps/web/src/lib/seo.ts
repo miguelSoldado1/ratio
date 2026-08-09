@@ -38,23 +38,29 @@ export function getAbsoluteAssetUrl(path: string | null | undefined) {
 interface CreateSeoMetaParams {
   description?: string;
   image?: string | null;
+  imageAlt?: string;
   path: string;
+  robots?: string | null;
   title?: string;
+  twitterCard?: "summary" | "summary_large_image";
   type?: string;
 }
 
-export function createSeoMeta({
-  description = defaultSeoDescription,
-  image = defaultSeoImage,
-  path,
-  title = defaultSeoTitle,
-  type = "website",
-}: CreateSeoMetaParams) {
-  const canonicalUrl = getCanonicalUrl(path);
+export function createSeoMeta(params: CreateSeoMetaParams) {
+  const description = params.description ?? defaultSeoDescription;
+  const image = params.image ?? defaultSeoImage;
+  const robots = params.robots === undefined ? "index, follow, max-image-preview:large" : params.robots;
+  const title = params.title ?? defaultSeoTitle;
+  const imageAlt = params.imageAlt ?? `${title} preview image`;
+  const twitterCard = params.twitterCard ?? "summary_large_image";
+  const type = params.type ?? "website";
+
+  const canonicalUrl = getCanonicalUrl(params.path);
   const imageUrl = getAbsoluteAssetUrl(image);
-  const imageAlt = `${title} preview image`;
+
+  const defaultImageUrl = getAbsoluteAssetUrl(defaultSeoImage);
   const defaultImageMetadata =
-    image === defaultSeoImage
+    imageUrl === defaultImageUrl
       ? [
           { property: "og:image:width", content: String(defaultSeoImageWidth) },
           { property: "og:image:height", content: String(defaultSeoImageHeight) },
@@ -64,7 +70,7 @@ export function createSeoMeta({
   return [
     { title },
     { name: "description", content: description },
-    { name: "robots", content: "index, follow, max-image-preview:large" },
+    ...(robots ? [{ name: "robots", content: robots }] : []),
     { property: "og:site_name", content: siteName },
     { property: "og:title", content: title },
     { property: "og:description", content: description },
@@ -73,7 +79,7 @@ export function createSeoMeta({
     { property: "og:image", content: imageUrl },
     { property: "og:image:alt", content: imageAlt },
     ...defaultImageMetadata,
-    { name: "twitter:card", content: "summary_large_image" },
+    { name: "twitter:card", content: twitterCard },
     { name: "twitter:title", content: title },
     { name: "twitter:description", content: description },
     { name: "twitter:image", content: imageUrl },
@@ -85,9 +91,21 @@ export function createCanonicalLink(path: string) {
   return { rel: "canonical", href: getCanonicalUrl(path) };
 }
 
+const jsonLdEscapeLookup: Record<string, string> = {
+  "&": "\\u0026",
+  "<": "\\u003c",
+  ">": "\\u003e",
+  "\u2028": "\\u2028",
+  "\u2029": "\\u2029",
+};
+
+const jsonLdEscapePattern = /[&<>\u2028\u2029]/g;
+
 export function createJsonLdScript(data: unknown) {
+  const json = JSON.stringify(data).replace(jsonLdEscapePattern, (match) => jsonLdEscapeLookup[match] ?? match);
+
   return {
-    children: JSON.stringify(data),
+    children: json,
     type: "application/ld+json",
   };
 }

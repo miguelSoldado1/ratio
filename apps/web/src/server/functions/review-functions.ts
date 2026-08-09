@@ -95,6 +95,10 @@ export const getReviewById = createServerFn()
   .validator(reviewIdSchema)
   .handler(({ data }) => reviewService.getReviewByIdService(data));
 
+export const getReviewHeadMetadata = createServerFn()
+  .validator(reviewIdSchema)
+  .handler(({ data }) => reviewService.getReviewHeadMetadataService(data));
+
 export const getAlbumRatingSummary = createServerFn()
   .validator(albumIdSchema)
   .handler(({ data }) => reviewService.getAlbumRatingSummaryService(data));
@@ -114,6 +118,10 @@ export const getReviewLikes = createServerFn()
 export const getUserProfile = createServerFn()
   .validator(userProfileSchema)
   .handler(({ data }) => reviewService.getUserProfileService(data));
+
+export const getProfileHeadMetadata = createServerFn()
+  .validator(userProfileSchema)
+  .handler(({ data }) => reviewService.getProfileHeadMetadataService(data));
 
 export const searchUsers = createServerFn()
   .validator(userSearchSchema)

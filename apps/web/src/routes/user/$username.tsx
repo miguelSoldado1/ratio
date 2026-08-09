@@ -23,22 +23,50 @@ import { useReviewLikeToggle } from "@/hooks/use-review-like-toggle";
 import { authClient } from "@/lib/auth/auth-client";
 import { createCanonicalLink, createSeoMeta, siteName } from "@/lib/seo";
 import { albumQueryKeys, userQueryKeys } from "@/lib/tanstack-query/query-keys";
-import { getUserProfile } from "@/server/functions/review-functions";
+import { getProfileHeadMetadata, getUserProfile } from "@/server/functions/review-functions";
+import { tryCatch } from "@/try-catch";
 import type { UserReviewsPage } from "@/server/services/review-service";
 
 type ProfileTab = "likes" | "lists" | "reviews";
 
 export const Route = createFileRoute("/user/$username")({
   component: UserPage,
-  head: ({ params }) => {
+  loader: async ({ params }) => {
+    const result = await tryCatch(getProfileHeadMetadata({ data: { username: params.username } }));
+    return result.data;
+  },
+  preload: false,
+  ssr: "data-only",
+  head: ({ loaderData, params }) => {
     const path = `/user/${params.username}`;
+
+    if (!loaderData) {
+      return {
+        links: [createCanonicalLink(path)],
+        meta: createSeoMeta({
+          description: `Read @${params.username}'s album reviews on Ratio.`,
+          path,
+          // A failed lookup is indistinguishable from a missing profile, so never emit noindex.
+          robots: null,
+          title: `@${params.username} — Album Reviews | ${siteName}`,
+          twitterCard: "summary",
+          type: "profile",
+        }),
+      };
+    }
+
+    const title = `${loaderData.displayName} (@${loaderData.username}) — Album Reviews | ${siteName}`;
+    const description = `Explore album reviews and ratings from ${loaderData.displayName} (@${loaderData.username}) on ${siteName}.`;
 
     return {
       links: [createCanonicalLink(path)],
       meta: createSeoMeta({
-        description: `Read @${params.username}'s album reviews on Ratio.`,
+        description,
+        image: loaderData.avatarUrl,
+        imageAlt: loaderData.avatarUrl ? `${loaderData.displayName}'s profile image` : `${siteName} profile`,
         path,
-        title: `@${params.username} - Album Reviews | ${siteName}`,
+        title,
+        twitterCard: "summary",
         type: "profile",
       }),
     };

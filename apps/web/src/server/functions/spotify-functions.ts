@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import z from "zod";
 import { createCloudflareRateLimitMiddleware, spotifyCatalogRateLimit } from "../rate-limit";
+import { getAlbumHeadMetadataService } from "../services/album-service";
 import * as spotifyService from "../services/spotify-service";
 
 // Schemas
@@ -24,3 +25,8 @@ export const getAlbumDetails = createServerFn()
   .middleware([createCloudflareRateLimitMiddleware(spotifyCatalogRateLimit)])
   .validator(albumDetailsSchema)
   .handler(({ data }) => spotifyService.getAlbumDetailsService(data));
+
+export const getAlbumHeadMetadata = createServerFn()
+  .middleware([createCloudflareRateLimitMiddleware(spotifyCatalogRateLimit)])
+  .validator(albumDetailsSchema)
+  .handler(({ data }) => getAlbumHeadMetadataService(data.albumId));
