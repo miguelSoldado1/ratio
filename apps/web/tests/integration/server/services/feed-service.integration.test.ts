@@ -9,6 +9,7 @@ import {
   createTestUserFollow,
 } from "@test/fixtures";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { encodeCursor } from "@/server/server-utils";
 import { getFeedService, getFollowingFeedService } from "@/server/services/feed-service";
 
 const mockState = vi.hoisted(() => ({
@@ -239,10 +240,11 @@ describe("getFeedService authenticated feed", () => {
     expect(indexOfReview(page.reviews, followedReview.id)).toBeLessThan(indexOfReview(page.reviews, ownReview.id));
   });
 
-  it("does not use followed-user replies as For You candidates", async () => {
+  it("does not treat followed-user replies as newer For You activity", async () => {
     const viewer = await createTestUser(testDb);
     const followedReplier = await createTestUser(testDb);
-    const oldReview = await createTestReview(testDb, { createdAt: daysAgo(45) });
+    const oldReview = await createTestReview(testDb, { body: "Old review", createdAt: daysAgo(45) });
+    const recentReview = await createTestReview(testDb, { body: "Recent review", createdAt: daysAgo(1) });
     mockState.currentUserId = viewer.id;
 
     await createTestUserFollow(testDb, { followerId: viewer.id, followingId: followedReplier.id });
@@ -254,7 +256,7 @@ describe("getFeedService authenticated feed", () => {
 
     const page = await getFeedService({});
 
-    expect(page.reviews.map((review) => review.id)).not.toContain(oldReview.id);
+    expect(indexOfReview(page.reviews, recentReview.id)).toBeLessThan(indexOfReview(page.reviews, oldReview.id));
   });
 });
 
@@ -492,14 +494,32 @@ describe("getFeedService cursor behavior", () => {
     await expect(getFeedService({ cursor: "not a cursor" })).rejects.toThrow("Invalid feed cursor");
   });
 
-  it("cursor seen IDs remain bounded", async () => {
-    await createManyFeedReviews(21);
+  it("paginates through more than 100 reviews without repeating or omitting the oldest review", async () => {
+    const createdReviews = await createManyFeedReviews(101);
+    const returnedReviewIds: string[] = [];
+    let cursor: string | undefined;
 
-    const page = await getFeedService({});
-    const payload = JSON.parse(atob(page.nextCursor ?? ""));
+    do {
+      const page = await getFeedService({ cursor });
+      returnedReviewIds.push(...page.reviews.map((review) => review.id));
+      cursor = page.nextCursor ?? undefined;
+    } while (cursor);
 
-    expect(payload.seenReviewIds).toHaveLength(20);
-    expect(payload.seenReviewIds.length).toBeLessThanOrEqual(100);
+    expect(returnedReviewIds).toHaveLength(101);
+    expect(new Set(returnedReviewIds).size).toBe(101);
+    expect(returnedReviewIds).toContain(createdReviews.at(-1)?.id);
+  });
+
+  it("ends the For You session when its cursor contains 500 returned reviews", async () => {
+    const cursor = createFeedCursorWithReviewCount(500);
+
+    await expect(getFeedService({ cursor })).resolves.toEqual({ nextCursor: null, reviews: [] });
+  });
+
+  it("rejects a For You cursor with more than 500 returned reviews", async () => {
+    const cursor = createFeedCursorWithReviewCount(501);
+
+    await expect(getFeedService({ cursor })).rejects.toThrow("Invalid feed cursor");
   });
 });
 
@@ -523,7 +543,7 @@ describe("getFeedService edge cases", () => {
     expect(page.reviews.find((feedReview) => feedReview.id === review.id)).toMatchObject({ likes: 0 });
   });
 
-  it("old reviews outside lookback are excluded unless resurfaced by recent likes", async () => {
+  it("includes old reviews without an age limit", async () => {
     const oldAuthor = await createTestUser(testDb);
     const resurfacedAuthor = await createTestUser(testDb);
     const liker = await createTestUser(testDb);
@@ -543,7 +563,7 @@ describe("getFeedService edge cases", () => {
     const page = await getFeedService({});
     const ids = page.reviews.map((review) => review.id);
 
-    expect(ids).not.toContain(oldReview.id);
+    expect(ids).toContain(oldReview.id);
     expect(ids).toContain(resurfacedReview.id);
   });
 });
@@ -602,6 +622,10 @@ async function createManyFeedReviews(count: number) {
 
 function indexOfReview(feedReviews: { id: string }[], reviewId: string) {
   return feedReviews.findIndex((review) => review.id === reviewId);
+}
+
+function createFeedCursorWithReviewCount(count: number) {
+  return encodeCursor({ seenReviewIds: Array.from({ length: count }, () => crypto.randomUUID()) });
 }
 
 function daysAgo(days: number) {

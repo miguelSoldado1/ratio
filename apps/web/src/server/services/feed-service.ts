@@ -16,12 +16,11 @@ const globalRecentCandidateLimit = 90;
 const globalLikedCandidateLimit = 60;
 const followedCandidateLimit = 90;
 const authenticatedGlobalCandidateLimit = 60;
-const feedLookbackDays = 30;
 const recentLikeWindowDays = 7;
 const maxPerAlbum = 2;
 const maxPerAuthor = 2;
 const maxRatingOnlyRatio = 0.15;
-const maxCursorSeenReviewIds = feedPageSize * 5;
+const maxFeedSessionReviews = 500;
 
 // Source boosts decide how strongly candidate origin matters before item-level scoring.
 // Keep these small-ish, usually 0-10, so source can break ties without overpowering recency.
@@ -47,7 +46,7 @@ const feedScoreWeights = {
 // Schemas
 
 const feedCursorPayloadSchema = z.object({
-  seenReviewIds: z.array(z.uuid()).max(maxCursorSeenReviewIds).optional(),
+  seenReviewIds: z.array(z.uuid()).max(maxFeedSessionReviews).optional(),
 });
 
 const followingFeedCursorPayloadSchema = z.object({
@@ -101,9 +100,7 @@ interface FeedCandidateBaseParams extends FeedCursorParams {
   recentLikeCutoff: Date;
 }
 
-interface GetAnonymousFeedCandidatesParams extends FeedCandidateBaseParams {
-  reviewCreatedCutoff: Date;
-}
+type GetAnonymousFeedCandidatesParams = FeedCandidateBaseParams;
 
 interface GetAuthenticatedFeedCandidatesParams extends GetAnonymousFeedCandidatesParams {
   viewerUserId: string;
@@ -111,14 +108,12 @@ interface GetAuthenticatedFeedCandidatesParams extends GetAnonymousFeedCandidate
 
 interface GetRecentReviewCandidatesParams extends FeedCursorParams {
   limit: number;
-  reviewCreatedCutoff: Date;
   source: FeedCandidateSource;
   viewerUserId?: string;
 }
 
 interface GetFollowedReviewCandidatesParams extends FeedCursorParams {
   limit: number;
-  reviewCreatedCutoff: Date;
   viewerUserId: string;
 }
 
@@ -148,33 +143,37 @@ export interface FeedPage {
 // Services
 
 export async function getFeedService(data: FeedInput): Promise<FeedPage> {
+  const cursor = data.cursor ? decodeFeedCursor(data.cursor) : undefined;
+  const seenReviewIds = cursor?.seenReviewIds ?? [];
+
+  if (seenReviewIds.length >= maxFeedSessionReviews) {
+    return { nextCursor: null, reviews: [] };
+  }
+
   const db = await getDb();
   const viewerUserId = await getOptionalCurrentUserId(db);
   const now = new Date();
   const recentLikeCutoff = subDays(now, recentLikeWindowDays);
-  const reviewCreatedCutoff = subDays(now, feedLookbackDays);
-  const cursor = data.cursor ? decodeFeedCursor(data.cursor) : undefined;
 
   const candidates = viewerUserId
     ? await getAuthenticatedFeedCandidates(db, {
         cursor,
         recentLikeCutoff,
-        reviewCreatedCutoff,
         viewerUserId,
       })
     : await getAnonymousFeedCandidates(db, {
         cursor,
         recentLikeCutoff,
-        reviewCreatedCutoff,
       });
 
-  const pageCandidates = rankAndFilterCandidates(candidates, { now, viewerUserId });
+  const remainingSessionReviews = maxFeedSessionReviews - seenReviewIds.length;
+  const pageCandidates = rankAndFilterCandidates(candidates, { now, viewerUserId }).slice(0, remainingSessionReviews);
   const replyCounts = await getReviewReplyCounts(
     db,
     pageCandidates.map((candidate) => candidate.review.id)
   );
 
-  return mapFeedPage(pageCandidates, cursor?.seenReviewIds ?? [], replyCounts);
+  return mapFeedPage(pageCandidates, seenReviewIds, replyCounts);
 }
 
 export async function getFollowingFeedService(data: FeedInput, context: AuthenticatedContext): Promise<FeedPage> {
@@ -231,13 +230,12 @@ export async function getFollowingFeedService(data: FeedInput, context: Authenti
 // Candidate queries
 
 async function getAnonymousFeedCandidates(db: Db, data: GetAnonymousFeedCandidatesParams) {
-  const { cursor, recentLikeCutoff, reviewCreatedCutoff } = data;
+  const { cursor, recentLikeCutoff } = data;
 
   const [recentRows, recentLikeRows] = await Promise.all([
     getRecentReviewCandidates(db, {
       cursor,
       limit: globalRecentCandidateLimit,
-      reviewCreatedCutoff,
       source: "recent",
     }),
     getRecentLikeCandidates(db, {
@@ -251,19 +249,17 @@ async function getAnonymousFeedCandidates(db: Db, data: GetAnonymousFeedCandidat
 }
 
 async function getAuthenticatedFeedCandidates(db: Db, data: GetAuthenticatedFeedCandidatesParams) {
-  const { cursor, recentLikeCutoff, reviewCreatedCutoff, viewerUserId } = data;
+  const { cursor, recentLikeCutoff, viewerUserId } = data;
 
   const [followedRows, recentRows, recentLikeRows] = await Promise.all([
     getFollowedReviewCandidates(db, {
       cursor,
       limit: followedCandidateLimit,
-      reviewCreatedCutoff,
       viewerUserId,
     }),
     getRecentReviewCandidates(db, {
       cursor,
       limit: authenticatedGlobalCandidateLimit,
-      reviewCreatedCutoff,
       source: "recent",
       viewerUserId,
     }),
@@ -283,7 +279,7 @@ async function getAuthenticatedFeedCandidates(db: Db, data: GetAuthenticatedFeed
 }
 
 function getRecentReviewCandidates(db: Db, data: GetRecentReviewCandidatesParams) {
-  const { cursor, limit, reviewCreatedCutoff, source, viewerUserId } = data;
+  const { cursor, limit, source, viewerUserId } = data;
 
   const seenReviewsFilter = getSeenReviewsFilter(cursor);
 
@@ -295,21 +291,14 @@ function getRecentReviewCandidates(db: Db, data: GetRecentReviewCandidatesParams
     .from(reviews)
     .innerJoin(albums, eq(reviews.albumId, albums.id))
     .innerJoin(user, eq(reviews.userId, user.id))
-    .where(
-      and(
-        isNotNull(user.username),
-        getVisibleReviewAuthorFilter(),
-        gt(reviews.createdAt, reviewCreatedCutoff),
-        seenReviewsFilter
-      )
-    )
+    .where(and(isNotNull(user.username), getVisibleReviewAuthorFilter(), seenReviewsFilter))
     .orderBy(desc(reviews.createdAt), desc(reviews.id))
     .limit(limit)
     .then((rows) => rows.map((row) => ({ ...row, source })));
 }
 
 function getFollowedReviewCandidates(db: Db, data: GetFollowedReviewCandidatesParams) {
-  const { cursor, limit, reviewCreatedCutoff, viewerUserId } = data;
+  const { cursor, limit, viewerUserId } = data;
 
   const seenReviewsFilter = getSeenReviewsFilter(cursor);
 
@@ -322,14 +311,7 @@ function getFollowedReviewCandidates(db: Db, data: GetFollowedReviewCandidatesPa
     .innerJoin(userFollows, and(eq(userFollows.followerId, viewerUserId), eq(userFollows.followingId, reviews.userId)))
     .innerJoin(albums, eq(reviews.albumId, albums.id))
     .innerJoin(user, eq(reviews.userId, user.id))
-    .where(
-      and(
-        isNotNull(user.username),
-        getVisibleReviewAuthorFilter(),
-        gt(reviews.createdAt, reviewCreatedCutoff),
-        seenReviewsFilter
-      )
-    )
+    .where(and(isNotNull(user.username), getVisibleReviewAuthorFilter(), seenReviewsFilter))
     .orderBy(desc(reviews.createdAt), desc(reviews.id))
     .limit(limit)
     .then((rows) => rows.map((row) => ({ ...row, source: "followed" as const })));
@@ -518,7 +500,10 @@ function mapFeedPage(candidates: FeedCandidate[], seenReviewIds: string[], reply
   const nextSeenReviewIds = getNextSeenReviewIds(seenReviewIds, candidates);
 
   return {
-    nextCursor: candidates.length ? encodeCursor({ seenReviewIds: nextSeenReviewIds }) : null,
+    nextCursor:
+      candidates.length && nextSeenReviewIds.length < maxFeedSessionReviews
+        ? encodeCursor({ seenReviewIds: nextSeenReviewIds })
+        : null,
     reviews: candidates.map((candidate) => mapFeedReview(candidate, replyCounts)),
   };
 }
@@ -573,7 +558,7 @@ function getNextSeenReviewIds(seenReviewIds: string[], candidates: FeedCandidate
     nextSeenReviewIds.add(candidate.review.id);
   }
 
-  return [...nextSeenReviewIds].slice(-maxCursorSeenReviewIds);
+  return [...nextSeenReviewIds];
 }
 
 // Dates

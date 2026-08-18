@@ -125,7 +125,7 @@ The feed uses a deterministic candidate/ranking/filtering pipeline:
 
 Anonymous users receive a blend of:
 
-- recent reviews in the current lookback window
+- reviews of any age, starting with the newest candidates
 - reviews with recent likes
 
 Authenticated users receive the anonymous candidate sources plus:
@@ -147,7 +147,7 @@ The scoring weights live in `apps/web/src/server/services/feed-service.ts` near 
 
 Rating-only activity is allowed but capped so it can appear for social/meme behavior without overwhelming written reviews. Repeated albums and repeated authors are also capped per page.
 
-Feed pagination is deterministic and carries recently returned review IDs in the cursor so later pages do not return duplicate reviews. This is a v1 tradeoff that fits the bounded candidate-window design: each page can re-query the small candidate set, exclude seen IDs, rank the remainder, and stay deterministic without schema changes. Cursor size is capped to keep URLs and `not in` filters bounded.
+Feed pagination is deterministic and carries returned review IDs in the cursor so later pages do not return duplicate reviews. This is a v1 tradeoff that fits the bounded candidate-query design: each page can re-query a small candidate set, exclude seen IDs, rank the remainder, and stay deterministic without schema changes. A For You scroll session ends after 500 returned reviews. This keeps the cursor and `not in` filters bounded while letting an early, low-volume feed reach reviews of any age without cycling.
 
 ### Deferred Feed Work
 
@@ -155,7 +155,7 @@ Do not block the first production release on these:
 
 - Add anonymous/public feed caching through a separate cached Hyperdrive binding or app-level cache; the main Hyperdrive binding keeps query caching disabled for freshness.
 - Replace seen-ID cursor pagination when feed scale justifies it, likely with cached anonymous candidate IDs, a materialized feed/ranking table, or another indexed candidate-store design.
-- ~~Add global indexes if feed latency grows~~. Shipped in `0004`: `review(created_at, id)` and `review_like(created_at, review_id)` back the candidate lookback reads, which are uncached and run on every anonymous home request.
+- ~~Add global indexes if feed latency grows~~. Shipped in `0004`: `review(created_at, id)` and `review_like(created_at, review_id)` back the candidate reads, which are uncached and run on every anonymous home request.
 - Add denormalized counters only when measured load justifies the write/storage cost, e.g. `review.likeCount`, `review.lastActivityAt`, or rolling aggregates.
 - Add album-level trend signals such as recent album review counts.
 - Add Spotify-personalized candidate sources once Spotify account linking and personal token usage are in scope.
