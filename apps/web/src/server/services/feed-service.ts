@@ -39,8 +39,8 @@ const feedScoreWeights = {
   ownAuthor: -12, // More negative keeps signed-in home from becoming the viewer's profile. Typical range: -20 to 0.
   ratingOnly: -6, // More negative hides rating-only activity. Move toward 0 to show more ratings. Typical range: -12 to 0.
   recentLike: 8, // Multiplies log(recent likes). Higher makes old reviews resurface from fresh activity. Typical range: 3-12.
-  recencyBase: 40, // Higher makes very fresh activity dominate. Typical range: 20-60.
-  recencyHalfLifeHours: 12, // Higher slows recency decay; lower makes the feed more now-focused. Typical range: 6-36 hours.
+  recencyBase: 40, // Higher makes newly published reviews dominate. Typical range: 20-60.
+  recencyHalfLifeHours: 7 * 24, // Higher rewards new reviews for longer; lower makes the feed more immediate.
 } as const;
 
 // Schemas
@@ -393,7 +393,7 @@ function rankAndFilterCandidates(candidates: FeedCandidate[], { now, viewerUserI
 
 function scoreFeedCandidate(candidate: FeedCandidate, { now, viewerUserId }: RankFeedCandidatesParams) {
   const hasBody = Boolean(candidate.review.body?.trim());
-  const ageHours = Math.max(0, now.getTime() - candidate.activityAt.getTime()) / 3_600_000;
+  const ageHours = Math.max(0, now.getTime() - candidate.review.createdAt.getTime()) / 3_600_000;
   const recencyScore = feedScoreWeights.recencyBase / (1 + ageHours / feedScoreWeights.recencyHalfLifeHours);
   const followedAuthorBoost = viewerUserId && candidate.followedAuthor ? feedScoreWeights.followedAuthor : 0;
   const bodyBoost = hasBody ? feedScoreWeights.body : feedScoreWeights.ratingOnly;

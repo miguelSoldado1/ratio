@@ -444,6 +444,32 @@ describe("getFeedService diversity and ranking", () => {
     );
   });
 
+  it("keeps a week-old review above a months-old review with established likes", async () => {
+    const recentAuthor = await createTestUser(testDb);
+    const oldAuthor = await createTestUser(testDb);
+    const recentReview = await createTestReview(testDb, {
+      body: "Week-old review",
+      createdAt: daysAgo(7),
+      userId: recentAuthor.id,
+    });
+    const oldReview = await createTestReview(testDb, {
+      body: "Months-old review",
+      createdAt: daysAgo(120),
+      userId: oldAuthor.id,
+    });
+    const likers = await Promise.all(Array.from({ length: 3 }, () => createTestUser(testDb)));
+
+    await Promise.all(
+      likers.map((liker) =>
+        createTestReviewLike(testDb, { createdAt: daysAgo(30), reviewId: oldReview.id, userId: liker.id })
+      )
+    );
+
+    const page = await getFeedService({});
+
+    expect(indexOfReview(page.reviews, recentReview.id)).toBeLessThan(indexOfReview(page.reviews, oldReview.id));
+  });
+
   it("recent likes can resurface older reviews within the configured windows", async () => {
     const oldAuthor = await createTestUser(testDb);
     const liker = await createTestUser(testDb);

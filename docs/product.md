@@ -130,7 +130,7 @@ Anonymous users receive a blend of:
 
 Authenticated users receive the anonymous candidate sources plus:
 
-- recent reviews from people they follow
+- reviews from people they follow, starting with the newest candidates
 
 The signed-in-only Following tab is separate from this ranked blend. It returns the viewer's reviews and reviews from
 followed users in strict reverse-chronological review order with cursor pagination, without ranking or diversity
@@ -138,7 +138,7 @@ filters. Replies and reply likes do not affect either feed's candidates or order
 
 The scoring weights live in `apps/web/src/server/services/feed-service.ts` near the feed constants so they can be tuned without changing query logic. Current signals are:
 
-- recency
+- review publication recency, with a seven-day half-life
 - followed author
 - written review body vs rating-only activity
 - total likes
