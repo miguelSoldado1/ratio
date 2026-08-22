@@ -23,50 +23,22 @@ import { useReviewLikeToggle } from "@/hooks/use-review-like-toggle";
 import { authClient } from "@/lib/auth/auth-client";
 import { createCanonicalLink, createSeoMeta, siteName } from "@/lib/seo";
 import { albumQueryKeys, userQueryKeys } from "@/lib/tanstack-query/query-keys";
-import { getProfileHeadMetadata, getUserProfile } from "@/server/functions/review-functions";
-import { tryCatch } from "@/try-catch";
+import { getUserProfile } from "@/server/functions/review-functions";
 import type { UserReviewsPage } from "@/server/services/review-service";
 
 type ProfileTab = "likes" | "lists" | "reviews";
 
 export const Route = createFileRoute("/user/$username")({
   component: UserPage,
-  loader: async ({ params }) => {
-    const result = await tryCatch(getProfileHeadMetadata({ data: { username: params.username } }));
-    return result.data;
-  },
-  preload: false,
-  ssr: "data-only",
-  head: ({ loaderData, params }) => {
+  head: ({ params }) => {
     const path = `/user/${params.username}`;
-
-    if (!loaderData) {
-      return {
-        links: [createCanonicalLink(path)],
-        meta: createSeoMeta({
-          description: `Read @${params.username}'s album reviews on Ratio.`,
-          path,
-          // A failed lookup is indistinguishable from a missing profile, so never emit noindex.
-          robots: null,
-          title: `@${params.username} — Album Reviews | ${siteName}`,
-          twitterCard: "summary",
-          type: "profile",
-        }),
-      };
-    }
-
-    const title = `${loaderData.displayName} (@${loaderData.username}) — Album Reviews | ${siteName}`;
-    const description = `Explore album reviews and ratings from ${loaderData.displayName} (@${loaderData.username}) on ${siteName}.`;
 
     return {
       links: [createCanonicalLink(path)],
       meta: createSeoMeta({
-        description,
-        image: loaderData.avatarUrl,
-        imageAlt: loaderData.avatarUrl ? `${loaderData.displayName}'s profile image` : `${siteName} profile`,
+        description: `Read @${params.username}'s album reviews on Ratio.`,
         path,
-        title,
-        twitterCard: "summary",
+        title: `@${params.username} - Album Reviews | ${siteName}`,
         type: "profile",
       }),
     };
