@@ -1,4 +1,5 @@
-import { createDocumentRouteHead, DOCUMENT_METADATA_SCRIPT_ID, type DocumentMetadata } from "@/lib/document-metadata";
+import { createDocumentRouteHead, DOCUMENT_METADATA_SCRIPT_ID } from "@/lib/document-metadata";
+import type { DocumentMetadata } from "@/lib/document-metadata";
 
 const managedHeadSelectors = [
   "title",

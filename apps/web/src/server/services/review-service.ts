@@ -3,7 +3,7 @@ import { alias } from "drizzle-orm/pg-core";
 import z from "zod";
 import { getDb } from "@/lib/db";
 import { albums, profilePinnedReviews, reviewLikes, reviews, user, userFollows } from "@/lib/db/schema";
-import { type FollowableUserRow, getFollowedByViewerSql, mapFollowableUser } from "../followable-user";
+import { getFollowedByViewerSql, mapFollowableUser } from "../followable-user";
 import {
   decodeCursor,
   encodeCursor,
@@ -16,6 +16,7 @@ import { createReviewLikedNotification } from "./notification-service";
 import { getReviewReplyCounts, getVisibleReviewReplyCountSql } from "./review-reply-service";
 import type { Db } from "@/lib/db";
 import type { AuthenticatedContext } from "../auth-middleware";
+import type { FollowableUserRow } from "../followable-user";
 
 // Constants
 

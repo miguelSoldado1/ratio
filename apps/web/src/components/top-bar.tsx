@@ -1,5 +1,5 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-import { type MouseEvent, useState } from "react";
+import { useState } from "react";
 import { AuthDialog } from "@/components/auth/auth-dialog";
 import { GlobalSearch } from "@/components/global-search/global-search";
 import { GlobalSearchTrigger } from "@/components/global-search/global-search-trigger";
@@ -8,6 +8,7 @@ import { NotificationsDropdown } from "@/components/notifications-dropdown";
 import { Skeleton } from "@/components/ui/skeleton";
 import { authClient } from "@/lib/auth/auth-client";
 import { useAuthRedirectErrorToast } from "@/lib/auth/use-auth-redirect-error-toast";
+import type { MouseEvent } from "react";
 
 function LogoHomeLink() {
   const isHome = useRouterState({ select: (state) => state.location.pathname === "/" });

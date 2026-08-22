@@ -1,5 +1,6 @@
-import { QueryCache, QueryClient, type QueryClientConfig, QueryClientProvider } from "@tanstack/react-query";
+import { QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { toast } from "sonner";
+import type { QueryClientConfig } from "@tanstack/react-query";
 
 const queryClientOptions: QueryClientConfig = {
   defaultOptions: {

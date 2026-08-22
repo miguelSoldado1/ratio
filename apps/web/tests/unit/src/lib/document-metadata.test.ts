@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { createDocumentRouteHead, type DocumentMetadata, getInitialDocumentMetadata } from "@/lib/document-metadata";
+import { createDocumentRouteHead, getInitialDocumentMetadata } from "@/lib/document-metadata";
+import type { DocumentMetadata } from "@/lib/document-metadata";
 
 const metadata = {
   description: "Read the album reviews.",

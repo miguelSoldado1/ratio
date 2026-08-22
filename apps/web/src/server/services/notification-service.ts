@@ -1,20 +1,12 @@
 import { and, desc, eq, gte, inArray, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import z from "zod";
-import {
-  albums,
-  notifications,
-  type notificationType,
-  reviewLikes,
-  reviewReplies,
-  reviewReplyLikes,
-  reviews,
-  user,
-} from "@/lib/db/schema";
+import { albums, notifications, reviewLikes, reviewReplies, reviewReplyLikes, reviews, user } from "@/lib/db/schema";
 import { decodeCursor, encodeCursor } from "../server-utils";
 import type { AnyColumn } from "drizzle-orm/column";
 import type { SelectedFieldsFlat } from "drizzle-orm/pg-core/query-builders/select.types";
 import type { Db } from "@/lib/db";
+import type { notificationType } from "@/lib/db/schema";
 import type { AuthenticatedContext } from "../auth-middleware";
 
 type DbTransaction = Parameters<Parameters<Db["transaction"]>[0]>[0];

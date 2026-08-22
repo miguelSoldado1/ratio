@@ -11,14 +11,9 @@ import { albumQueryKeys, userQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { searchUsers } from "@/server/functions/review-functions";
 import { searchAlbums } from "@/server/functions/spotify-functions";
 import { RecentSearchResults } from "./recent-search-results";
-import {
-  clearRecentSearches,
-  getRecentSearches,
-  type RecentSearch,
-  removeRecentSearch,
-  saveRecentSearch,
-} from "./recent-searches";
+import { clearRecentSearches, getRecentSearches, removeRecentSearch, saveRecentSearch } from "./recent-searches";
 import { SearchResults } from "./search-results";
+import type { RecentSearch } from "./recent-searches";
 import type { AlbumResult, UserResult } from "./types";
 
 interface GlobalSearchProps {

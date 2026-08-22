@@ -23,14 +23,7 @@
         "organizeImports": {
           "level": "on",
           "options": {
-            "groups": [
-              {
-                "type": false
-              },
-              {
-                "type": true
-              }
-            ]
+            "groups": [{ "type": false }, { "type": true }]
           }
         }
       }
@@ -39,7 +32,13 @@
   "linter": {
     "rules": {
       "style": {
-        "useBlockStatements": "off"
+        "useBlockStatements": "off",
+        "useImportType": {
+          "level": "error",
+          "options": {
+            "style": "separatedType"
+          }
+        }
       },
       "suspicious": {
         "noAlert": "off"
