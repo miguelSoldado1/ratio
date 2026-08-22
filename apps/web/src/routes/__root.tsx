@@ -4,6 +4,7 @@ import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-r
 import { NotFoundPage } from "@/components/not-found-page";
 import { TopBar } from "@/components/top-bar";
 import { Toaster } from "@/components/ui/sonner";
+import { DOCUMENT_METADATA_BOOTSTRAP_FALLBACK, DOCUMENT_METADATA_SCRIPT_ID } from "@/lib/document-metadata";
 import { defaultSeoDescription, defaultSeoTitle, faviconLinks } from "@/lib/seo";
 import appCss from "../styles.css?url";
 
@@ -48,6 +49,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     <html className="dark scroll-smooth" lang="en">
       <head>
         <HeadContent />
+        <script id={DOCUMENT_METADATA_SCRIPT_ID} suppressHydrationWarning>
+          {DOCUMENT_METADATA_BOOTSTRAP_FALLBACK}
+        </script>
       </head>
       <body>
         <Toaster />

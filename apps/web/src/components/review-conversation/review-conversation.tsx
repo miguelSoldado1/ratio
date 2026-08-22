@@ -1,7 +1,7 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { isNotFound, notFound, useRouter } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { AuthDialog } from "@/components/auth/auth-dialog";
 import { InlineError } from "@/components/inline-error";
@@ -13,6 +13,7 @@ import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
 import { useReviewDelete } from "@/hooks/use-review-delete";
 import { useReviewLikeToggle } from "@/hooks/use-review-like-toggle";
 import { authClient } from "@/lib/auth/auth-client";
+import { createReviewPageTitle } from "@/lib/page-titles";
 import { albumQueryKeys, feedQueryKeys, reviewQueryKeys, userQueryKeys } from "@/lib/tanstack-query/query-keys";
 import {
   addReviewReply,
@@ -70,6 +71,16 @@ export function ReviewConversation({ reviewId: routeReviewId }: ReviewConversati
     queryFn: () => getReviewByIdFn({ data: { reviewId: routeReviewId } }),
     queryKey: reviewQueryKey,
   });
+
+  const loadedReview = reviewQuery.data;
+  const reviewAlbumTitle = loadedReview?.album.title;
+  const reviewAuthorName = loadedReview?.user.displayUsername;
+
+  useEffect(() => {
+    if (!(reviewAlbumTitle && reviewAuthorName)) return;
+
+    document.title = createReviewPageTitle(reviewAlbumTitle, reviewAuthorName);
+  }, [reviewAlbumTitle, reviewAuthorName]);
 
   const albumId = reviewQuery.data?.album.id;
   const albumReviewsQueryKey = albumId ? albumQueryKeys.reviews(albumId, userId) : undefined;

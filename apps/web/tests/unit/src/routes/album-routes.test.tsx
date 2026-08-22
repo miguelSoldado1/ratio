@@ -47,6 +47,11 @@ describe("album and review routes", () => {
 
     expect(screen.getByText("Full album page")).toBeTruthy();
     expect(mocks.albumPage).toHaveBeenCalledWith({ albumId: "album-a" });
+    expect(AlbumRoute.options.loader).toBeUndefined();
+    expect(AlbumRoute.options.pendingComponent).toBeDefined();
+    expect(AlbumRoute.options.pendingMinMs).toBe(0);
+    expect(AlbumRoute.options.pendingMs).toBe(0);
+    expect(AlbumRoute.options.ssr).toBe(false);
   });
 
   it("renders a standalone review page without mounting AlbumPage", () => {
@@ -57,6 +62,10 @@ describe("album and review routes", () => {
 
     expect(ReviewRoute.options.notFoundComponent).toBeDefined();
     expect(ReviewRoute.options.loader).toBeUndefined();
+    expect(ReviewRoute.options.pendingComponent).toBeDefined();
+    expect(ReviewRoute.options.pendingMinMs).toBe(0);
+    expect(ReviewRoute.options.pendingMs).toBe(0);
+    expect(ReviewRoute.options.ssr).toBe(false);
     expect(screen.queryByText("Back to album")).toBeNull();
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(mocks.albumPage).not.toHaveBeenCalled();

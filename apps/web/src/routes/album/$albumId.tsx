@@ -1,10 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { AlbumLookupLoading } from "@/components/album-page/album-lookup-loading";
 import { AlbumPage } from "@/components/album-page/album-page";
+import { createDocumentRouteHead, getInitialDocumentMetadata } from "@/lib/document-metadata";
 import { createCanonicalLink, createSeoMeta, siteName } from "@/lib/seo";
 
 export const Route = createFileRoute("/album/$albumId")({
   component: AlbumRoute,
   head: ({ params }) => {
+    const initialMetadata = getInitialDocumentMetadata();
+    if (initialMetadata) return createDocumentRouteHead(initialMetadata);
+
     const path = `/album/${params.albumId}`;
 
     return {
@@ -16,6 +21,10 @@ export const Route = createFileRoute("/album/$albumId")({
       }),
     };
   },
+  pendingComponent: AlbumLookupLoading,
+  pendingMinMs: 0,
+  pendingMs: 0,
+  ssr: false,
 });
 
 function AlbumRoute() {

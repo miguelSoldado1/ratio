@@ -18,9 +18,9 @@ const TRACK_ROW_SKELETONS = [
   "track-row-12",
 ];
 
-export function AlbumLookupLoading({ albumId }: { albumId: string }) {
+export function AlbumLookupLoading() {
   return (
-    <main aria-busy="true" className="min-h-screen bg-background text-foreground" data-album-id={albumId}>
+    <main aria-busy="true" className="min-h-screen bg-background text-foreground">
       <div className="mx-auto grid w-full max-w-375 gap-8 px-5 py-6 lg:grid-cols-[minmax(240px,340px)_1fr] lg:px-10 xl:gap-12 xl:px-14 2xl:px-20">
         <aside className="hidden lg:sticky lg:top-20 lg:block lg:self-start">
           <Skeleton className="aspect-square w-full rounded-none" />
