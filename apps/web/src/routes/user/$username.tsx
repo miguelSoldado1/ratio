@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { AuthDialog } from "@/components/auth/auth-dialog";
 import { InlineError } from "@/components/inline-error";
 import { PageContainer, PageContainerContent } from "@/components/page-container";
@@ -21,6 +21,8 @@ import {
 import { useReviewDelete } from "@/hooks/use-review-delete";
 import { useReviewLikeToggle } from "@/hooks/use-review-like-toggle";
 import { authClient } from "@/lib/auth/auth-client";
+import { createDocumentRouteHead, getInitialDocumentMetadata } from "@/lib/document-metadata";
+import { createProfilePageTitle } from "@/lib/page-titles";
 import { createCanonicalLink, createSeoMeta, siteName } from "@/lib/seo";
 import { albumQueryKeys, userQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { getUserProfile } from "@/server/functions/review-functions";
@@ -31,6 +33,9 @@ type ProfileTab = "likes" | "lists" | "reviews";
 export const Route = createFileRoute("/user/$username")({
   component: UserPage,
   head: ({ params }) => {
+    const initialMetadata = getInitialDocumentMetadata();
+    if (initialMetadata) return createDocumentRouteHead(initialMetadata);
+
     const path = `/user/${params.username}`;
 
     return {
@@ -43,6 +48,10 @@ export const Route = createFileRoute("/user/$username")({
       }),
     };
   },
+  pendingComponent: UserPagePending,
+  pendingMinMs: 0,
+  pendingMs: 0,
+  ssr: false,
 });
 
 function UserPage() {
@@ -64,6 +73,15 @@ function UserPage() {
   });
 
   const profile = userProfileQuery.data?.user;
+  const profileDisplayName = profile?.displayName;
+  const profileUsername = profile?.username;
+
+  useEffect(() => {
+    if (!(profileDisplayName && profileUsername)) return;
+
+    document.title = createProfilePageTitle(profileDisplayName, profileUsername);
+  }, [profileDisplayName, profileUsername]);
+
   const reviewsQueryKey = profile
     ? userQueryKeys.reviews(profile.id, viewerUserId)
     : userQueryKeys.reviews("", viewerUserId);
@@ -112,18 +130,7 @@ function UserPage() {
     if (value === "likes" || value === "lists" || value === "reviews") setActiveTab(value);
   }
 
-  if (userProfileQuery.isPending) {
-    return (
-      <main className="h-[calc(100dvh-4.0625rem)] bg-background text-foreground">
-        <PageContainer className="flex h-full min-h-0 flex-col">
-          <PageContainerContent className="flex flex-col pt-5 pb-0 lg:pt-8">
-            <ProfileHeaderSkeleton />
-            <ProfileTabsSkeleton />
-          </PageContainerContent>
-        </PageContainer>
-      </main>
-    );
-  }
+  if (userProfileQuery.isPending) return <UserPagePending />;
 
   if (userProfileQuery.isError || !profile) {
     return (
@@ -201,5 +208,18 @@ function UserPage() {
         </PageContainer>
       </main>
     </>
+  );
+}
+
+function UserPagePending() {
+  return (
+    <main className="h-[calc(100dvh-4.0625rem)] bg-background text-foreground">
+      <PageContainer className="flex h-full min-h-0 flex-col">
+        <PageContainerContent className="flex flex-col pt-5 pb-0 lg:pt-8">
+          <ProfileHeaderSkeleton />
+          <ProfileTabsSkeleton />
+        </PageContainerContent>
+      </PageContainer>
+    </main>
   );
 }

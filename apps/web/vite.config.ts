@@ -28,7 +28,7 @@ const config = defineConfig(({ command, mode }) => {
       devtools(),
       ...(useCloudflareRuntime ? [cloudflare({ viteEnvironment: { name: "ssr" } })] : []),
       tailwindcss(),
-      tanstackStart(),
+      tanstackStart({ server: { entry: "./server.ts" } }),
       viteReact(),
     ],
   };

@@ -3,12 +3,13 @@ import { alias } from "drizzle-orm/pg-core";
 import z from "zod";
 import { getDb } from "@/lib/db";
 import { reviewReplies, reviewReplyLikes, reviews, user } from "@/lib/db/schema";
-import { type FollowableUserRow, getFollowedByViewerSql, mapFollowableUser } from "../followable-user";
+import { getFollowedByViewerSql, mapFollowableUser } from "../followable-user";
 import { decodeCursor, encodeCursor, getCreatedAtIdCursorFilter, getOptionalCurrentUser } from "../server-utils";
 import { createReplyLikedNotification, createReviewRepliedNotifications } from "./notification-service";
 import type { AnyColumn } from "drizzle-orm/column";
 import type { Db } from "@/lib/db";
 import type { AuthenticatedContext } from "../auth-middleware";
+import type { FollowableUserRow } from "../followable-user";
 
 // Constants
 

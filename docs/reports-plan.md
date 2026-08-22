@@ -219,13 +219,10 @@ const createReportSchema = z
 
 ### Rate limiting
 
-Two layers, following the existing pattern in `apps/web/src/server/rate-limit.ts`:
+Two layers, following the existing pattern in `apps/web/src/server/rate-limit.ts`. Reuse the shared native
+`contentCreateRateLimit` burst budget, then add the report-specific daily fixed window:
 
 ```ts
-export const reportCreateRateLimit = defineCloudflareRateLimitRule({
-  bindingName: "REPORT_CREATE_RATE_LIMITER",
-});
-
 export const reportCreateDailyRateLimit = defineFixedWindowRateLimitRule({
   limit: 20,
   scope: "report-create-daily",
@@ -236,12 +233,8 @@ export const reportCreateDailyRateLimit = defineFixedWindowRateLimitRule({
 Note that `getWindowResetAt` floors to aligned buckets, so this is a **UTC calendar-day** window that
 resets at midnight UTC for everyone — not a rolling 24 hours. Fine here; just don't describe it as rolling.
 
-Add the binding to **both** blocks of `apps/web/wrangler.jsonc` — the top-level `ratelimits` array and
-the `env.development.ratelimits` array. Namespace ids follow the existing numbering: `1009` for
-production, `2009` for development. `{ limit: 5, period: 60 }` is a sensible burst cap; a genuine
-reporter never needs more.
-
-Then run `pnpm cf-typegen` so `worker-configuration.d.ts` picks up the new binding.
+Do not add another native binding. Reports share the existing 10-per-minute content-creation budget with reviews,
+replies, and lists, while the daily fixed window keeps report-specific abuse bounded.
 
 ## Phase 3 — Web: report UI
 

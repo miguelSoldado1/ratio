@@ -122,6 +122,12 @@ The main reason to store album records is product correctness, not just performa
 
 Spotify remains the source of truth for discovery and fresh lookup. Our database stores the subset of albums Ratio has durable local activity for. Track lists are not stored in Postgres initially; album pages can fetch tracks live from Spotify or use a short-lived server-owned cache later if needed.
 
+Direct album-document metadata follows the same persistence boundary. The document handler checks for an existing
+album row first. When none exists, it uses the rate-limited Spotify catalog metadata cache to produce the title,
+artists, and cover required by Open Graph; it never creates or updates an album row. This work happens only for a full
+HTML document request. Client-side album navigation never calls the document metadata resolver and continues through
+the normal album-details query.
+
 When creating the first review for an album, the client only submits the Spotify album ID plus review data. The server must ensure the album row exists before inserting the review: first check Postgres, then fetch the album from Spotify if missing, reject non-album Spotify IDs, then transactionally upsert the album and insert the review.
 
 Do not trust client-provided album metadata for durable writes. If Spotify lookup fails and the album row does not already exist, reject the review with a user-friendly retry message rather than creating a review that points at a missing album. If duplicate first-write lookups become painful, add a short-lived Cloudflare KV cache written and read only by server-side Spotify lookup code.

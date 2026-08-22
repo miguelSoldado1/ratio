@@ -3,10 +3,11 @@ import z from "zod";
 import { tryCatch } from "@/try-catch";
 import { authMiddleware } from "../auth-middleware";
 import {
+  contentCreateRateLimit,
   createCloudflareRateLimitMiddleware,
   createFixedWindowRateLimitMiddleware,
   listCreateHourlyRateLimit,
-  spotifyAlbumDetailsRateLimit,
+  spotifyCatalogRateLimit,
   userMutationRateLimit,
 } from "../rate-limit";
 import * as listService from "../services/list-service";
@@ -73,7 +74,7 @@ export const getMyListsForAlbum = createServerFn()
 export const createList = createServerFn({ method: "POST" })
   .middleware([
     authMiddleware,
-    createCloudflareRateLimitMiddleware(userMutationRateLimit),
+    createCloudflareRateLimitMiddleware(contentCreateRateLimit),
     createFixedWindowRateLimitMiddleware(listCreateHourlyRateLimit),
   ])
   .validator(listDetailsInputSchema)
@@ -92,7 +93,7 @@ export const deleteList = createServerFn({ method: "POST" })
 export const addListItem = createServerFn({ method: "POST" })
   .middleware([
     authMiddleware,
-    createCloudflareRateLimitMiddleware(spotifyAlbumDetailsRateLimit),
+    createCloudflareRateLimitMiddleware(spotifyCatalogRateLimit),
     createCloudflareRateLimitMiddleware(userMutationRateLimit),
   ])
   .validator(listItemSchema)

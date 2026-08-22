@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { useEffect } from "react";
 import { AlbumArtwork } from "@/components/album-artwork";
 import { AlbumHeader } from "@/components/album-page/album-header";
 import { AlbumLookupLoading } from "@/components/album-page/album-lookup-loading";
@@ -8,6 +9,7 @@ import { ReviewsSection } from "@/components/album-page/reviews-section";
 import { TrackList } from "@/components/album-page/track-list";
 import { InlineError } from "@/components/inline-error";
 import { PageContainer, PageContainerContent } from "@/components/page-container";
+import { createAlbumPageTitle } from "@/lib/page-titles";
 import { albumQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { getAlbumDetails } from "@/server/functions/spotify-functions";
 
@@ -22,7 +24,17 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
     queryKey: albumQueryKeys.details(albumId),
   });
 
-  if (albumDetailsQuery.isPending) return <AlbumLookupLoading albumId={albumId} />;
+  const loadedAlbum = albumDetailsQuery.data?.album;
+  const albumTitle = loadedAlbum?.title;
+  const primaryArtistName = loadedAlbum?.artists[0]?.name;
+
+  useEffect(() => {
+    if (!albumTitle) return;
+
+    document.title = createAlbumPageTitle(albumTitle, primaryArtistName);
+  }, [albumTitle, primaryArtistName]);
+
+  if (albumDetailsQuery.isPending) return <AlbumLookupLoading />;
   if (albumDetailsQuery.isError) {
     return (
       <main className="min-h-screen bg-background text-foreground">

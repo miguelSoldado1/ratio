@@ -51,8 +51,31 @@ Album and feed cards receive scalar reply counts from one batched query over the
 Neither For You nor Following reads reply-activity candidates, and no review-list DTO serializes reply bodies,
 reply-author identity, or reply-like state. Following uses the normal `(createdAt, reviewId)` review cursor.
 
-Reply creation uses the native Cloudflare rate-limit binding. Reply reads, likes, and notifications stay
-request-driven; there is no polling, queue, KV thread cache, denormalized counter, or materialized activity table.
+Review, reply, and list creation share the native Cloudflare content-creation rate-limit binding. Reply reads, likes,
+and notifications stay request-driven; there is no polling, queue, KV thread cache, denormalized counter, or
+materialized activity table.
+
+## Public Document Metadata Boundary
+
+Album, review, and profile pages are SPA routes with `ssr: false`. They have no route loaders, so matching, intent
+preloading, and in-app navigation can never initiate a metadata request or wait for document metadata. Each route
+defines an immediate `pendingComponent`; TanStack Start emits that static skeleton inside the initial document, and the
+same shape remains available locally while the client route chunk and normal TanStack Query data load.
+
+Dynamic crawler metadata belongs to the HTML document response rather than the route lifecycle. The public app's
+custom `src/server.ts` entry recognizes direct `GET` requests for `/album/:albumId`, `/review/:reviewId`, and
+`/user/:username`, resolves a narrow public metadata record in parallel with the ordinary TanStack Start shell, and
+decorates the returned `<head>`. Server-function, API, asset, and client-navigation traffic bypass this path. The
+decorator replaces only managed title, description, robots, canonical, Open Graph, and Twitter tags; metadata lookup
+failures leave the route's generic head intact and never prevent the app shell from loading. It also writes the same
+path-scoped metadata into a small inline bootstrap snapshot so the first client hydration reproduces the decorated
+head instead of restoring generic tags. The snapshot is ignored as soon as the browser is on a different path.
+
+Profile and review document metadata each use one bounded public database query with no session or relationship state.
+Album metadata reads the local album row first; an album outside Ratio's durable graph uses the rate-limited Spotify
+catalog metadata cache without creating a database row. Client components update only `document.title` from the page
+data their existing TanStack Query request already returned. Social metadata is not recreated in the browser because
+unfurlers make their own direct document request.
 
 ## Cloudflare Git Builds
 

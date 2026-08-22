@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { type LinkedAccount, SignInMethodsTable } from "@/components/settings/sign-in-methods-table";
+import { SignInMethodsTable } from "@/components/settings/sign-in-methods-table";
+import type { LinkedAccount } from "@/components/settings/sign-in-methods-table";
 
 const linkedSpotify = {
   accountId: "spotify-account",

@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import z from "zod";
 import { authMiddleware } from "../auth-middleware";
 import {
+  contentCreateRateLimit,
   createCloudflareRateLimitMiddleware,
   createFixedWindowRateLimitMiddleware,
   reviewCreateHourlyRateLimit,
@@ -63,7 +64,11 @@ const createReviewSchema = z.object({
 // Server functions
 
 export const createReview = createServerFn({ method: "POST" })
-  .middleware([authMiddleware, createFixedWindowRateLimitMiddleware(reviewCreateHourlyRateLimit)])
+  .middleware([
+    authMiddleware,
+    createCloudflareRateLimitMiddleware(contentCreateRateLimit),
+    createFixedWindowRateLimitMiddleware(reviewCreateHourlyRateLimit),
+  ])
   .validator(createReviewSchema)
   .handler(({ context, data }) => reviewService.createReviewService(data, context));
 

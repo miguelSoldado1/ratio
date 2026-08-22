@@ -1,4 +1,4 @@
-import { handleRequest, RejectUpload, type Router, route } from "@better-upload/server";
+import { handleRequest, RejectUpload, route } from "@better-upload/server";
 import { createFileRoute } from "@tanstack/react-router";
 import { env } from "@/env";
 import { createAuth } from "@/lib/auth";
@@ -13,6 +13,7 @@ import {
   uploadSignHourlyRateLimit,
   uploadSignRateLimit,
 } from "@/server/rate-limit";
+import type { Router } from "@better-upload/server";
 
 const uploadRouter: Router = {
   bucketName: env.CLOUDFLARE_R2_BUCKET_NAME,

@@ -38,23 +38,27 @@ export function getAbsoluteAssetUrl(path: string | null | undefined) {
 interface CreateSeoMetaParams {
   description?: string;
   image?: string | null;
+  imageAlt?: string;
   path: string;
   title?: string;
+  twitterCard?: "summary" | "summary_large_image";
   type?: string;
 }
 
-export function createSeoMeta({
-  description = defaultSeoDescription,
-  image = defaultSeoImage,
-  path,
-  title = defaultSeoTitle,
-  type = "website",
-}: CreateSeoMetaParams) {
+export function createSeoMeta(params: CreateSeoMetaParams) {
+  const description = params.description ?? defaultSeoDescription;
+  const image = params.image ?? defaultSeoImage;
+  const title = params.title ?? defaultSeoTitle;
+  const imageAlt = params.imageAlt ?? `${title} preview image`;
+  const twitterCard = params.twitterCard ?? "summary_large_image";
+  const type = params.type ?? "website";
+  const { path } = params;
+
   const canonicalUrl = getCanonicalUrl(path);
   const imageUrl = getAbsoluteAssetUrl(image);
-  const imageAlt = `${title} preview image`;
+
   const defaultImageMetadata =
-    image === defaultSeoImage
+    imageUrl === getAbsoluteAssetUrl(defaultSeoImage)
       ? [
           { property: "og:image:width", content: String(defaultSeoImageWidth) },
           { property: "og:image:height", content: String(defaultSeoImageHeight) },
@@ -73,7 +77,7 @@ export function createSeoMeta({
     { property: "og:image", content: imageUrl },
     { property: "og:image:alt", content: imageAlt },
     ...defaultImageMetadata,
-    { name: "twitter:card", content: "summary_large_image" },
+    { name: "twitter:card", content: twitterCard },
     { name: "twitter:title", content: title },
     { name: "twitter:description", content: description },
     { name: "twitter:image", content: imageUrl },
