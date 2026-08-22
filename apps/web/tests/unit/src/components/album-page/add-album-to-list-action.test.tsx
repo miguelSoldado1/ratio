@@ -115,8 +115,34 @@ describe("AddAlbumToListAction", () => {
         expect.anything()
       );
     });
-    expect(await screen.findByText("Added")).toBeTruthy();
+    expect(await screen.findByText("Open")).toBeTruthy();
     expect(screen.getByText("3 albums")).toBeTruthy();
+  });
+
+  it("opens a list that already contains the album", async () => {
+    mockGetMyListsForAlbum.mockResolvedValueOnce({
+      lists: [
+        {
+          containsAlbum: true,
+          id: "list_1",
+          itemCount: 3,
+          title: "Headphone albums",
+        },
+      ],
+      nextCursor: null,
+    });
+
+    renderAction();
+    fireEvent.click(screen.getByRole("button", { name: "Add album to a list" }));
+    fireEvent.click(await screen.findByText("Headphone albums"));
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith({
+        params: { listId: "list_1" },
+        to: "/list/$listId",
+      });
+    });
+    expect(mockAddListItem).not.toHaveBeenCalled();
   });
 
   it("creates a list and adds the current album to it", async () => {

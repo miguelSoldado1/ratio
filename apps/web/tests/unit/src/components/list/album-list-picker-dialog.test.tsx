@@ -49,24 +49,29 @@ afterEach(() => {
 });
 
 describe("AlbumListPickerDialog", () => {
-  it("shows list states and only selects available or failed lists", () => {
+  it("opens added lists and only adds to available or failed lists", () => {
+    const onOpenList = vi.fn();
     const onSelect = vi.fn();
 
     renderPicker({
       failedListIds: new Set(["failed"]),
       lists,
+      onOpenList,
       onSelect,
       pendingListIds: new Set(["pending"]),
     });
 
-    expect(screen.getByText("Added")).toBeTruthy();
+    expect(screen.getByText("Open")).toBeTruthy();
     expect(screen.queryByText("Adding")).toBeNull();
     expect(screen.getByText("Full")).toBeTruthy();
     expect(screen.getByText("Retry")).toBeTruthy();
+    expect(screen.getByRole("option", { name: "Open Already added" })).toBeTruthy();
+    expect(screen.getByRole("option", { name: "Add album to Available list" })).toBeTruthy();
 
     fireEvent.click(screen.getByText("Already added"));
     fireEvent.click(screen.getByText("Pending list"));
     fireEvent.click(screen.getByText("Full list"));
+    expect(onOpenList).toHaveBeenCalledWith("already-added");
     expect(onSelect).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByText("Failed list"));
@@ -113,6 +118,7 @@ function renderPicker(overrides: Partial<Parameters<typeof AlbumListPickerDialog
       onCreateList={vi.fn()}
       onLoadMore={vi.fn()}
       onOpenChange={vi.fn()}
+      onOpenList={vi.fn()}
       onRetry={vi.fn()}
       onSelect={vi.fn()}
       open

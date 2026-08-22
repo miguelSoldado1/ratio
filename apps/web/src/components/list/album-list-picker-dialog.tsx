@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, ListPlus, Plus } from "lucide-react";
+import { ArrowLeft, ChevronRight, CircleCheck, ListPlus, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +29,7 @@ interface AlbumListPickerDialogProps {
   onCreateList: () => void;
   onLoadMore: () => void;
   onOpenChange: (open: boolean) => void;
+  onOpenList: (listId: string) => void;
   onRetry: () => void;
   onSelect: (list: MyListForAlbum) => void;
   open: boolean;
@@ -45,6 +46,7 @@ export function AlbumListPickerDialog({
   onCreateList,
   onLoadMore,
   onOpenChange,
+  onOpenList,
   onRetry,
   onSelect,
   open,
@@ -113,6 +115,7 @@ export function AlbumListPickerDialog({
             isLoading={isLoading}
             lists={lists}
             loadError={loadError}
+            onOpenList={onOpenList}
             onRetry={onRetry}
             onSelect={onSelect}
             pendingListIds={pendingListIds}
@@ -148,6 +151,7 @@ interface AlbumListPickerResultsProps {
   isLoading: boolean;
   lists: MyListForAlbum[];
   loadError: boolean;
+  onOpenList: (listId: string) => void;
   onRetry: () => void;
   onSelect: (list: MyListForAlbum) => void;
   pendingListIds: Set<string>;
@@ -158,6 +162,7 @@ function AlbumListPickerResults({
   isLoading,
   lists,
   loadError,
+  onOpenList,
   onRetry,
   onSelect,
   pendingListIds,
@@ -201,20 +206,31 @@ function AlbumListPickerResults({
 
           return (
             <CommandItem
-              className="gap-3 py-2.5"
-              disabled={list.containsAlbum || pending || full}
+              aria-label={list.containsAlbum ? `Open ${list.title}` : `Add album to ${list.title}`}
+              className="gap-3 py-2.5 [&>svg:last-child]:hidden"
+              disabled={pending || (full && !list.containsAlbum)}
               key={list.id}
-              onSelect={() => onSelect(list)}
+              onSelect={() => (list.containsAlbum ? onOpenList(list.id) : onSelect(list))}
               value={`list:${list.title}:${list.id}`}
             >
-              <ListPlus />
+              {list.containsAlbum ? (
+                <CircleCheck className="text-primary" />
+              ) : (
+                <ListPlus className="text-muted-foreground" />
+              )}
               <div className="min-w-0 flex-1 text-left">
                 <p className="truncate font-medium text-foreground text-sm">{list.title}</p>
                 <p className="text-muted-foreground text-xs">
                   {list.itemCount} {list.itemCount === 1 ? "album" : "albums"}
                 </p>
               </div>
-              <ListPickerStatus containsAlbum={list.containsAlbum} failed={failed} full={full} />
+              <ListPickerStatus failed={failed} full={full} />
+              {list.containsAlbum ? (
+                <span className="flex shrink-0 items-center gap-1 text-muted-foreground text-xs group-data-selected/command-item:text-foreground">
+                  Open
+                  <ChevronRight />
+                </span>
+              ) : null}
             </CommandItem>
           );
         })}
@@ -224,21 +240,11 @@ function AlbumListPickerResults({
 }
 
 interface ListPickerStatusProps {
-  containsAlbum: boolean;
   failed: boolean;
   full: boolean;
 }
 
-function ListPickerStatus({ containsAlbum, failed, full }: ListPickerStatusProps) {
-  if (containsAlbum) {
-    return (
-      <Badge variant="secondary">
-        <Check data-icon="inline-start" />
-        Added
-      </Badge>
-    );
-  }
-
+function ListPickerStatus({ failed, full }: ListPickerStatusProps) {
   if (failed) return <Badge variant="destructive">Retry</Badge>;
   if (full) return <Badge variant="outline">Full</Badge>;
 
