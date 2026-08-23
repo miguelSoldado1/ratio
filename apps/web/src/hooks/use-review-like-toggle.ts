@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback } from "react";
 import { toast } from "sonner";
+import { trackSocialActionCompleted } from "@/lib/analytics/posthog";
 import { reviewQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { setReviewLike } from "@/server/functions/review-functions";
 import { tryCatch } from "@/try-catch";
@@ -25,16 +26,7 @@ interface UseReviewLikeToggleParams {
 export function useReviewLikeToggle<TPage extends ReviewLikePage>({ enabled, queryKeys }: UseReviewLikeToggleParams) {
   const queryClient = useQueryClient();
   const setReviewLikeFn = useServerFn(setReviewLike);
-  const setReviewLikeMutation = useMutation({
-    mutationFn: setReviewLikeFn,
-    onSuccess: async (updatedReview) => {
-      for (const targetQueryKey of queryKeys) {
-        queryClient.setQueryData(targetQueryKey, (data) => updateReviewLikeData<TPage>(data, updatedReview));
-      }
-
-      await queryClient.invalidateQueries({ queryKey: reviewQueryKeys.likes(updatedReview.reviewId) });
-    },
-  });
+  const setReviewLikeMutation = useMutation({ mutationFn: setReviewLikeFn });
 
   return useCallback(
     async (reviewId: string, liked: boolean) => {
@@ -42,15 +34,27 @@ export function useReviewLikeToggle<TPage extends ReviewLikePage>({ enabled, que
         return false;
       }
 
-      const { error } = await tryCatch(setReviewLikeMutation.mutateAsync({ data: { liked, reviewId } }));
+      const { data: updatedReview, error } = await tryCatch(
+        setReviewLikeMutation.mutateAsync({ data: { liked, reviewId } })
+      );
       if (error) {
         toast.error("Couldn't update like", {
           description: error instanceof Error ? error.message : "Something went wrong while updating the like.",
         });
         return false;
       }
+
+      if (updatedReview.liked) trackSocialActionCompleted("review_like");
+
+      for (const targetQueryKey of queryKeys) {
+        queryClient.setQueryData(targetQueryKey, (data) => updateReviewLikeData<TPage>(data, updatedReview));
+      }
+
+      await queryClient.invalidateQueries({ queryKey: reviewQueryKeys.likes(updatedReview.reviewId) });
+
+      return true;
     },
-    [enabled, setReviewLikeMutation]
+    [enabled, queryClient, queryKeys, setReviewLikeMutation]
   );
 }
 

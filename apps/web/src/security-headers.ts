@@ -1,7 +1,7 @@
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
-  "connect-src 'self' https://accounts.spotify.com https://api.spotify.com https://*.ce2122099880570dc3d6f5908544bb21.r2.cloudflarestorage.com",
+  "connect-src 'self' https://accounts.spotify.com https://api.spotify.com https://us.i.posthog.com https://*.ce2122099880570dc3d6f5908544bb21.r2.cloudflarestorage.com",
   "font-src 'self'",
   "form-action 'self' https://accounts.spotify.com https://accounts.google.com https://discord.com",
   "frame-ancestors 'none'",

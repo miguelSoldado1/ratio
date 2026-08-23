@@ -9,6 +9,7 @@ import { ReviewsSection } from "@/components/album-page/reviews-section";
 import { TrackList } from "@/components/album-page/track-list";
 import { InlineError } from "@/components/inline-error";
 import { PageContainer, PageContainerContent } from "@/components/page-container";
+import { trackAlbumOpened } from "@/lib/analytics/posthog";
 import { createAlbumPageTitle } from "@/lib/page-titles";
 import { albumQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { getAlbumDetails } from "@/server/functions/spotify-functions";
@@ -25,14 +26,16 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
   });
 
   const loadedAlbum = albumDetailsQuery.data?.album;
+  const loadedAlbumId = loadedAlbum?.id;
   const albumTitle = loadedAlbum?.title;
-  const primaryArtistName = loadedAlbum?.artists[0]?.name;
+  const albumArtist = loadedAlbum?.artists.map((artist) => artist.name).join(", ");
 
   useEffect(() => {
-    if (!albumTitle) return;
+    if (!(albumTitle && loadedAlbumId)) return;
 
-    document.title = createAlbumPageTitle(albumTitle, primaryArtistName);
-  }, [albumTitle, primaryArtistName]);
+    document.title = createAlbumPageTitle(albumTitle, albumArtist);
+    trackAlbumOpened({ artist: albumArtist ?? "", id: loadedAlbumId, title: albumTitle });
+  }, [albumArtist, albumTitle, loadedAlbumId]);
 
   if (albumDetailsQuery.isPending) return <AlbumLookupLoading />;
   if (albumDetailsQuery.isError) {

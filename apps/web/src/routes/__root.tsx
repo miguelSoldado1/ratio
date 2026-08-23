@@ -1,9 +1,11 @@
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { NotFoundPage } from "@/components/not-found-page";
 import { TopBar } from "@/components/top-bar";
 import { Toaster } from "@/components/ui/sonner";
+import { initializeAnalytics } from "@/lib/analytics/posthog";
 import { DOCUMENT_METADATA_BOOTSTRAP_FALLBACK, DOCUMENT_METADATA_SCRIPT_ID } from "@/lib/document-metadata";
 import { defaultSeoDescription, defaultSeoTitle, faviconLinks } from "@/lib/seo";
 import appCss from "../styles.css?url";
@@ -28,6 +30,10 @@ export const Route = createRootRoute({
 });
 
 function RootComponent() {
+  useEffect(() => {
+    initializeAnalytics();
+  }, []);
+
   return (
     <RootDocument>
       <a

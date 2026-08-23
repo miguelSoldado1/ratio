@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback } from "react";
 import { toast } from "sonner";
+import { trackSocialActionCompleted } from "@/lib/analytics/posthog";
 import { setUserFollow } from "@/server/functions/follow-functions";
 import { tryCatch } from "@/try-catch";
 import type { QueryKey } from "@tanstack/react-query";
@@ -16,7 +17,7 @@ export function useSetUserFollowMutation() {
   const setUserFollowFn = useServerFn(setUserFollow);
 
   return useMutation({
-    mutationFn: setUserFollowFn,
+    mutationFn: (input: Parameters<typeof setUserFollowFn>[0]) => setUserFollowFn(input),
   });
 }
 
@@ -58,6 +59,8 @@ export function useUserFollowToggle({ enabled, queryKey }: UseUserFollowTogglePa
         });
         return false;
       }
+
+      if (updatedProfile.followedByViewer) trackSocialActionCompleted("follow");
 
       queryClient.setQueryData<UserProfile>(queryKey, (profile) => {
         if (!(profile && profile.user.id === updatedProfile.userId)) return profile;

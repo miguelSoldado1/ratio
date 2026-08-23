@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/drawer";
 import { Field, FieldDescription, FieldGroup, FieldLabel, FieldTitle } from "@/components/ui/field";
 import { Textarea } from "@/components/ui/textarea";
+import { trackReviewPublished } from "@/lib/analytics/posthog";
 import { authClient } from "@/lib/auth/auth-client";
 import { albumQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { createReview, hasMyAlbumReview } from "@/server/functions/review-functions";
@@ -33,9 +34,9 @@ const reviewFormIds = {
 const maxReviewLength = 2000;
 
 interface ReviewDrawerProps {
-  albumArtist?: string;
+  albumArtist: string;
   albumId: string;
-  albumTitle?: string;
+  albumTitle: string;
 }
 
 export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerProps) {
@@ -90,6 +91,7 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
       });
     }
 
+    trackReviewPublished({ artist: albumArtist, id: albumId, title: albumTitle }, trimmedBody.length > 0);
     await queryClient.invalidateQueries({ queryKey: albumQueryKeys.review(albumId) });
 
     setOpen(false);

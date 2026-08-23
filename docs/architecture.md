@@ -55,6 +55,22 @@ Review, reply, and list creation share the native Cloudflare content-creation ra
 and notifications stay request-driven; there is no polling, queue, KV thread cache, denormalized counter, or
 materialized activity table.
 
+## Analytics Boundary
+
+The public app loads PostHog after hydration only for a production build served from the exact
+`https://ratiomusic.live` origin. Its public client token and ingestion host are pinned in the analytics boundary so a
+Cloudflare Git Build cannot silently omit analytics through missing build-time environment variables. PostHog runs in
+cookieless server-hash mode with person profiles, interaction autocapture, error and performance capture, session
+recording, surveys, experiments, and feature flags disabled. Automatic SPA page views and page leaves feed Web
+Analytics, but album, list, review, and username path segments are normalized before capture and external referrers are
+reduced to their origin.
+
+Product analytics deliberately consists of three narrow events: album opens and successful review publication with the
+public Spotify album ID, title, and artist (publication adds only a written-body boolean), and successful positive
+social actions with a bounded action enum. PostHog never receives Ratio account IDs, usernames, search text, rating
+values, reviews, replies, or list content. The product database remains the source of truth for exact activity,
+retention, and cross-day behavior.
+
 ## Public Document Metadata Boundary
 
 Album, review, and profile pages are SPA routes with `ssr: false`. They have no route loaders, so matching, intent

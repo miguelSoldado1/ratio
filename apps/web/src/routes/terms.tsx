@@ -17,21 +17,22 @@ export const Route = createFileRoute("/terms")({
 function TermsPage() {
   return (
     <LegalPage
-      description="The basic rules for using Ratio and sharing work with the community."
+      description="The rules for using Ratio and sharing work with its community."
       highlights={[
         { label: "Service", value: "Album ratings and reviews" },
         { label: "Your content", value: "It stays yours" },
         { label: "Community", value: "Be respectful" },
       ]}
-      title="Terms of Use"
+      lastUpdated="23 August 2026"
+      title="Terms of use"
     >
-      <LegalSection id="terms-about" title="About these Terms">
+      <LegalSection id="terms-about" title="About these terms">
         <p>
-          Ratio is a community for rating and reviewing albums, operated by Miguel Soldado. These Terms form an
-          agreement between you and Miguel Soldado.
+          Ratio is an independently operated community for rating and reviewing albums. These terms govern your use of
+          the service.
         </p>
         <p>
-          By creating an account or using account features, you accept these Terms. If you do not accept them, you may
+          By creating an account or using account features, you accept these terms. If you do not accept them, you may
           still browse public pages but must not create an account or submit content.
         </p>
       </LegalSection>
@@ -47,14 +48,13 @@ function TermsPage() {
 
       <LegalSection id="terms-content" title="Content you share">
         <p>
-          You keep ownership of the reviews, replies, lists, and images you create. You give Ratio a non-exclusive,
-          worldwide, royalty-free license to host, store, reproduce, and display that content, only as needed to operate
-          Ratio.
+          You own the reviews, replies, lists, and images you create. You give Ratio a non-exclusive, worldwide,
+          royalty-free license to host, store, reproduce, and display that content only as needed to run the service.
         </p>
         <p>
           That license ends when your content is deleted, except for temporary backups or copies Ratio must keep by law.
-          You confirm that you have the rights to share whatever you post. Once content is public, other people can copy
-          or share it in ways Ratio cannot control.
+          You confirm that you have the right to share what you post. Once content is public, other people can copy or
+          share it in ways Ratio cannot control.
         </p>
       </LegalSection>
 
@@ -69,10 +69,10 @@ function TermsPage() {
           Ratio, and enough information to understand why you believe its use is not authorized.
         </p>
         <p>
-          Reports should be made in good faith and should confirm that the information supplied is accurate and that you
-          are the rights holder or authorized to act for them. Ratio may ask for more information, remove or disable
-          access to reported content, and suspend or terminate accounts that repeatedly infringe other people&apos;s
-          rights. If your content was removed by mistake, contact the same address and explain why.
+          Reports must be made in good faith and confirm that the information supplied is accurate and that you are the
+          rights holder or authorized to act for them. Ratio may ask for more information, remove or disable access to
+          reported content, and suspend or terminate accounts that repeatedly infringe other people&apos;s rights. If
+          your content was removed by mistake, contact the same address and explain why.
         </p>
       </LegalSection>
 
@@ -97,9 +97,9 @@ function TermsPage() {
 
       <LegalSection id="terms-third-parties" title="Spotify and other services">
         <p>
-          Ratio is built on services from Spotify, Google, Discord, Cloudflare, and Supabase. Their own terms and
-          privacy policies may also apply when you use them. Album artwork, metadata, names, and trademarks belong to
-          their respective owners.
+          Ratio uses services from Spotify, Google, Discord, Cloudflare, and Supabase. Their terms and privacy policies
+          may also apply when you use them. Album artwork, metadata, names, and trademarks belong to their respective
+          owners.
         </p>
         <p>
           Features and data that come from these services can change or stop working, and that is outside Ratio&apos;s
@@ -115,8 +115,8 @@ function TermsPage() {
         </p>
         <p>
           To the fullest extent permitted by law, all implied warranties relating to the Spotify Platform, Spotify
-          Service, and Spotify Content—including merchantability, fitness for a particular purpose, and
-          non-infringement—are disclaimed.
+          Service, and Spotify Content (including merchantability, fitness for a particular purpose, and
+          non-infringement) are disclaimed.
         </p>
         <p>
           You must not modify or create derivative works based on the Spotify Platform, Spotify Service, or Spotify
@@ -133,7 +133,7 @@ function TermsPage() {
       <LegalSection id="terms-availability" title="Availability and account deletion">
         <p>
           Ratio may change, pause, or stop features at any time. Uninterrupted access and permanent storage are not
-          guaranteed, so keep your own copy of anything you would hate to lose.
+          guaranteed, so keep your own copy of content that matters to you.
         </p>
         <p>
           You can delete your account in settings. Your account data and activity are removed from the live service,
@@ -155,13 +155,13 @@ function TermsPage() {
 
       <LegalSection id="terms-changes" title="Changes, law, and contact">
         <p>
-          These Terms will change as Ratio grows. The date at the top is updated whenever they do, and significant
-          changes will be called out where that is reasonably possible. If you keep using Ratio after a change, you
-          accept the updated Terms.
+          Ratio may update these terms. The date at the top will show the latest revision. If a change materially
+          affects your rights, Ratio will provide notice in the service where practicable. If you keep using Ratio after
+          a change takes effect, you accept the updated terms.
         </p>
-        <p>Portuguese law governs these Terms. Any mandatory protections under the law where you live still apply.</p>
+        <p>Portuguese law governs these terms. Any mandatory protections under the law where you live still apply.</p>
         <p>
-          Questions are welcome at{" "}
+          For questions, email{" "}
           <a className={legalLinkClassName} href="mailto:ratio.music.dev@gmail.com">
             ratio.music.dev@gmail.com
           </a>

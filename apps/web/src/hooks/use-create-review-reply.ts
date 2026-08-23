@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback } from "react";
+import { trackSocialActionCompleted } from "@/lib/analytics/posthog";
 import { albumQueryKeys, feedQueryKeys, userQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { isReviewReplyCountData, updateReviewReplyCountInPages } from "@/lib/tanstack-query/review-reply-cache";
 import { createReviewReply } from "@/server/functions/review-reply-functions";
@@ -36,6 +37,7 @@ export function useCreateReviewReply() {
         );
       }
 
+      trackSocialActionCompleted("reply");
       return { error: null, reply };
     },
     [mutation, queryClient]

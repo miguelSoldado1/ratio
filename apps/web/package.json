@@ -45,6 +45,7 @@
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.17.0",
     "obscenity": "^0.4.6",
+    "posthog-js": "1.415.6",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "shadcn": "^4.11.0",
