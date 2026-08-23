@@ -11,6 +11,7 @@ interface LegalPageProps {
   children: ReactNode;
   description: string;
   highlights: LegalHighlight[];
+  lastUpdated: string;
   title: string;
 }
 
@@ -20,7 +21,7 @@ interface LegalSectionProps {
   title: string;
 }
 
-export function LegalPage({ children, description, highlights, title }: LegalPageProps) {
+export function LegalPage({ children, description, highlights, lastUpdated, title }: LegalPageProps) {
   return (
     <main className="min-h-screen bg-background text-foreground">
       <PageContainer>
@@ -32,7 +33,7 @@ export function LegalPage({ children, description, highlights, title }: LegalPag
                 <h1 className="font-semibold text-4xl tracking-tight sm:text-5xl">{title}</h1>
                 <p className="max-w-2xl text-base text-muted-foreground leading-7 sm:text-lg">{description}</p>
               </div>
-              <p className="text-muted-foreground text-sm">Last updated 28 July 2026</p>
+              <p className="text-muted-foreground text-sm">Last updated {lastUpdated}</p>
 
               <dl className="grid divide-y divide-border border-border border-y sm:grid-cols-3 sm:divide-x sm:divide-y-0">
                 {highlights.map((highlight) => (

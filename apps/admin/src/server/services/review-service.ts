@@ -1,14 +1,9 @@
 import { albums, reviewLikes, reviews, user } from "@ratio/database/schema";
 import { and, asc, count, desc, eq, gte, ilike, lt, or, sql } from "drizzle-orm";
 import { toFiniteNumber } from "@/lib/format";
-import {
-  buildQueryParams,
-  buildSortingClause,
-  type TableQueryConfig,
-  type TableQueryInput,
-  type TableQueryResult,
-} from "../table-query";
+import { buildQueryParams, buildSortingClause } from "../table-query";
 import type { getDb } from "@/lib/db";
+import type { TableQueryConfig, TableQueryInput, TableQueryResult } from "../table-query";
 
 // Constants
 

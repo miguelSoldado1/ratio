@@ -28,6 +28,20 @@ pnpm run dev
 
 Use `pnpm run dev:admin` for the separate admin app on port 3001. Set `ADMIN_BETTER_AUTH_URL=http://127.0.0.1:3001` in the shared root `.env`. Use `pnpm run dev:cf` or `pnpm run dev:admin:cf` when you want to exercise the corresponding Cloudflare development environment locally.
 
+## Analytics
+
+The public app sends cookieless Web Analytics and three explicit product events to PostHog: album opens and successful
+review publication with public catalog identity, plus completed positive social actions. Analytics is pinned to the
+public PostHog project and loads only for the production build at the exact `https://ratiomusic.live` origin, so local,
+development, and preview deployments do not send events. The PostHog project token is a public client identifier, not a
+secret.
+
+Enable **Cookieless server hash mode** in the matching PostHog project. Keep person profiles, autocapture, dead clicks,
+heatmaps, performance and exception capture, session recording, surveys, and feature flags disabled. Dynamic album,
+list, review, and username path segments are removed before page events are sent. Product events do not include account
+identifiers, search text, ratings, or written content; album-open and review-publication events include the public
+Spotify album ID, title, and artist.
+
 ## Testing
 
 Public tests live under `apps/web/tests`; admin tests live under `apps/admin/tests`.

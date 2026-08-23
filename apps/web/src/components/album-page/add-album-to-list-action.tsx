@@ -120,6 +120,11 @@ export function AddAlbumToListAction({ albumId, albumTitle }: AddAlbumToListActi
     await navigate({ params: { listId: createdList.id }, to: "/list/$listId" });
   }
 
+  async function handleOpenList(listId: string) {
+    setPickerOpen(false);
+    await navigate({ params: { listId }, to: "/list/$listId" });
+  }
+
   function handlePickerOpenChange(open: boolean) {
     setPickerOpen(open);
     if (!open) setFailedListIds(new Set());
@@ -161,6 +166,7 @@ export function AddAlbumToListAction({ albumId, albumTitle }: AddAlbumToListActi
             onCreateList={handleCreateList}
             onLoadMore={handleLoadMore}
             onOpenChange={handlePickerOpenChange}
+            onOpenList={handleOpenList}
             onRetry={handleRetry}
             onSelect={handleListSelect}
             open={pickerOpen}

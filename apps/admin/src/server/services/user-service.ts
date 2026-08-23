@@ -1,8 +1,9 @@
 import { user } from "@ratio/database/schema";
 import { and, count, gte, lt, sql } from "drizzle-orm";
 import { toFiniteNumber } from "@/lib/format";
-import { buildQueryParams, type TableQueryConfig, type TableQueryInput, type TableQueryResult } from "../table-query";
+import { buildQueryParams } from "../table-query";
 import type { getDb } from "@/lib/db";
+import type { TableQueryConfig, TableQueryInput, TableQueryResult } from "../table-query";
 
 // Constants
 

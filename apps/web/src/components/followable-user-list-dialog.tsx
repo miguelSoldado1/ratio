@@ -17,6 +17,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { UserList } from "@/components/user-list";
 import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
 import { useSetUserFollowMutation } from "@/hooks/use-user-follow-toggle";
+import { trackSocialActionCompleted } from "@/lib/analytics/posthog";
 import { tryCatch } from "@/try-catch";
 import type { InfiniteData, QueryKey } from "@tanstack/react-query";
 import type { ReactElement } from "react";
@@ -127,6 +128,8 @@ export function FollowableUserListDialog<TUser extends FollowableUser>({
       const errorMessage = error instanceof Error ? error.message : "Something went wrong while updating follow.";
       return toast.error("Couldn't update follow", { description: errorMessage });
     }
+
+    if (updatedFollow.followedByViewer) trackSocialActionCompleted("follow");
 
     queryClient.setQueryData<InfiniteData<FollowableUserPage<TUser>, string | null>>(queryKey, (list) =>
       updateFollowableUser(list, updatedFollow.userId, updatedFollow.followedByViewer)

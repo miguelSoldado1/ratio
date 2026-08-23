@@ -12,6 +12,7 @@ import { useCreateReviewReply } from "@/hooks/use-create-review-reply";
 import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
 import { useReviewDelete } from "@/hooks/use-review-delete";
 import { useReviewLikeToggle } from "@/hooks/use-review-like-toggle";
+import { trackSocialActionCompleted } from "@/lib/analytics/posthog";
 import { authClient } from "@/lib/auth/auth-client";
 import { createReviewPageTitle } from "@/lib/page-titles";
 import { albumQueryKeys, feedQueryKeys, reviewQueryKeys, userQueryKeys } from "@/lib/tanstack-query/query-keys";
@@ -204,6 +205,8 @@ export function ReviewConversation({ reviewId: routeReviewId }: ReviewConversati
       });
       return false;
     }
+
+    if (updatedReply.liked) trackSocialActionCompleted("reply_like");
 
     queryClient.setQueryData<ReviewRepliesData>(repliesQueryKey, (data) => updateReviewReplyLike(data, updatedReply));
     setLocalReplyTail((tail) =>
