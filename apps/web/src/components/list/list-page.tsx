@@ -17,7 +17,7 @@ import { ListHeader } from "./list-header";
 import { ListItemRow } from "./list-item-row";
 import { ListManagementMenu } from "./list-management-menu";
 import { listRowClassName } from "./list-row-styles";
-import type { AutoScrollOptions, DragEndEvent } from "@dnd-kit/core";
+import type { Announcements, AutoScrollOptions, DragEndEvent } from "@dnd-kit/core";
 import type { ListDetails } from "@/server/services/list-service";
 
 const screenReaderInstructions = {
@@ -91,6 +91,17 @@ export function ListPage({
     return displayedAlbums.find((album) => album.id === String(id))?.title ?? "album";
   }
 
+  const announcements: Announcements = {
+    onDragCancel: ({ active }) => `Reordering ${getAlbumTitle(active.id)} was cancelled.`,
+    onDragEnd: ({ active, over }) =>
+      over
+        ? `${getAlbumTitle(active.id)} was moved to the position of ${getAlbumTitle(over.id)}.`
+        : `${getAlbumTitle(active.id)} was returned to its original position.`,
+    onDragOver: ({ active, over }) =>
+      over ? `${getAlbumTitle(active.id)} is over ${getAlbumTitle(over.id)}.` : undefined,
+    onDragStart: ({ active }) => `Picked up ${getAlbumTitle(active.id)}.`,
+  };
+
   async function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
@@ -137,19 +148,7 @@ export function ListPage({
         <div className="mt-6 max-w-2xl border-border border-t pt-1 lg:mt-8">
           {hasAlbums ? (
             <DndContext
-              accessibility={{
-                announcements: {
-                  onDragCancel: ({ active }) => `Reordering ${getAlbumTitle(active.id)} was cancelled.`,
-                  onDragEnd: ({ active, over }) =>
-                    over
-                      ? `${getAlbumTitle(active.id)} was moved to the position of ${getAlbumTitle(over.id)}.`
-                      : `${getAlbumTitle(active.id)} was returned to its original position.`,
-                  onDragOver: ({ active, over }) =>
-                    over ? `${getAlbumTitle(active.id)} is over ${getAlbumTitle(over.id)}.` : undefined,
-                  onDragStart: ({ active }) => `Picked up ${getAlbumTitle(active.id)}.`,
-                },
-                screenReaderInstructions,
-              }}
+              accessibility={{ announcements, screenReaderInstructions }}
               autoScroll={listAutoScroll}
               collisionDetection={closestCenter}
               modifiers={[restrictToVerticalAxis, restrictToParentElement]}

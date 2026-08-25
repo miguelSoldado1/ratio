@@ -279,6 +279,7 @@ function createSpotifyAlbumDetails(overrides: Record<string, unknown> = {}) {
 
 function createSpotifyTrack(overrides: Record<string, unknown> = {}) {
   return {
+    artists: [{ id: "artist_1", name: "Artist One" }],
     disc_number: 1,
     duration_ms: 1000,
     id: "track_1",
@@ -306,6 +307,7 @@ function createCachedAlbumDetails({ albumId, releaseDate = "2026-01-02" }: { alb
     },
     tracks: [
       {
+        artists: [{ id: "artist_1", name: "Artist One" }],
         discNumber: 1,
         durationMs: 3500,
         id: "cached_track",

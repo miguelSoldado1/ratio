@@ -82,7 +82,13 @@ const spotifyArtistSchema = z.object({
   spotifyUrl: z.string(),
 });
 
+const spotifyTrackArtistSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+
 const spotifyAlbumTrackSchema = z.object({
+  artists: z.array(spotifyTrackArtistSchema),
   id: z.string(),
   discNumber: z.number(),
   durationMs: z.number(),
@@ -359,6 +365,7 @@ function getNormalizedSpotifyReleaseDate(releaseDate: string) {
 
 function mapSpotifyAlbumTrack(track: SpotifyAlbumTrack) {
   return {
+    artists: track.artists.map((artist) => ({ id: artist.id, name: artist.name })),
     id: track.id,
     discNumber: track.disc_number,
     durationMs: track.duration_ms,
