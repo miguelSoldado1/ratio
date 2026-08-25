@@ -2,6 +2,7 @@ import type { getAlbumDetails } from "@/server/functions/spotify-functions";
 
 type SpotifyAlbumDetails = Awaited<ReturnType<typeof getAlbumDetails>>;
 type SpotifyAlbum = SpotifyAlbumDetails["album"];
+type SpotifyAlbumTrack = SpotifyAlbumDetails["tracks"][number];
 
 export function getAlbumArtistNames(album: SpotifyAlbum) {
   return album.artists.map((albumArtist) => albumArtist.name).join(", ");
@@ -34,4 +35,8 @@ function formatAlbumRuntime(durationMs: number) {
   }
 
   return `${minutes} min ${seconds} sec`;
+}
+
+export function getTrackArtistNames(track: SpotifyAlbumTrack) {
+  return track.artists.map((trackArtist) => trackArtist.name).join(", ");
 }

@@ -1,6 +1,7 @@
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { getTrackArtistNames } from "./album-format.ts";
 import type { getAlbumDetails } from "@/server/functions/spotify-functions";
 
 type SpotifyAlbumDetails = Awaited<ReturnType<typeof getAlbumDetails>>;
@@ -28,7 +29,7 @@ export function TrackList({ className, collapsible = false, tracks }: TrackListP
   );
 }
 
-function CollapsibleTrackList({ className, tracks }: { className?: string; tracks: SpotifyAlbumTrack[] }) {
+function CollapsibleTrackList({ className, tracks }: Omit<TrackListProps, "collapsible">) {
   const [isExpanded, setIsExpanded] = useState(false);
   const hasMore = tracks.length > PEEK_THRESHOLD;
 
@@ -60,7 +61,7 @@ function CollapsibleTrackList({ className, tracks }: { className?: string; track
   );
 }
 
-function TrackGroups({ className, tracks }: { className?: string; tracks: SpotifyAlbumTrack[] }) {
+function TrackGroups({ className, tracks }: Omit<TrackListProps, "collapsible">) {
   const trackGroups = getTrackGroups(tracks);
   const hasMultipleDiscs = trackGroups.length > 1;
 
@@ -92,9 +93,12 @@ function TrackGroups({ className, tracks }: { className?: string; tracks: Spotif
 
 function TrackRow({ label, track }: { label: number; track: SpotifyAlbumTrack }) {
   return (
-    <div className="grid grid-cols-[2rem_1fr_auto] items-center gap-3 py-3">
+    <div className="grid grid-cols-[2rem_1fr_auto] items-center gap-3 py-2">
       <span className="text-muted-foreground text-xs tabular-nums">{label}</span>
-      <span className="min-w-0 truncate font-medium text-sm">{track.title}</span>
+      <div className="min-w-0">
+        <p className="truncate font-medium text-sm leading-snug">{track.title}</p>
+        <p className="truncate text-muted-foreground-subtle text-xs leading-snug">{getTrackArtistNames(track)}</p>
+      </div>
       <span className="text-muted-foreground text-xs tabular-nums">{getTrackDuration(track)}</span>
     </div>
   );
