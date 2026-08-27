@@ -1,7 +1,7 @@
 import { deleteSpotifyCacheJson } from "./spotify-cache";
 
 const SPOTIFY_PROVIDER_ID = "spotify";
-const SPOTIFY_RECENT_ROTATION_CACHE_KEY_PREFIX = "spotify:recent-rotation";
+const SPOTIFY_RECENT_ROTATION_CACHE_KEY_PREFIX = "spotify:recent-rotation:v2";
 
 interface DeletedAccount {
   providerId: string;

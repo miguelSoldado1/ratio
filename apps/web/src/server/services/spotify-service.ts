@@ -423,14 +423,14 @@ function getAlbumSearchResults(searchResults: SpotifyAlbum[]) {
   for (const album of searchResults) {
     if (album.album_type !== ALBUM_TYPE) continue;
 
-    const key = getAlbumSearchDedupeKey(album);
+    const key = getSpotifyAlbumDedupeKey(album);
     if (!albumsByKey.has(key)) albumsByKey.set(key, album);
   }
 
   return Array.from(albumsByKey.values());
 }
 
-function getAlbumSearchDedupeKey(album: SpotifyAlbum) {
+export function getSpotifyAlbumDedupeKey(album: SpotifyAlbum) {
   return [
     normalizeAlbumSearchText(removeAdvisoryEditionMarkers(album.name)),
     album.artists.map((artist) => normalizeAlbumSearchText(artist.name)).join("|"),

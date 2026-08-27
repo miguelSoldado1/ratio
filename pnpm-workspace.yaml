@@ -9,3 +9,4 @@ allowBuilds:
   msw: false
   sharp: true
   workerd: true
+  core-js: true
