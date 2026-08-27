@@ -70,10 +70,10 @@ Pipeline in `apps/web/src/server/services/spotify-recent-rotation-service.ts`:
 
 ```text
 Validate Spotify account, scope, and token (before any cached data is returned)
-→ read per-user KV cache (spotify:recent-rotation:<ratio-user-id>, 30m TTL)
+→ read per-user KV cache (spotify:recent-rotation:v2:<ratio-user-id>, 30m TTL)
 → on miss: GET /me/player/recently-played?limit=50 (one request, album metadata included)
 → keep album_type === "album", drop local/malformed tracks
-→ dedupe by album ID, keeping the newest played_at
+→ dedupe by normalized title, artists, release year, and track count, keeping the newest played_at
 → order by most recent play, take 6
 → cache the normalized six-album response only
 ```
@@ -81,6 +81,7 @@ Validate Spotify account, scope, and token (before any cached data is returned)
 Rules:
 
 - Listening history is never persisted in Postgres, and no permanent Ratio album rows are created from this shelf.
+- Explicit, clean, and edited editions use the same advisory-marker deduplication rule as album search.
 - Authorization failures are never cached as empty successful results; an empty album list is a valid successful result.
 - Spotify `429` responses are respected without a retry loop. Better Auth refreshes once; Ratio does not add a retry around token retrieval.
 - The client query uses a 30-minute `staleTime` matching the KV TTL. Known, accepted tradeoff: the two layers can compound to roughly 1-hour-old data in the worst case. No manual refresh in v1.

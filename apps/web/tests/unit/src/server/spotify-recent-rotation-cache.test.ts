@@ -20,7 +20,7 @@ describe("Spotify recent rotation cache", () => {
       userId: "user_1",
     });
 
-    expect(mockDeleteSpotifyCacheJson).toHaveBeenCalledWith("spotify:recent-rotation:user_1");
+    expect(mockDeleteSpotifyCacheJson).toHaveBeenCalledWith("spotify:recent-rotation:v2:user_1");
   });
 
   it("does not clear the rotation when another provider is deleted", async () => {

@@ -77,7 +77,7 @@ describe("getMyRecentRotationService", () => {
       expect.objectContaining({ albums: [expect.objectContaining({ id: "album_1" })], status: "ready" })
     );
     expect(mockSetSpotifyCacheJson).toHaveBeenCalledWith(
-      "spotify:recent-rotation:user_1",
+      "spotify:recent-rotation:v2:user_1",
       expect.objectContaining({ albums: [expect.objectContaining({ id: "album_1" })] }),
       1800
     );
@@ -117,6 +117,31 @@ describe("mapRecentlyPlayedToRotationAlbums", () => {
     ]);
   });
 
+  it("deduplicates explicit and clean editions using the search rule", () => {
+    const albums = mapRecentlyPlayedToRotationAlbums(
+      createPlayHistoryItems([
+        createPlayHistoryItem({
+          albumId: "clean_album",
+          albumName: "Album Name (Clean)",
+          playedAt: "2026-07-10T09:00:00.000Z",
+        }),
+        createPlayHistoryItem({
+          albumId: "explicit_album",
+          albumName: "Album Name (Explicit)",
+          playedAt: "2026-07-10T11:00:00.000Z",
+        }),
+      ])
+    );
+
+    expect(albums).toEqual([
+      expect.objectContaining({
+        id: "explicit_album",
+        lastPlayedAt: "2026-07-10T11:00:00.000Z",
+        title: "Album Name (Explicit)",
+      }),
+    ]);
+  });
+
   it("ignores malformed plays and returns at most six albums", () => {
     const validItems = Array.from({ length: 8 }, (_, index) =>
       createPlayHistoryItem({ albumId: `album_${index}`, playedAt: `2026-07-10T0${index}:00:00.000Z` })
@@ -148,10 +173,12 @@ function createPlayHistoryItems(items: Record<string, unknown>[]) {
 
 function createPlayHistoryItem({
   albumId,
+  albumName = albumId,
   albumType = "album",
   playedAt = "2026-07-10T10:00:00.000Z",
 }: {
   albumId: string;
+  albumName?: string;
   albumType?: string;
   playedAt?: string;
 }) {
@@ -163,7 +190,9 @@ function createPlayHistoryItem({
         artists: [{ id: "artist_1", name: "Artist One" }],
         id: albumId,
         images: [{ height: 640, url: "https://img.large", width: 640 }],
-        name: "Album Name",
+        name: albumName,
+        release_date: "2026-01-02",
+        total_tracks: 2,
       },
     },
   };

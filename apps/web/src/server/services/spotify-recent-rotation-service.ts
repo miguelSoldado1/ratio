@@ -7,7 +7,7 @@ import {
   SpotifyAuthorizationRequiredError,
   SpotifyReconnectRequiredError,
 } from "../spotify-user-token";
-import { getLargestImageUrl, getSpotifyCacheValueOrFetch } from "./spotify-service";
+import { getLargestImageUrl, getSpotifyAlbumDedupeKey, getSpotifyCacheValueOrFetch } from "./spotify-service";
 import type { Db } from "@/lib/db";
 import type { AuthenticatedContext } from "../auth-middleware";
 
@@ -116,7 +116,7 @@ async function getRotationUserAccessToken(db: Db, userId: string) {
 // Mappers
 
 export function mapRecentlyPlayedToRotationAlbums(items: SpotifyPlayHistoryItem[]) {
-  const albumsById = new Map<string, RecentRotationAlbum>();
+  const albumsByDedupeKey = new Map<string, RecentRotationAlbum>();
 
   for (const item of items) {
     const album = item?.track?.album;
@@ -126,16 +126,12 @@ export function mapRecentlyPlayedToRotationAlbums(items: SpotifyPlayHistoryItem[
     if (!(album?.id && playedAt)) continue;
     if (album.album_type !== ALBUM_TYPE) continue;
 
-    const existingAlbum = albumsById.get(album.id);
+    const dedupeKey = getSpotifyAlbumDedupeKey(album);
+    const existingAlbum = albumsByDedupeKey.get(dedupeKey);
 
-    if (existingAlbum) {
-      if (Date.parse(playedAt) > Date.parse(existingAlbum.lastPlayedAt)) {
-        existingAlbum.lastPlayedAt = playedAt;
-      }
-      continue;
-    }
+    if (existingAlbum && Date.parse(playedAt) <= Date.parse(existingAlbum.lastPlayedAt)) continue;
 
-    albumsById.set(album.id, {
+    albumsByDedupeKey.set(dedupeKey, {
       id: album.id,
       title: album.name,
       artistNames: (album.artists ?? []).map((artist) => artist.name),
@@ -145,7 +141,7 @@ export function mapRecentlyPlayedToRotationAlbums(items: SpotifyPlayHistoryItem[
     });
   }
 
-  return Array.from(albumsById.values())
+  return Array.from(albumsByDedupeKey.values())
     .sort((albumA, albumB) => Date.parse(albumB.lastPlayedAt) - Date.parse(albumA.lastPlayedAt))
     .slice(0, RECENT_ROTATION_ALBUM_LIMIT);
 }
