@@ -70,10 +70,23 @@ describe("ReplyLikeButton", () => {
     expect(onToggle).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Like reply by Alice" }).getAttribute("aria-pressed")).toBe("false");
   });
+
+  it("prompts sign-in instead of liking for anonymous viewers", async () => {
+    vi.useFakeTimers();
+    const onAuthRequired = vi.fn();
+    renderReplyLikeButton({ onAuthRequired, onToggle: undefined });
+
+    fireEvent.click(screen.getByRole("button", { name: "Like reply by Alice" }));
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(350);
+    });
+
+    expect(onAuthRequired).toHaveBeenCalledOnce();
+    expect(screen.getByRole("button", { name: "Like reply by Alice" }).getAttribute("aria-pressed")).toBe("false");
+  });
 });
 
 function renderReplyLikeButton(overrides: Partial<React.ComponentProps<typeof ReplyLikeButton>> = {}) {
-  return render(
-    <ReplyLikeButton authorName="Alice" disabled={false} liked={false} likes={2} onToggle={vi.fn()} {...overrides} />
-  );
+  return render(<ReplyLikeButton authorName="Alice" liked={false} likes={2} onToggle={vi.fn()} {...overrides} />);
 }

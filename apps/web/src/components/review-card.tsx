@@ -291,33 +291,25 @@ function Review({ children, className, collapsed = true, permalink }: ReviewProp
 interface LikesProps {
   className?: string;
   count: number;
-  disabled?: boolean;
   liked?: boolean;
+  onAuthRequired?: () => void;
   onShowLikes?: () => void;
   onToggle?: OptimisticLikeToggleHandler;
 }
 
-function getLikeHeartClass({ disabled, liked }: { disabled: boolean; liked: boolean }) {
+function getLikeHeartClass(liked: boolean) {
   if (liked) return "fill-primary stroke-primary";
-  if (disabled) return "stroke-muted-foreground/70";
 
   return "stroke-muted-foreground group-hover:stroke-primary";
 }
 
-function getLikeCountClass({ disabled, liked }: { disabled: boolean; liked: boolean }) {
+function getLikeCountClass(liked: boolean) {
   if (liked) return "text-primary";
-  if (disabled) return "text-muted-foreground-subtle";
 
   return "text-muted-foreground group-hover:text-primary";
 }
 
-function getLikeButtonClass({ disabled }: { disabled: boolean }) {
-  if (disabled) return "cursor-default";
-
-  return "cursor-pointer press-feedback";
-}
-
-function Likes({ count, disabled = false, liked = false, onShowLikes, onToggle, className }: LikesProps) {
+function Likes({ count, liked = false, onAuthRequired, onShowLikes, onToggle, className }: LikesProps) {
   const like = useDebouncedOptimisticLike({ count, liked, onToggle });
   const likeLabel = like.count === 1 ? "like" : "likes";
   const canShowLikes = like.count > 0 && Boolean(onShowLikes);
@@ -340,12 +332,8 @@ function Likes({ count, disabled = false, liked = false, onShowLikes, onToggle, 
       <Button
         aria-label={like.liked ? "Unlike review" : "Like review"}
         aria-pressed={like.liked}
-        className={cn(
-          "group -mr-1 hover:bg-transparent dark:hover:bg-transparent [&_svg:not([class*='size-'])]:size-3.5",
-          getLikeButtonClass({ disabled })
-        )}
-        disabled={disabled}
-        onClick={like.toggle}
+        className="group press-feedback -mr-1 cursor-pointer hover:bg-transparent dark:hover:bg-transparent [&_svg:not([class*='size-'])]:size-3.5"
+        onClick={onToggle ? like.toggle : onAuthRequired}
         size="icon-sm"
         type="button"
         variant="ghost"
@@ -354,7 +342,7 @@ function Likes({ count, disabled = false, liked = false, onShowLikes, onToggle, 
           className={cn(
             "[transition:color_150ms_ease,fill_150ms_ease,stroke_150ms_ease]",
             like.justLiked && "animate-heart-pop",
-            getLikeHeartClass({ disabled, liked: like.liked })
+            getLikeHeartClass(like.liked)
           )}
           data-icon="inline-start"
           onAnimationEnd={like.clearJustLiked}
@@ -365,7 +353,7 @@ function Likes({ count, disabled = false, liked = false, onShowLikes, onToggle, 
           aria-label={`Show people who liked this review, ${like.count} ${likeLabel}`}
           className={cn(
             "h-8 pr-1 pl-0 text-xs tabular-nums hover:bg-transparent hover:text-primary dark:hover:bg-transparent",
-            getLikeCountClass({ disabled: false, liked: like.liked })
+            getLikeCountClass(like.liked)
           )}
           onClick={onShowLikes}
           size="sm"
@@ -375,12 +363,7 @@ function Likes({ count, disabled = false, liked = false, onShowLikes, onToggle, 
           {likeCount}
         </Button>
       ) : (
-        <span
-          className={cn(
-            "flex h-8 items-center px-1 text-xs tabular-nums",
-            getLikeCountClass({ disabled, liked: like.liked })
-          )}
-        >
+        <span className={cn("flex h-8 items-center px-1 text-xs tabular-nums", getLikeCountClass(like.liked))}>
           {likeCount}
         </span>
       )}

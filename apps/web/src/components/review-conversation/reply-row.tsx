@@ -9,6 +9,7 @@ interface ReplyRowProps {
   canDeleteAsAdmin: boolean;
   hasSession: boolean;
   isDeleting: boolean;
+  onAuthRequired: () => void;
   onDelete: () => Promise<boolean>;
   onLikeToggle: OptimisticLikeToggleHandler;
   onShowLikes: () => void;
@@ -22,6 +23,7 @@ export function ReplyRow({
   canDeleteAsAdmin,
   hasSession,
   isDeleting,
+  onAuthRequired,
   onDelete,
   onLikeToggle,
   onShowLikes,
@@ -43,11 +45,11 @@ export function ReplyRow({
       <ReviewCard.Footer>
         <ReplyLikeButton
           authorName={authorName}
-          disabled={!hasSession}
           liked={reply.liked}
           likes={reply.likes}
+          onAuthRequired={onAuthRequired}
           onShowLikes={onShowLikes}
-          onToggle={onLikeToggle}
+          onToggle={hasSession ? onLikeToggle : undefined}
         />
         <div className="ml-auto">
           <ReplyManagementMenu

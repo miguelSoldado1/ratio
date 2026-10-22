@@ -6,14 +6,21 @@ import type { OptimisticLikeToggleHandler } from "@/hooks/use-debounced-optimist
 
 interface ReplyLikeButtonProps {
   authorName: string;
-  disabled: boolean;
   liked: boolean;
   likes: number;
+  onAuthRequired?: () => void;
   onShowLikes?: () => void;
-  onToggle: OptimisticLikeToggleHandler;
+  onToggle?: OptimisticLikeToggleHandler;
 }
 
-export function ReplyLikeButton({ authorName, disabled, liked, likes, onShowLikes, onToggle }: ReplyLikeButtonProps) {
+export function ReplyLikeButton({
+  authorName,
+  liked,
+  likes,
+  onAuthRequired,
+  onShowLikes,
+  onToggle,
+}: ReplyLikeButtonProps) {
   const like = useDebouncedOptimisticLike({ count: likes, liked, onToggle });
 
   const likeLabel = like.count === 1 ? "like" : "likes";
@@ -38,8 +45,7 @@ export function ReplyLikeButton({ authorName, disabled, liked, likes, onShowLike
         aria-label={`${like.liked ? "Unlike" : "Like"} reply by ${authorName}`}
         aria-pressed={like.liked}
         className="group press-feedback -mr-1 text-muted-foreground hover:bg-transparent hover:text-primary dark:hover:bg-transparent [&_svg:not([class*='size-'])]:size-3.5"
-        disabled={disabled}
-        onClick={like.toggle}
+        onClick={onToggle ? like.toggle : onAuthRequired}
         size="icon-sm"
         type="button"
         variant="ghost"

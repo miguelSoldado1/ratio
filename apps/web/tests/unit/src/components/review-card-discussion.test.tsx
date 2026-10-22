@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ReviewCard } from "@/components/review-card";
 import { ReviewRow } from "@/components/review-list";
@@ -124,6 +124,59 @@ describe("review row discussion slots", () => {
     expect(screen.getByRole("link", { name: albumLinkNamePattern }).getAttribute("href")).toBe("/album/album-1");
     expect(screen.getByRole("link", { name: "Open Alice's review" }).getAttribute("href")).toBe("/review/review-1");
     expect(screen.getByRole("link", { name: reviewTimeLinkNamePattern }).getAttribute("href")).toBe("/review/review-1");
+  });
+});
+
+describe("review row likes", () => {
+  it("prompts sign-in instead of liking for anonymous viewers", () => {
+    const onAuthRequired = vi.fn();
+    const onReviewLikeToggle = vi.fn();
+    render(
+      <ReviewRow
+        onAuthRequired={onAuthRequired}
+        onReviewLikeToggle={onReviewLikeToggle}
+        resolveUser={() => ({ displayUsername: "Alice", username: "alice" })}
+        review={{
+          createdAt: new Date("2026-01-01T00:00:00.000Z"),
+          id: "review-1",
+          liked: false,
+          likes: 0,
+          rating: 4,
+        }}
+        viewer={{ hasSession: false }}
+      />
+    );
+
+    const likeButton = screen.getByRole("button", { name: "Like review" });
+    expect(likeButton.hasAttribute("disabled")).toBe(false);
+
+    fireEvent.click(likeButton);
+
+    expect(onAuthRequired).toHaveBeenCalledOnce();
+    expect(onReviewLikeToggle).not.toHaveBeenCalled();
+    expect(likeButton.getAttribute("aria-pressed")).toBe("false");
+  });
+
+  it("never fakes a like for anonymous viewers when no sign-in handler is provided", () => {
+    render(
+      <ReviewRow
+        onReviewLikeToggle={vi.fn()}
+        resolveUser={() => ({ displayUsername: "Alice", username: "alice" })}
+        review={{
+          createdAt: new Date("2026-01-01T00:00:00.000Z"),
+          id: "review-1",
+          liked: false,
+          likes: 0,
+          rating: 4,
+        }}
+        viewer={{ hasSession: false }}
+      />
+    );
+
+    const likeButton = screen.getByRole("button", { name: "Like review" });
+    fireEvent.click(likeButton);
+
+    expect(likeButton.getAttribute("aria-pressed")).toBe("false");
   });
 });
 
