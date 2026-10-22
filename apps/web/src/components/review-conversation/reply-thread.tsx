@@ -19,6 +19,7 @@ interface ReplyThreadProps {
   isNextPageError: boolean;
   loadMoreRef: RefObject<HTMLDivElement | null>;
   localTail: ReviewReply[];
+  onAuthRequired: () => void;
   onDelete: (replyId: string) => Promise<boolean>;
   onLikeToggle: (replyId: string, liked: boolean) => boolean | Promise<boolean | undefined> | undefined;
   onRetryInitial: () => void;
@@ -40,6 +41,7 @@ export function ReplyThread({
   isNextPageError,
   loadMoreRef,
   localTail,
+  onAuthRequired,
   onDelete,
   onLikeToggle,
   onShowLikes,
@@ -111,6 +113,7 @@ export function ReplyThread({
                   canDeleteAsAdmin={isAdminMode && !reply.canDelete}
                   hasSession={hasSession}
                   isDeleting={deletingReplyId === reply.id}
+                  onAuthRequired={onAuthRequired}
                   onDelete={() => handleDelete(reply.id)}
                   onLikeToggle={(liked) => onLikeToggle(reply.id, liked)}
                   onShowLikes={() => onShowLikes(reply.id)}
@@ -135,6 +138,7 @@ export function ReplyThread({
                 canDeleteAsAdmin={isAdminMode && !reply.canDelete}
                 hasSession={hasSession}
                 isDeleting={deletingReplyId === reply.id}
+                onAuthRequired={onAuthRequired}
                 onDelete={() => handleDelete(reply.id)}
                 onLikeToggle={(liked) => onLikeToggle(reply.id, liked)}
                 onShowLikes={() => onShowLikes(reply.id)}

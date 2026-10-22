@@ -63,7 +63,7 @@ deferred until the product needs those dedicated surfaces.
 - Rate albums 0.5-5 in half-star increments (auth required; stored as 1-10)
 - Optional written review alongside rating, limited to 2000 characters when posted; longer drafts remain editable but
   cannot be submitted
-- Like reviews
+- Like reviews; anonymous like taps on reviews and replies open the sign-in dialog instead of doing nothing
 - Liked-by dialog for reviews
 - Follow users
 - User profiles with rating history

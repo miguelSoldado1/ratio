@@ -124,6 +124,7 @@ function renderThread(overrides: Partial<React.ComponentProps<typeof ReplyThread
       isNextPageError={false}
       loadMoreRef={{ current: null }}
       localTail={[]}
+      onAuthRequired={vi.fn()}
       onDelete={vi.fn().mockResolvedValue(true)}
       onLikeToggle={vi.fn()}
       onRetryInitial={vi.fn()}

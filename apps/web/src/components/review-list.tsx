@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { AuthDialog } from "@/components/auth/auth-dialog";
 import { ReviewCard } from "@/components/review-card";
 import { ReviewCardSkeleton } from "@/components/review-card-skeleton";
 import { ReviewLikesDialog } from "@/components/review-likes-dialog";
@@ -33,6 +34,7 @@ export interface ReviewListItem {
 
 interface ReviewRowProps<TReview extends ReviewListItem> {
   className?: string;
+  onAuthRequired?: () => void;
   onReviewLikeToggle: ReviewLikeToggleHandler;
   onShowLikes?: () => void;
   renderActions?: (review: TReview) => ReactNode;
@@ -50,6 +52,7 @@ interface ReviewRowProps<TReview extends ReviewListItem> {
  * through `ReviewList`. */
 export function ReviewRow<TReview extends ReviewListItem>({
   className,
+  onAuthRequired,
   onReviewLikeToggle,
   onShowLikes,
   renderActions,
@@ -83,8 +86,8 @@ export function ReviewRow<TReview extends ReviewListItem>({
       <ReviewCard.Footer>
         <ReviewCard.Likes
           count={review.likes}
-          disabled={!viewer.hasSession}
           liked={review.liked}
+          onAuthRequired={onAuthRequired}
           onShowLikes={onShowLikes}
           onToggle={viewer.hasSession ? (liked) => onReviewLikeToggle(review.id, liked) : undefined}
         />
@@ -130,6 +133,7 @@ export function ReviewList<TReview extends ReviewListItem>({
   viewer,
 }: ReviewListProps<TReview>) {
   const [reviewLikesId, setReviewLikesId] = useState<string>();
+  const [authDialogOpen, setAuthDialogOpen] = useState(false);
 
   if (reviews.length === 0) {
     return <>{emptyState}</>;
@@ -141,6 +145,7 @@ export function ReviewList<TReview extends ReviewListItem>({
         <ReviewRow
           className={rowClassName}
           key={review.id}
+          onAuthRequired={() => setAuthDialogOpen(true)}
           onReviewLikeToggle={onReviewLikeToggle}
           onShowLikes={() => setReviewLikesId(review.id)}
           renderActions={renderActions}
@@ -162,6 +167,7 @@ export function ReviewList<TReview extends ReviewListItem>({
         reviewId={reviewLikesId}
         viewer={viewer}
       />
+      <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} />
     </>
   );
 }

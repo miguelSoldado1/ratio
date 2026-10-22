@@ -19,6 +19,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { trackReviewPublished } from "@/lib/analytics/posthog";
 import { authClient } from "@/lib/auth/auth-client";
 import { albumQueryKeys } from "@/lib/tanstack-query/query-keys";
+import { cn } from "@/lib/utils";
 import { createReview, hasMyAlbumReview } from "@/server/functions/review-functions";
 import { tryCatch } from "@/try-catch";
 import { ReviewStarRatingInput } from "./review-star-rating-input";
@@ -171,7 +172,7 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
                   </FieldDescription>
                 </Field>
                 <Field className="border-border border-t pt-4">
-                  <FieldLabel htmlFor={reviewFormIds.review}>Review</FieldLabel>
+                  <FieldLabel htmlFor={reviewFormIds.review}>Review (optional)</FieldLabel>
                   <Textarea
                     aria-describedby={reviewFormIds.reviewDescription}
                     className="review-composer-textarea rounded-none border-border border-x-0 border-t-0 border-b bg-transparent px-0 py-3 text-[15px] leading-6 shadow-none outline-none ring-0"
@@ -185,7 +186,10 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
                     value={reviewForm.body}
                   />
                   <FieldDescription
-                    className={reviewForm.body.length > maxReviewLength ? "text-destructive" : undefined}
+                    className={cn(
+                      reviewForm.body.length === 0 && "invisible",
+                      reviewForm.body.length > maxReviewLength && "text-destructive"
+                    )}
                     id={reviewFormIds.reviewDescription}
                   >
                     {reviewForm.body.length}/{maxReviewLength} characters

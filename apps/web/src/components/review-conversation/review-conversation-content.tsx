@@ -225,8 +225,8 @@ export function ReviewConversationContent({
         <ReviewCard.Footer>
           <ReviewCard.Likes
             count={review.likes}
-            disabled={!viewer.hasSession}
             liked={review.liked}
+            onAuthRequired={onAuthRequired}
             onShowLikes={onShowReviewLikes}
             onToggle={viewer.hasSession ? (liked) => onReviewLikeToggle(review.id, liked) : undefined}
           />
@@ -269,6 +269,7 @@ export function ReviewConversationContent({
         isNextPageError={isNextReplyPageError}
         loadMoreRef={loadMoreRepliesRef}
         localTail={localReplyTail}
+        onAuthRequired={onAuthRequired}
         onDelete={onDeleteReply}
         onLikeToggle={onLikeReply}
         onRetryInitial={onRetryReplies}
