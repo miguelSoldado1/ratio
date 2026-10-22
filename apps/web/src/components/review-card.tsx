@@ -352,7 +352,7 @@ function Likes({ count, liked = false, onAuthRequired, onShowLikes, onToggle, cl
         <Button
           aria-label={`Show people who liked this review, ${like.count} ${likeLabel}`}
           className={cn(
-            "h-8 pr-1 pl-0 text-xs tabular-nums hover:bg-transparent hover:text-primary dark:hover:bg-transparent",
+            "h-8 min-w-6 justify-start pr-1 pl-0 text-xs tabular-nums hover:bg-transparent hover:text-primary dark:hover:bg-transparent",
             getLikeCountClass(like.liked)
           )}
           onClick={onShowLikes}
@@ -363,7 +363,9 @@ function Likes({ count, liked = false, onAuthRequired, onShowLikes, onToggle, cl
           {likeCount}
         </Button>
       ) : (
-        <span className={cn("flex h-8 items-center px-1 text-xs tabular-nums", getLikeCountClass(like.liked))}>
+        <span
+          className={cn("flex h-8 min-w-6 items-center pr-1 pl-0 text-xs tabular-nums", getLikeCountClass(like.liked))}
+        >
           {likeCount}
         </span>
       )}

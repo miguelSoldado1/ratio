@@ -62,7 +62,7 @@ export function ReplyLikeButton({
       {canShowLikes ? (
         <Button
           aria-label={`Show people who liked this reply by ${authorName}, ${like.count} ${likeLabel}`}
-          className="h-8 pr-1 pl-0 text-muted-foreground text-xs tabular-nums hover:bg-transparent hover:text-primary dark:hover:bg-transparent"
+          className="h-8 min-w-6 justify-start pr-1 pl-0 text-muted-foreground text-xs tabular-nums hover:bg-transparent hover:text-primary dark:hover:bg-transparent"
           onClick={onShowLikes}
           size="sm"
           type="button"
@@ -71,7 +71,9 @@ export function ReplyLikeButton({
           {likeCount}
         </Button>
       ) : (
-        <span className="flex h-8 items-center px-1 text-muted-foreground text-xs tabular-nums">{likeCount}</span>
+        <span className="flex h-8 min-w-6 items-center pr-1 pl-0 text-muted-foreground text-xs tabular-nums">
+          {likeCount}
+        </span>
       )}
     </div>
   );
