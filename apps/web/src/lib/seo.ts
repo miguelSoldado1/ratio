@@ -91,9 +91,16 @@ export function createCanonicalLink(path: string) {
 
 export function createJsonLdScript(data: unknown) {
   return {
-    children: JSON.stringify(data),
+    children: serializeInlineScriptJson(data),
     type: "application/ld+json",
   };
+}
+
+export function serializeInlineScriptJson(value: unknown) {
+  return JSON.stringify(value).replace(
+    /[<>&\u2028\u2029]/g,
+    (character) => `\\u${character.charCodeAt(0).toString(16).padStart(4, "0")}`
+  );
 }
 
 function getAbsoluteUrl(pathOrUrl: string) {
