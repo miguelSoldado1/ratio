@@ -18,6 +18,9 @@
       "id": "0ac8aedf7d20434c89dfd625bab620c1"
     }
   ],
+  "triggers": {
+    "crons": ["0 4 */2 * *"]
+  },
   "ratelimits": [
     {
       "name": "SPOTIFY_CATALOG_RATE_LIMITER",
@@ -68,6 +71,9 @@
   ],
   "env": {
     "development": {
+      "triggers": {
+        "crons": []
+      },
       "workers_dev": false,
       "routes": [
         {

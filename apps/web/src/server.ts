@@ -3,11 +3,12 @@ import { createServerEntry } from "@tanstack/react-start/server-entry";
 import { decorateDocumentResponse } from "@/server/document-head";
 import { matchDocumentMetadataRoute, resolveDocumentMetadata } from "@/server/document-metadata";
 import { isRateLimitError } from "@/server/rate-limit";
+import { refreshSitemapCache } from "@/server/services/sitemap-service";
 import type { DocumentMetadataRoute } from "@/server/document-metadata";
 
 const startHandler = createStartHandler(defaultStreamHandler);
 
-export default createServerEntry({
+const serverEntry = createServerEntry({
   async fetch(request, options) {
     if (request.method !== "GET") return await startHandler(request, options);
 
@@ -22,6 +23,13 @@ export default createServerEntry({
     return metadata ? decorateDocumentResponse(response, metadata) : response;
   },
 });
+
+export default {
+  ...serverEntry,
+  scheduled(_controller: ScheduledController, env: Env, context: ExecutionContext) {
+    context.waitUntil(refreshSitemapCache(env.CACHE));
+  },
+};
 
 async function resolveMetadataSafely(route: DocumentMetadataRoute, request: Request) {
   try {

@@ -93,6 +93,27 @@ catalog metadata cache without creating a database row. Client components update
 data their existing TanStack Query request already returned. Social metadata is not recreated in the browser because
 unfurlers make their own direct document request.
 
+Album pages include `MusicAlbum` JSON-LD. The local album query also calculates the rating from non-banned users,
+rounded to match the album page. Albums without ratings, including Spotify-only albums, omit `aggregateRating`.
+The album route declares JSON-LD through TanStack's `head.scripts`. It renders an empty script on the server, which the
+document decorator fills alongside the metadata snapshot. The first client render uses that snapshot, and TanStack
+removes the script when navigation leaves the album route. Other album routes start with an empty JSON-LD array until
+a direct document request supplies metadata.
+
+## Sitemap
+
+`/sitemap.xml` serves XML cached in KV. The production cron (`0 4 */2 * *`) refreshes it at 04:00 UTC on odd-numbered
+days of the month through `scheduled` in `src/server.ts`. Development overrides the inherited cron list with `[]`.
+On a cache miss, the route builds the sitemap from Postgres and saves it to KV. Local Node development has no KV, so it
+rebuilds on each request.
+
+The sitemap includes the homepage and legal pages. Album pages, review permalinks, and profiles qualify with at least
+one written review by a non-banned user. Lists need at least three albums and a non-banned owner with a username.
+Rating-only activity is excluded. Each of the four dynamic sections is capped at 12,000 URLs to stay below the
+50,000-URL limit for a single sitemap.
+
+The KV key is `sitemap:v1`. After deployment, bump the version when inclusion rules change to rebuild on the next request.
+
 ## Cloudflare Git Builds
 
 Connect the same GitHub repository independently to each Worker. Use `apps/web` and `apps/admin` as their respective root directories so each Wrangler file and build output stays app-local. Configure watch paths to include the app directory plus `packages/database`, the root lockfile/workspace manifests, and relevant shared configuration or migrations. Changes that affect only one app should not build the other unless a shared path changed.

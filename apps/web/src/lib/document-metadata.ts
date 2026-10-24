@@ -1,6 +1,7 @@
-import { createCanonicalLink, createSeoMeta } from "@/lib/seo";
+import { createCanonicalLink, createJsonLdScript, createSeoMeta } from "@/lib/seo";
 
 export const DOCUMENT_METADATA_SCRIPT_ID = "ratio-document-metadata";
+export const DOCUMENT_JSON_LD_SCRIPT_ID = "ratio-document-json-ld";
 export const DOCUMENT_METADATA_BOOTSTRAP_FALLBACK = "window.__RATIO_DOCUMENT_METADATA__=null;";
 const trailingSlashesPattern = /\/+$/;
 
@@ -13,6 +14,7 @@ export interface DocumentMetadata {
   description: string;
   image: string | null;
   imageAlt: string;
+  jsonLd?: Record<string, unknown>;
   path: string;
   title: string;
   type: "article" | "music.album" | "profile";
@@ -33,10 +35,11 @@ export function createDocumentRouteHead(metadata: DocumentMetadata) {
       }),
       ...(metadata.additionalMeta ?? []),
     ],
+    scripts: metadata.jsonLd ? [{ ...createJsonLdScript(metadata.jsonLd), id: DOCUMENT_JSON_LD_SCRIPT_ID }] : [],
   };
 }
 
-export function getInitialDocumentMetadata() {
+export function getInitialDocumentMetadata(pathname?: string) {
   if (typeof window === "undefined") return null;
 
   const metadata = (
@@ -45,8 +48,9 @@ export function getInitialDocumentMetadata() {
     }
   ).__RATIO_DOCUMENT_METADATA__;
 
-  // The snapshot belongs to the initial document and must not leak into later client navigation.
-  return metadata && normalizeDocumentPath(metadata.path) === normalizeDocumentPath(window.location.pathname)
+  // The snapshot is valid only for the initial document path, including return navigation.
+  return metadata &&
+    normalizeDocumentPath(metadata.path) === normalizeDocumentPath(pathname ?? window.location.pathname)
     ? metadata
     : null;
 }

@@ -3,7 +3,7 @@ import z from "zod";
 import { getDb } from "@/lib/db";
 import { albums, reviews, user } from "@/lib/db/schema";
 import { createAlbumPageTitle, createProfilePageTitle, createReviewPageTitle } from "@/lib/page-titles";
-import { siteName } from "@/lib/seo";
+import { getCanonicalUrl, siteName } from "@/lib/seo";
 import { enforceCloudflareRateLimitForRequest, spotifyCatalogRateLimit } from "./rate-limit";
 import { getAlbumPersistenceMetadata } from "./services/spotify-service";
 import type { DocumentMetadata } from "@/lib/document-metadata";
@@ -16,6 +16,16 @@ export type DocumentMetadataRoute =
   | { albumId: string; kind: "album" }
   | { kind: "profile"; username: string }
   | { kind: "review"; reviewId: string };
+
+interface AlbumDocumentMetadataInput {
+  artistNames: string[];
+  coverUrl: string | null;
+  ratingAverage: number | null;
+  ratingCount: number;
+  releaseDate: string;
+  title: string;
+  totalTracks: number;
+}
 
 export function matchDocumentMetadataRoute(pathname: string): DocumentMetadataRoute | null {
   const segments = pathname.split("/").filter(Boolean);
@@ -57,31 +67,63 @@ async function resolveAlbumDocumentMetadata(albumId: string, request: Request) {
   await enforceCloudflareRateLimitForRequest(request, spotifyCatalogRateLimit);
   const spotifyAlbum = await getAlbumPersistenceMetadata(albumId);
 
-  return createAlbumDocumentMetadata(albumId, spotifyAlbum);
+  return createAlbumDocumentMetadata(albumId, { ...spotifyAlbum, ratingAverage: null, ratingCount: 0 });
 }
 
 async function getLocalAlbumMetadata(albumId: string) {
   const db = await getDb();
+  const visibleReviewFilter = sql`${user.banned} is not true`;
   const [album] = await db
-    .select({ artistNames: albums.artistNames, coverUrl: albums.coverUrl, title: albums.title })
+    .select({
+      artistNames: albums.artistNames,
+      coverUrl: albums.coverUrl,
+      ratingAverage: sql<number | null>`(avg(${reviews.rating}) filter (where ${visibleReviewFilter}) / 2)::float`,
+      ratingCount: sql<number>`(count(${reviews.id}) filter (where ${visibleReviewFilter}))::int`,
+      releaseDate: albums.releaseDate,
+      title: albums.title,
+      totalTracks: albums.totalTracks,
+    })
     .from(albums)
+    .leftJoin(reviews, eq(reviews.albumId, albums.id))
+    .leftJoin(user, eq(reviews.userId, user.id))
     .where(eq(albums.id, albumId))
+    .groupBy(albums.id)
     .limit(1);
 
   return album ?? null;
 }
 
-function createAlbumDocumentMetadata(
-  albumId: string,
-  album: { artistNames: string[]; coverUrl: string | null; title: string }
-) {
+function createAlbumDocumentMetadata(albumId: string, album: AlbumDocumentMetadataInput) {
   const artistNames = album.artistNames.length > 0 ? album.artistNames : ["Unknown Artist"];
+  const path = `/album/${encodeURIComponent(albumId)}`;
 
   return {
     description: `Read reviews and ratings for ${album.title} by ${artistNames.join(", ")} on ${siteName}.`,
     image: album.coverUrl,
     imageAlt: album.coverUrl ? `${album.title} album cover` : `${siteName} album reviews`,
-    path: `/album/${encodeURIComponent(albumId)}`,
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "MusicAlbum",
+      ...(album.ratingAverage !== null && album.ratingCount > 0
+        ? {
+            aggregateRating: {
+              "@type": "AggregateRating",
+              bestRating: 5,
+              ratingCount: album.ratingCount,
+              // Matches the album page summary, which rounds to one decimal.
+              ratingValue: Number(album.ratingAverage.toFixed(1)),
+              worstRating: 0.5,
+            },
+          }
+        : {}),
+      byArtist: artistNames.map((name) => ({ "@type": "MusicGroup", name })),
+      datePublished: album.releaseDate,
+      ...(album.coverUrl ? { image: album.coverUrl } : {}),
+      name: album.title,
+      numTracks: album.totalTracks,
+      url: getCanonicalUrl(path),
+    },
+    path,
     title: createAlbumPageTitle(album.title, artistNames[0]),
     type: "music.album",
   } satisfies DocumentMetadata;

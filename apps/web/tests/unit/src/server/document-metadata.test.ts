@@ -37,7 +37,17 @@ describe("document metadata route matching", () => {
 describe("document metadata resolution", () => {
   it("uses a local album row without spending Spotify rate limit", async () => {
     mocks.getDb.mockResolvedValue(
-      createDbWithRows([{ artistNames: ["Artist"], coverUrl: "cover.jpg", title: "Album" }])
+      createDbWithRows([
+        {
+          artistNames: ["Artist"],
+          coverUrl: "cover.jpg",
+          ratingAverage: 3.6666,
+          ratingCount: 3,
+          releaseDate: "2026-01-01",
+          title: "Album",
+          totalTracks: 10,
+        },
+      ])
     );
 
     const metadata = await resolveDocumentMetadata(
@@ -47,6 +57,14 @@ describe("document metadata resolution", () => {
 
     expect(metadata).toMatchObject({
       image: "cover.jpg",
+      jsonLd: {
+        "@type": "MusicAlbum",
+        aggregateRating: { bestRating: 5, ratingCount: 3, ratingValue: 3.7, worstRating: 0.5 },
+        byArtist: [{ "@type": "MusicGroup", name: "Artist" }],
+        datePublished: "2026-01-01",
+        name: "Album",
+        url: "https://ratiomusic.live/album/album-a",
+      },
       title: "Album by Artist — Reviews | Ratio",
       type: "music.album",
     });
@@ -69,6 +87,8 @@ describe("document metadata resolution", () => {
     const metadata = await resolveDocumentMetadata({ albumId: "album-a", kind: "album" }, request);
 
     expect(metadata).toMatchObject({ image: "spotify-cover.jpg", title: "Album by Artist — Reviews | Ratio" });
+    expect(metadata).not.toHaveProperty("jsonLd.aggregateRating");
+    expect(metadata).toHaveProperty("jsonLd.name", "Album");
     expect(mocks.enforceRateLimit).toHaveBeenCalledWith(request, {
       bindingName: "SPOTIFY_CATALOG_RATE_LIMITER",
     });
@@ -139,13 +159,17 @@ describe("document metadata resolution", () => {
 function createDbWithRows(rows: unknown[]) {
   const query = {
     from: vi.fn(),
+    groupBy: vi.fn(),
     innerJoin: vi.fn(),
+    leftJoin: vi.fn(),
     limit: vi.fn().mockResolvedValue(rows),
     where: vi.fn(),
   };
 
   query.from.mockReturnValue(query);
+  query.groupBy.mockReturnValue(query);
   query.innerJoin.mockReturnValue(query);
+  query.leftJoin.mockReturnValue(query);
   query.where.mockReturnValue(query);
 
   return {

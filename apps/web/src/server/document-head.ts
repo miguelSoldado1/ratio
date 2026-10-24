@@ -1,4 +1,9 @@
-import { createDocumentRouteHead, DOCUMENT_METADATA_SCRIPT_ID } from "@/lib/document-metadata";
+import {
+  createDocumentRouteHead,
+  DOCUMENT_JSON_LD_SCRIPT_ID,
+  DOCUMENT_METADATA_SCRIPT_ID,
+} from "@/lib/document-metadata";
+import { serializeInlineScriptJson } from "@/lib/seo";
 import type { DocumentMetadata } from "@/lib/document-metadata";
 
 const managedHeadSelectors = [
@@ -15,10 +20,8 @@ const canonicalLinkPattern = /<link\b(?=[^>]*\brel=["']canonical["'])[^>]*>/gi;
 const managedNamedMetaPattern = /<meta\b(?=[^>]*\bname=["'](?:description|robots|twitter:[^"']+)["'])[^>]*>/gi;
 const managedPropertyMetaPattern = /<meta\b(?=[^>]*\bproperty=["'](?:og:[^"']+|profile:username)["'])[^>]*>/gi;
 const titlePattern = /<title\b[^>]*>[\s\S]*?<\/title>/gi;
-const metadataScriptPattern = new RegExp(
-  `(<script\\b(?=[^>]*\\bid=["']${DOCUMENT_METADATA_SCRIPT_ID}["'])[^>]*>)[\\s\\S]*?(<\\/script>)`,
-  "i"
-);
+const metadataScriptPattern = createScriptPattern(DOCUMENT_METADATA_SCRIPT_ID);
+const jsonLdScriptPattern = createScriptPattern(DOCUMENT_JSON_LD_SCRIPT_ID);
 
 export function decorateDocumentResponse(response: Response, metadata: DocumentMetadata) {
   if (!response.headers.get("content-type")?.includes("text/html")) return response;
@@ -46,6 +49,11 @@ export function decorateDocumentResponse(response: Response, metadata: DocumentM
           element.setInnerContent(bootstrap);
         },
       })
+      .on(`script#${DOCUMENT_JSON_LD_SCRIPT_ID}`, {
+        element(element) {
+          element.setInnerContent(serializeInlineScriptJson(metadata.jsonLd ?? []));
+        },
+      })
       .on("head", {
         element(element) {
           element.append(markup, { html: true });
@@ -54,7 +62,12 @@ export function decorateDocumentResponse(response: Response, metadata: DocumentM
       .transform(response);
   }
 
-  return decorateBufferedDocumentResponse(response, markup, bootstrap);
+  return decorateBufferedDocumentResponse(
+    response,
+    markup,
+    bootstrap,
+    serializeInlineScriptJson(metadata.jsonLd ?? [])
+  );
 }
 
 export function createDocumentHeadMarkup(metadata: DocumentMetadata) {
@@ -66,21 +79,18 @@ export function createDocumentHeadMarkup(metadata: DocumentMetadata) {
 }
 
 export function createDocumentMetadataBootstrap(metadata: DocumentMetadata) {
-  const serializedMetadata = JSON.stringify(metadata).replace(
-    /[<>&\u2028\u2029]/g,
-    (character) => `\\u${character.charCodeAt(0).toString(16).padStart(4, "0")}`
-  );
-
-  return `window.__RATIO_DOCUMENT_METADATA__=${serializedMetadata};`;
+  return `window.__RATIO_DOCUMENT_METADATA__=${serializeInlineScriptJson(metadata)};`;
 }
 
-async function decorateBufferedDocumentResponse(response: Response, markup: string, bootstrap: string) {
+async function decorateBufferedDocumentResponse(response: Response, markup: string, bootstrap: string, jsonLd: string) {
   const html = await response.text();
   const strippedHtml = stripManagedHeadMarkup(html);
   const bootstrappedHtml = strippedHtml.replace(metadataScriptPattern, (_match, openingTag, closingTag) =>
     [openingTag, bootstrap, closingTag].join("")
   );
-  const decoratedHtml = bootstrappedHtml.replace(closingHeadPattern, `${markup}</head>`);
+  const decoratedHtml = bootstrappedHtml
+    .replace(jsonLdScriptPattern, (_match, openingTag, closingTag) => [openingTag, jsonLd, closingTag].join(""))
+    .replace(closingHeadPattern, `${markup}</head>`);
   const headers = new Headers(response.headers);
 
   headers.delete("content-encoding");
@@ -99,6 +109,10 @@ function createMetaMarkup(tag: { content?: string; name?: string; property?: str
   if (tag.property && tag.content) return createMetaTag("property", tag.property, tag.content);
 
   return "";
+}
+
+function createScriptPattern(id: string) {
+  return new RegExp(`(<script\\b(?=[^>]*\\bid=["']${id}["'])[^>]*>)[\\s\\S]*?(<\\/script>)`, "i");
 }
 
 function stripManagedHeadMarkup(html: string) {

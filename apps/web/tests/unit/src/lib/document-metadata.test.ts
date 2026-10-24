@@ -45,5 +45,13 @@ describe("initial document metadata", () => {
     });
     expect(head.meta).toContainEqual({ property: "og:title", content: metadata.title });
     expect(head.meta).toContainEqual({ name: "twitter:card", content: "summary" });
+    expect(head.scripts).toEqual([]);
+  });
+
+  it("does not use the initial snapshot for another album while preloading", () => {
+    metadataWindow.__RATIO_DOCUMENT_METADATA__ = metadata;
+    window.history.replaceState(null, "", metadata.path);
+
+    expect(getInitialDocumentMetadata("/album/another-album")).toBeNull();
   });
 });

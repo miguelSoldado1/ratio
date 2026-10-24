@@ -47,6 +47,25 @@ describe("document head decoration", () => {
     expect(markup).toContain('<meta property="og:image:height" content="630">');
   });
 
+  it("fills the JSON-LD script slot without allowing a closing script tag", async () => {
+    const response = await decorateDocumentResponse(
+      new Response(
+        '<html><head><script id="ratio-document-json-ld" type="application/ld+json">null</script></head><body>Shell</body></html>',
+        { headers: { "content-type": "text/html" } }
+      ),
+      {
+        ...albumMetadata,
+        jsonLd: { "@type": "MusicAlbum", name: "</script><script>alert('no')</script>" },
+      }
+    );
+    const markup = await response.text();
+
+    expect(markup).toContain(
+      '<script id="ratio-document-json-ld" type="application/ld+json">{"@type":"MusicAlbum","name":"\\u003c/script'
+    );
+    expect(markup.match(/<\/script>/g)).toHaveLength(1);
+  });
+
   it("leaves non-HTML responses untouched", () => {
     const response = new Response("{}", { headers: { "content-type": "application/json" } });
 

@@ -1,16 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AlbumLookupLoading } from "@/components/album-page/album-lookup-loading";
 import { AlbumPage } from "@/components/album-page/album-page";
-import { createDocumentRouteHead, getInitialDocumentMetadata } from "@/lib/document-metadata";
-import { createCanonicalLink, createSeoMeta, siteName } from "@/lib/seo";
+import {
+  createDocumentRouteHead,
+  DOCUMENT_JSON_LD_SCRIPT_ID,
+  getInitialDocumentMetadata,
+} from "@/lib/document-metadata";
+import { createCanonicalLink, createJsonLdScript, createSeoMeta, siteName } from "@/lib/seo";
 
 export const Route = createFileRoute("/album/$albumId")({
   component: AlbumRoute,
   head: ({ params }) => {
-    const initialMetadata = getInitialDocumentMetadata();
+    const path = `/album/${encodeURIComponent(params.albumId)}`;
+    const initialMetadata = getInitialDocumentMetadata(path);
     if (initialMetadata) return createDocumentRouteHead(initialMetadata);
-
-    const path = `/album/${params.albumId}`;
 
     return {
       links: [createCanonicalLink(path)],
@@ -19,6 +22,7 @@ export const Route = createFileRoute("/album/$albumId")({
         path,
         title: `Album Reviews | ${siteName}`,
       }),
+      scripts: [{ ...createJsonLdScript([]), id: DOCUMENT_JSON_LD_SCRIPT_ID }],
     };
   },
   pendingComponent: AlbumLookupLoading,
