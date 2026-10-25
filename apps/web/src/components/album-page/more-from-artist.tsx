@@ -57,7 +57,7 @@ export function MoreFromArtist({ album }: MoreFromArtistProps) {
               <span>{candidate.releaseYear}</span>
               <SpotifyAttribution
                 ariaLabel={`Open ${candidate.title} on Spotify`}
-                className="size-6 justify-center"
+                className="size-6 justify-center opacity-40"
                 href={candidate.spotifyUrl}
                 variant="icon"
               />
