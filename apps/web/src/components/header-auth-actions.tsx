@@ -48,18 +48,16 @@ export function HeaderAuthActions({ onAuthClick }: HeaderAuthActionsProps) {
 
   if (!user) {
     return (
-      <div className="flex min-w-0 items-center rounded-full bg-muted/40 p-0.5">
-        <Button
-          className="h-8 gap-1.5 px-2.5 text-muted-foreground hover:bg-background/80 hover:text-foreground sm:px-3"
-          onClick={onAuthClick}
-          shape="pill"
-          type="button"
-          variant="ghost"
-        >
-          <LogIn className="size-4" />
-          <span className="text-sm">Sign in</span>
-        </Button>
-      </div>
+      <Button
+        className="gap-1.5 bg-muted/40 px-3 text-muted-foreground hover:bg-muted hover:text-foreground dark:hover:bg-muted"
+        onClick={onAuthClick}
+        shape="pill"
+        type="button"
+        variant="ghost"
+      >
+        <LogIn className="size-4" />
+        <span className="text-sm">Sign in</span>
+      </Button>
     );
   }
 
@@ -68,11 +66,11 @@ export function HeaderAuthActions({ onAuthClick }: HeaderAuthActionsProps) {
   const avatar = <UserAvatar className="size-7 text-2xs" name={displayName} src={user.image} />;
 
   return (
-    <div className="flex min-w-0 items-center rounded-full bg-muted/40 p-0.5">
+    <div className="relative flex min-w-0 items-center rounded-full bg-muted/40 p-0.5 [transition:background-color_150ms_ease,transform_130ms_cubic-bezier(0.23,1,0.32,1)] has-[>a:active]:scale-[0.97] has-aria-expanded:bg-muted has-[>a:focus-visible]:ring-3 has-[>a:focus-visible]:ring-ring/30 has-[>a]:hover:bg-muted">
       {profileUsername ? (
         <Link
           aria-label={`View ${displayName}'s profile`}
-          className="press-feedback focus-ring inline-flex size-8 min-w-0 items-center justify-center rounded-full hover:bg-background/80 lg:w-auto lg:max-w-52 lg:justify-start lg:gap-2 lg:px-1 lg:pr-2"
+          className="inline-flex size-8 min-w-0 items-center justify-center outline-none after:absolute after:inset-0 after:rounded-full lg:w-auto lg:max-w-52 lg:justify-start lg:gap-2 lg:px-1 lg:pr-2"
           params={{ username: profileUsername }}
           to="/user/$username"
         >
@@ -90,7 +88,7 @@ export function HeaderAuthActions({ onAuthClick }: HeaderAuthActionsProps) {
           render={
             <Button
               aria-label="Open account menu"
-              className="size-8 px-0 text-muted-foreground hover:bg-background/80"
+              className="relative size-8 px-0 text-muted-foreground after:absolute after:-inset-0.75 after:rounded-full hover:bg-foreground/10 aria-expanded:bg-foreground/10 dark:hover:bg-foreground/10"
               shape="pill"
               type="button"
               variant="ghost"
