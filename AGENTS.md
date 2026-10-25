@@ -9,6 +9,7 @@
 
 ## Implementation Conventions
 
+- Keep each server-function module paired with one corresponding service module. Add related operations to that existing service instead of creating another service file.
 - Route files should prefer TanStack Router's folder-style organization for nested/path segments, e.g. `src/routes/album/$albumId.tsx` for `/album/:albumId`, instead of flattened names such as `album.$albumId.tsx`.
 - Keep username URLs first-class, but use stable IDs internally.
 - In React components, call TanStack Start server functions through `useServerFn(serverFn)` before passing them to `useQuery` or `useMutation`.

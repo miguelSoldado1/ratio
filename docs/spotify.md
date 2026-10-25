@@ -13,6 +13,7 @@ icon around list-cover artwork. Opening a list exposes the item-level Spotify li
 
 Public list rows use a quiet Spotify icon per album. The icon links directly to that album on Spotify, providing both
 item-level attribution and the applicable Spotify destination without changing the row's primary Ratio navigation.
+The "More from [artist]" shelf uses the same Spotify icon links beside each release year. Its heading has no icon.
 
 ## Spotify Login and Linking
 
@@ -89,7 +90,7 @@ Rules:
 
 ## Client Credentials Token
 
-Used for all catalog Spotify Web API requests (search, album details), for anonymous traffic and authenticated users alike. Only the recent-rotation shelf uses personal user tokens.
+Used for all catalog Spotify Web API requests (search, album details, artist albums), for anonymous traffic and authenticated users alike. Only the recent-rotation shelf uses personal user tokens.
 
 - Cache the token in Cloudflare KV with its expiry timestamp; optionally keep a module-scope in-memory copy as a fast per-isolate layer
 - Refresh proactively before expiry; Spotify tokens last about 1 hour, so refresh around 55 minutes
@@ -147,3 +148,11 @@ Search is the most token-expensive endpoint.
   results depend on the country associated with each Spotify account.
 - Search, album details, and album-track pagination must use the same marketless catalog behavior. Their cache keys use
   an explicit versioned global scope so results from the former fixed-US behavior cannot be reused.
+
+## More from artist
+
+The album page's "More from [artist]" shelf calls `GET /artists/{artistId}/albums?include_groups=album&limit=10`
+with the Client Credentials token and no `market`. The deduplicated list is cached per artist for 7 days at
+`spotify:artist-albums:global-v1:<artist-id>`, shared by every album page for that artist. The server then removes
+the current album (and its matching edition) and returns up to four. On failure it returns an empty list and the
+shelf stays hidden.

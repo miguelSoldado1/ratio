@@ -80,6 +80,8 @@ export const accountQueryKeys = {
 
 export const spotifyQueryKeys = {
   all: () => ["spotify"] as const,
+  artistAlbums: (artistId: string, albumId: string) =>
+    [...spotifyQueryKeys.all(), "artist-albums", artistId, albumId] as const,
   recentRotation: (userId: string) => ["spotify", userId, "recent-rotation"] as const,
 };
 

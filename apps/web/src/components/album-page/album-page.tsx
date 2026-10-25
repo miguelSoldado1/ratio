@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { AlbumArtwork } from "@/components/album-artwork";
 import { AlbumHeader } from "@/components/album-page/album-header";
 import { AlbumLookupLoading } from "@/components/album-page/album-lookup-loading";
+import { MoreFromArtist } from "@/components/album-page/more-from-artist";
 import { RatingsPanel } from "@/components/album-page/ratings-panel";
 import { ReviewsSection } from "@/components/album-page/reviews-section";
 import { TrackList } from "@/components/album-page/track-list";
@@ -70,6 +71,7 @@ export function AlbumPage({ albumId }: AlbumPageProps) {
             <div className="scroll-mt-16" id="album-reviews">
               <ReviewsSection album={album} className="mt-8 lg:mt-12" />
             </div>
+            <MoreFromArtist album={album} />
           </section>
         </PageContainerContent>
       </PageContainer>

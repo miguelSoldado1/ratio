@@ -35,9 +35,23 @@ export interface AlbumDetailsInput {
   albumId: string;
 }
 
+interface AlbumEdition {
+  artists: { name: string }[];
+  name: string;
+  release_date: string;
+  total_tracks: number;
+}
+
+export interface ArtistAlbumsInput {
+  albumId: string;
+  artistId: string;
+}
+
 // Constants
 
 const ALBUM_SEARCH_LIMIT = 10;
+const ARTIST_ALBUMS_FETCH_LIMIT = 10;
+const ARTIST_ALBUMS_SHELF_LIMIT = 4;
 const ALBUM_TRACKS_LIMIT = 50;
 const ALBUM_TYPE = "album" satisfies SpotifyAlbum["album_type"];
 const ALBUMS_ONLY_ERROR_MESSAGE = "Only albums are supported";
@@ -49,9 +63,11 @@ const SPOTIFY_SEARCH_CACHE_KEY_PREFIX = `${SPOTIFY_CACHE_KEY_PREFIX}:search:albu
 const SPOTIFY_SEARCH_CACHE_TTL_SECONDS = 10 * 60; // 10 minutes
 
 const SPOTIFY_ALBUM_DETAILS_CACHE_KEY_PREFIX = `${SPOTIFY_CACHE_KEY_PREFIX}:album-details`;
+const SPOTIFY_ARTIST_ALBUMS_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60; // 7 days
 const SPOTIFY_ALBUM_DETAILS_CACHE_TTL_SECONDS = 24 * 60 * 60; // 24 hours
 
 const SPOTIFY_ALBUM_PERSISTENCE_CACHE_KEY_PREFIX = `${SPOTIFY_CACHE_KEY_PREFIX}:album-persistence`;
+const SPOTIFY_ARTIST_ALBUMS_CACHE_KEY_PREFIX = `${SPOTIFY_CACHE_KEY_PREFIX}:artist-albums`;
 const SPOTIFY_ALBUM_PERSISTENCE_CACHE_TTL_SECONDS = 24 * 60 * 60; // 24 hours
 const SPOTIFY_RELEASE_YEAR_DATE_PATTERN = /^\d{4}$/;
 const SPOTIFY_RELEASE_MONTH_DATE_PATTERN = /^\d{4}-\d{2}$/;
@@ -126,6 +142,17 @@ const spotifyAlbumPersistenceMetadataSchema = z.object({
 
 const spotifyAlbumSearchResultsSchema = z.array(spotifyAlbumSearchResultSchema);
 
+const artistAlbumSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  releaseYear: z.string(),
+  coverUrl: z.string().nullable(),
+  spotifyUrl: z.string(),
+  editionKey: z.string(),
+});
+
+const artistAlbumsSchema = z.array(artistAlbumSchema);
+
 // Services
 
 export async function searchAlbumsService({ query }: SearchAlbumsInput) {
@@ -140,7 +167,7 @@ export async function searchAlbumsService({ query }: SearchAlbumsInput) {
         limit: ALBUM_SEARCH_LIMIT,
       });
 
-      const albums = getAlbumSearchResults(body.albums?.items ?? []);
+      const albums = getUniqueSpotifyAlbums(body.albums?.items ?? []);
       return albums.map(mapSpotifyAlbumSearch);
     }
 
@@ -210,7 +237,57 @@ export async function getAlbumPersistenceMetadata(albumId: string): Promise<Spot
   });
 }
 
+export async function getArtistAlbumsService({ albumId, artistId }: ArtistAlbumsInput) {
+  async function fetchArtistAlbumsFromSpotify() {
+    const token = await getClientCredentialsToken();
+    const spotifyApi = createSpotifyApi(token);
+    const { body } = await spotifyApi.getArtistAlbums(artistId, {
+      include_groups: ALBUM_TYPE,
+      limit: ARTIST_ALBUMS_FETCH_LIMIT,
+    });
+
+    return getUniqueSpotifyAlbums(body.items).map((album) => ({
+      id: album.id,
+      title: album.name,
+      releaseYear: album.release_date.slice(0, 4),
+      coverUrl: getLargestImageUrl(album.images),
+      spotifyUrl: getSpotifyUrl("album", album.id),
+      editionKey: getSpotifyAlbumDedupeKey(album),
+    }));
+  }
+
+  try {
+    const [artistAlbums, currentEditionKey] = await Promise.all([
+      getSpotifyCacheValueOrFetch({
+        cacheKey: getSpotifyCatalogCacheKey(SPOTIFY_ARTIST_ALBUMS_CACHE_KEY_PREFIX, artistId),
+        schema: artistAlbumsSchema,
+        ttlSeconds: SPOTIFY_ARTIST_ALBUMS_CACHE_TTL_SECONDS,
+        fetcher: fetchArtistAlbumsFromSpotify,
+      }),
+      getAlbumEditionKey(albumId),
+    ]);
+
+    return artistAlbums
+      .filter((album) => album.id !== albumId && album.editionKey !== currentEditionKey)
+      .slice(0, ARTIST_ALBUMS_SHELF_LIMIT)
+      .map(({ editionKey: _editionKey, ...album }) => album);
+  } catch (error) {
+    logSpotifyApiError("artist_albums", error, { artistId });
+    return [];
+  }
+}
+
 // Helpers
+
+async function getAlbumEditionKey(albumId: string) {
+  const album = await getAlbumPersistenceMetadata(albumId);
+  return getSpotifyAlbumDedupeKey({
+    name: album.title,
+    artists: album.artistNames.map((name) => ({ name })),
+    release_date: album.releaseDate,
+    total_tracks: album.totalTracks,
+  });
+}
 
 interface GetSpotifyCacheValueOrFetchOptions<T> {
   cacheKey: string;
@@ -384,7 +461,7 @@ function mapSpotifyArtist(artist: SpotifyApi.ArtistObjectSimplified) {
   };
 }
 
-function getSpotifyUrl(resourceType: "album" | "artist" | "track", id: string) {
+export function getSpotifyUrl(resourceType: "album" | "artist" | "track", id: string) {
   return `https://open.spotify.com/${resourceType}/${id}`;
 }
 
@@ -417,7 +494,7 @@ async function getAlbumTracks(spotifyApi: SpotifyApiClient, albumId: string, tra
 
 // Search filtering
 
-function getAlbumSearchResults(searchResults: SpotifyAlbum[]) {
+function getUniqueSpotifyAlbums(searchResults: SpotifyAlbum[]) {
   const albumsByKey = new Map<string, SpotifyAlbum>();
 
   for (const album of searchResults) {
@@ -430,7 +507,7 @@ function getAlbumSearchResults(searchResults: SpotifyAlbum[]) {
   return Array.from(albumsByKey.values());
 }
 
-export function getSpotifyAlbumDedupeKey(album: SpotifyAlbum) {
+export function getSpotifyAlbumDedupeKey(album: AlbumEdition) {
   return [
     normalizeAlbumSearchText(removeAdvisoryEditionMarkers(album.name)),
     album.artists.map((artist) => normalizeAlbumSearchText(artist.name)).join("|"),
