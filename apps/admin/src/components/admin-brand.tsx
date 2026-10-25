@@ -11,7 +11,7 @@ export function AdminBrand() {
   return (
     <div className="flex min-w-0 items-center gap-1">
       <Link aria-label="Ratio Admin" className="mr-1 flex shrink-0 items-center" to="/">
-        <img alt="" className="size-8" height={32} src="/favicon.svg" width={32} />
+        <img alt="" className="size-8" height={32} src="/brand/ratio-logo-white.svg" width={32} />
       </Link>
       <nav className="flex items-center gap-0.5">
         {NAV_LINKS.map((link) => (
