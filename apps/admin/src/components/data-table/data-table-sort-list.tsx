@@ -117,7 +117,7 @@ export function DataTableSortList<TData>({ table, ...props }: DataTableSortListP
           Sort
           {sorting.length > 0 && (
             <Badge
-              className="h-[18.24px] rounded-[3.2px] px-[5.12px] font-mono font-normal text-[10.4px]"
+              className="h-[18.24px] rounded-md px-[5.12px] font-mono font-normal text-[10.4px]"
               variant="secondary"
             >
               {sorting.length}
@@ -127,7 +127,7 @@ export function DataTableSortList<TData>({ table, ...props }: DataTableSortListP
         <PopoverContent
           aria-describedby={descriptionId}
           aria-labelledby={labelId}
-          className="flex w-full max-w-(--available-width) flex-col gap-3.5 p-4 sm:min-w-[380px]"
+          className="flex w-full max-w-(--available-width) flex-col gap-3.5 p-4 sm:min-w-95"
           {...props}
         >
           <div className="flex flex-col gap-1">
@@ -140,7 +140,7 @@ export function DataTableSortList<TData>({ table, ...props }: DataTableSortListP
           </div>
           {sorting.length > 0 && (
             <SortableContent asChild>
-              <ul className="flex max-h-[300px] flex-col gap-2 overflow-y-auto p-1">
+              <ul className="flex max-h-75 flex-col gap-2 overflow-y-auto p-1">
                 {sorting.map((sort) => (
                   <DataTableSortItem
                     columnLabels={columnLabels}
@@ -175,7 +175,7 @@ export function DataTableSortList<TData>({ table, ...props }: DataTableSortListP
       </Popover>
       <SortableOverlay>
         <div className="flex items-center gap-2">
-          <div className="h-8 w-[180px] rounded-sm bg-primary/10" />
+          <div className="h-8 w-45 rounded-sm bg-primary/10" />
           <div className="h-8 w-24 rounded-sm bg-primary/10" />
           <div className="size-8 shrink-0 rounded-sm bg-primary/10" />
           <div className="size-8 shrink-0 rounded-sm bg-primary/10" />
@@ -272,7 +272,7 @@ function DataTableSortItem({
           open={showDirectionSelector}
           value={sort.desc ? "desc" : "asc"}
         >
-          <SelectTrigger aria-controls={directionListboxId} className="h-8 w-24 rounded [&[data-size]]:h-8">
+          <SelectTrigger aria-controls={directionListboxId} className="h-8 w-24 rounded data-size:h-8">
             <SelectValue />
           </SelectTrigger>
           <SelectContent className="min-w-(--anchor-width)" id={directionListboxId}>

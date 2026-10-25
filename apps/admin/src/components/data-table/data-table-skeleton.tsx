@@ -43,10 +43,10 @@ export function DataTableSkeleton({
       <div className="flex w-full items-center justify-between gap-2 overflow-auto p-1">
         <div className="flex flex-1 items-center gap-2">
           {filterKeys.map((key) => (
-            <Skeleton className="h-7 w-[4.5rem] border-dashed" key={key} />
+            <Skeleton className="h-7 w-18 border-dashed" key={key} />
           ))}
         </div>
-        {withViewOptions ? <Skeleton className="ml-auto hidden h-7 w-[4.5rem] lg:flex" /> : null}
+        {withViewOptions ? <Skeleton className="ml-auto hidden h-7 w-18 lg:flex" /> : null}
       </div>
       <div className={withBorder ? "rounded-md border" : undefined}>
         <Table>
@@ -90,7 +90,7 @@ export function DataTableSkeleton({
           <div className="flex items-center gap-4 sm:gap-6 lg:gap-8">
             <div className="flex items-center gap-2">
               <Skeleton className="h-7 w-24" />
-              <Skeleton className="h-7 w-[4.5rem]" />
+              <Skeleton className="h-7 w-18" />
             </div>
             <div className="flex items-center justify-center font-medium text-sm">
               <Skeleton className="h-7 w-20" />
