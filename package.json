@@ -1,6 +1,7 @@
 {
   "name": "ratio-workspace",
   "private": true,
+  "packageManager": "pnpm@11.1.3",
   "scripts": {
     "dev": "pnpm --filter @ratio/web dev",
     "dev:admin": "pnpm --filter @ratio/admin dev",
