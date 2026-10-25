@@ -7,7 +7,12 @@ import {
   SpotifyAuthorizationRequiredError,
   SpotifyReconnectRequiredError,
 } from "../spotify-user-token";
-import { getLargestImageUrl, getSpotifyAlbumDedupeKey, getSpotifyCacheValueOrFetch } from "./spotify-service";
+import {
+  getLargestImageUrl,
+  getSpotifyAlbumDedupeKey,
+  getSpotifyCacheValueOrFetch,
+  getSpotifyUrl,
+} from "./spotify-service";
 import type { Db } from "@/lib/db";
 import type { AuthenticatedContext } from "../auth-middleware";
 
@@ -136,7 +141,7 @@ export function mapRecentlyPlayedToRotationAlbums(items: SpotifyPlayHistoryItem[
       title: album.name,
       artistNames: (album.artists ?? []).map((artist) => artist.name),
       coverUrl: getLargestImageUrl(album.images ?? []),
-      spotifyUrl: `https://open.spotify.com/album/${album.id}`,
+      spotifyUrl: getSpotifyUrl("album", album.id),
       lastPlayedAt: playedAt,
     });
   }

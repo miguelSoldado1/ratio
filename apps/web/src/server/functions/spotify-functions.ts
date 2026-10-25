@@ -13,6 +13,11 @@ const albumDetailsSchema = z.object({
   albumId: z.string().trim().min(1).max(64),
 });
 
+const artistAlbumsSchema = z.object({
+  albumId: z.string().trim().min(1).max(64),
+  artistId: z.string().trim().min(1).max(64),
+});
+
 // Server functions
 
 export const searchAlbums = createServerFn()
@@ -24,3 +29,8 @@ export const getAlbumDetails = createServerFn()
   .middleware([createCloudflareRateLimitMiddleware(spotifyCatalogRateLimit)])
   .validator(albumDetailsSchema)
   .handler(({ data }) => spotifyService.getAlbumDetailsService(data));
+
+export const getArtistAlbums = createServerFn()
+  .middleware([createCloudflareRateLimitMiddleware(spotifyCatalogRateLimit)])
+  .validator(artistAlbumsSchema)
+  .handler(({ data }) => spotifyService.getArtistAlbumsService(data));

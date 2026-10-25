@@ -164,6 +164,11 @@ Do not block the first production release on these:
 
 ## Album Reviews
 
+Album pages have a "More from [artist]" shelf below Reviews so pages without reviews still lead somewhere. It shows
+up to four other albums by the first credited artist; the cover and title open the Ratio album page and the Spotify
+icon opens it on Spotify. The shelf is hidden when there's nothing to show. Check how often it is empty before adding
+a community review fallback.
+
 Authenticated album review lists should show the viewer's own review first when present. This makes the disabled `Add a review` action self-explanatory without adding persistent helper text or a tooltip to the album actions.
 
 The v1 query uses two index-friendly reads on the first page: fetch the viewer review by `(userId, albumId)`, fetch the normal album review page by `(albumId, createdAt, id)` while excluding the viewer, then merge in application code. Cursor pages only read the normal chronological page and continue excluding the viewer to avoid duplicates. This avoids a computed pin sort on the primary album review list.

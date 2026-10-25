@@ -13,7 +13,12 @@ interface AlbumArtworkProps
 
 export function AlbumArtwork({ alt, className, height, src, width, ...imageProps }: AlbumArtworkProps) {
   return (
-    <span aria-label={alt} className={cn("relative block shrink-0 overflow-hidden bg-muted", className)} role="img">
+    <span
+      aria-hidden={alt === "" ? true : undefined}
+      aria-label={alt}
+      className={cn("relative block shrink-0 overflow-hidden bg-muted", className)}
+      role="img"
+    >
       <span aria-hidden="true" className="absolute inset-0 flex items-center justify-center text-muted-foreground/35">
         <Disc3 className="size-1/2 max-h-20 max-w-20" />
       </span>
