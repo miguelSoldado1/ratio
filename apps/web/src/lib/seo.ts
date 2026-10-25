@@ -17,7 +17,7 @@ export const faviconLinks = [
   { rel: "manifest", href: "/site.webmanifest" },
 ];
 
-export function getSiteUrl() {
+function getSiteUrl() {
   return getAbsoluteUrl(import.meta.env.VITE_SITE_URL ?? fallbackSiteUrl);
 }
 
