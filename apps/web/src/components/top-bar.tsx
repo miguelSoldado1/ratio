@@ -38,7 +38,7 @@ function LogoHomeLink() {
       resetScroll
       to="/"
     >
-      <img alt="" className="size-10 shrink-0" height={32} src="/favicon.svg" width={32} />
+      <img alt="" className="size-10 shrink-0" height={32} src="/brand/ratio-logo-white.svg" width={32} />
     </Link>
   );
 }
