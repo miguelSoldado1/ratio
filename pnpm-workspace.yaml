@@ -10,3 +10,8 @@ allowBuilds:
   sharp: true
   workerd: true
   core-js: true
+
+packageExtensions:
+  cmdk:
+    peerDependencies:
+      "@types/react": "*"

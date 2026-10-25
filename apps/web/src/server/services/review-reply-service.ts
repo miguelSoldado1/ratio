@@ -382,7 +382,7 @@ async function getReviewReplyCount(db: Db, reviewId: string) {
   return counts.get(reviewId) ?? 0;
 }
 
-export function getVisibleReplyLikeCountSql(replyId: typeof reviewReplies.id) {
+function getVisibleReplyLikeCountSql(replyId: typeof reviewReplies.id) {
   return sql<number>`(
     select count(*)::int
     from ${reviewReplyLikes}
