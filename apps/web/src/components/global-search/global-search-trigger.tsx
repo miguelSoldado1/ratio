@@ -39,7 +39,7 @@ export function GlobalSearchTrigger({ className, compact = false, onOpen }: Glob
     >
       <span className="flex min-w-0 items-center gap-2">
         <Search data-icon="inline-start" />
-        <span className="truncate text-sm">Search albums and people</span>
+        <span className="truncate text-sm">Search albums and artists</span>
       </span>
     </Button>
   );
