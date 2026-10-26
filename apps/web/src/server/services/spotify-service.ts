@@ -273,7 +273,7 @@ export async function getArtistAlbumsService({ albumId, artistId }: ArtistAlbums
       .map(({ editionKey: _editionKey, ...album }) => album);
   } catch (error) {
     logSpotifyApiError("artist_albums", error, { artistId });
-    return [];
+    throw new Error("Spotify artist albums lookup failed");
   }
 }
 
