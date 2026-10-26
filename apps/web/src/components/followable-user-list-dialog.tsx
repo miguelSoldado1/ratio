@@ -12,9 +12,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Spinner } from "@/components/ui/spinner";
-import { UserList } from "@/components/user-list";
+import { UserList, UserListSkeleton } from "@/components/user-list";
 import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
 import { useSetUserFollowMutation } from "@/hooks/use-user-follow-toggle";
 import { trackSocialActionCompleted } from "@/lib/analytics/posthog";
@@ -48,8 +47,6 @@ interface FollowableUserListDialogProps<TUser extends FollowableUser> {
   trigger?: ReactElement;
   viewer: ViewerState;
 }
-
-const userListSkeletonRows = ["one", "two", "three", "four"] as const;
 
 export function FollowableUserListDialog<TUser extends FollowableUser>({
   description,
@@ -230,21 +227,4 @@ function updateFollowableUser<TUser extends FollowableUser>(
       users: page.users.map((user) => (user.id === userId ? { ...user, followedByViewer } : user)),
     })),
   };
-}
-
-function UserListSkeleton() {
-  return (
-    <div className="flex flex-col gap-2 px-2 py-1">
-      {userListSkeletonRows.map((row) => (
-        <div className="flex items-center gap-3" key={row}>
-          <Skeleton className="size-11 rounded-full" />
-          <div className="flex min-w-0 flex-1 flex-col gap-2">
-            <Skeleton className="h-4 w-32 rounded-sm" />
-            <Skeleton className="h-3 w-24 rounded-sm" />
-          </div>
-          <Skeleton className="h-8 w-20 rounded-full" />
-        </div>
-      ))}
-    </div>
-  );
 }
