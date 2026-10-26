@@ -154,5 +154,6 @@ Search is the most token-expensive endpoint.
 The album page's "More from [artist]" shelf calls `GET /artists/{artistId}/albums?include_groups=album&limit=10`
 with the Client Credentials token and no `market`. The deduplicated list is cached per artist for 7 days at
 `spotify:artist-albums:global-v1:<artist-id>`, shared by every album page for that artist. The server then removes
-the current album (and its matching edition) and returns up to four. On failure it returns an empty list and the
-shelf stays hidden.
+the current album (and its matching edition) and returns up to four. On failure it throws instead of returning an
+empty list, so the client does not cache a failure as "no albums". The shelf stays hidden and retries on the next
+visit.

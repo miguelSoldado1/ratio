@@ -100,14 +100,18 @@ describe("getArtistAlbumsService", () => {
       getArtistAlbums,
     } as unknown as ReturnType<typeof createSpotifyApi>);
 
-    await expect(getArtistAlbumsService({ albumId: "current", artistId: "artist_1" })).resolves.toEqual([]);
+    await expect(getArtistAlbumsService({ albumId: "current", artistId: "artist_1" })).rejects.toThrow(
+      "Spotify artist albums lookup failed"
+    );
     expect(getArtistAlbums).not.toHaveBeenCalled();
   });
 
-  it("returns an empty shelf and logs when Spotify fails", async () => {
+  it("throws instead of returning an empty shelf and logs when Spotify fails", async () => {
     getArtistAlbums.mockRejectedValue(Object.assign(new Error("Service unavailable"), { statusCode: 503 }));
 
-    await expect(getArtistAlbumsService({ albumId: "current", artistId: "artist_1" })).resolves.toEqual([]);
+    await expect(getArtistAlbumsService({ albumId: "current", artistId: "artist_1" })).rejects.toThrow(
+      "Spotify artist albums lookup failed"
+    );
     expect(console.error).toHaveBeenCalledWith(
       "spotify_api_error",
       expect.objectContaining({ operation: "artist_albums", status: 503 })
