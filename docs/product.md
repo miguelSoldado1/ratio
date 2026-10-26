@@ -80,6 +80,9 @@ deferred until the product needs those dedicated surfaces.
 - Link/unlink sign-in methods in settings
 - Home For You feed blending recent reviews, recently liked reviews, and followed-user reviews when signed in
 - Signed-in Following feed with the viewer's reviews and reviews from followed users in reverse chronological order
+- An empty Following feed shows up to four people from the For You reviews already loaded on the page, newest review
+  first, each with that review's album and a Follow button. The order is plain recency, so this doesn't replace the
+  deferred suggested-users work. With no other reviewers, the empty state shows only its text
 - Review permalinks and basic review sharing
 - Basic admin moderation: remove bad reviews/ratings and ban abusive accounts
 - Flat review conversations with public reading, authenticated replies and reply likes, owner/admin deletion, and

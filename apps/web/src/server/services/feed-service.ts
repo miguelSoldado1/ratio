@@ -528,6 +528,7 @@ function mapFeedReview(candidate: FeedCandidate, replyCounts: Map<string, number
     user: {
       avatarUrl: candidate.user.avatarUrl ?? undefined,
       displayUsername: candidate.user.displayUsername ?? candidate.user.username ?? candidate.user.id,
+      id: candidate.user.id,
       username: candidate.user.username ?? undefined,
     },
   };
