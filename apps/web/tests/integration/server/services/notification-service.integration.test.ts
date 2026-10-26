@@ -277,7 +277,7 @@ describe("getNotificationsService", () => {
     for (const [index, actor] of actors.entries()) {
       await createTestNotification(testDb, {
         actorUserId: actor.id,
-        createdAt: new Date(Date.UTC(2026, 6, 4, 0, index)),
+        createdAt: minutesAgo(index),
         recipientUserId: recipient.id,
         seenAt: null,
         type: "user_followed",
@@ -303,16 +303,16 @@ describe("getNotificationsService", () => {
 
     await createTestNotification(testDb, {
       actorUserId: unseenActor.id,
-      createdAt: new Date("2026-07-04T10:00:00.000Z"),
+      createdAt: minutesAgo(60),
       recipientUserId: recipient.id,
       seenAt: null,
       type: "user_followed",
     });
     await createTestNotification(testDb, {
       actorUserId: seenActor.id,
-      createdAt: new Date("2026-07-04T09:00:00.000Z"),
+      createdAt: minutesAgo(120),
       recipientUserId: recipient.id,
-      seenAt: new Date("2026-07-04T09:30:00.000Z"),
+      seenAt: minutesAgo(90),
       type: "user_followed",
     });
 
@@ -450,4 +450,8 @@ describe("getNotificationsService", () => {
 
 async function createUsers(count: number) {
   return await Promise.all(Array.from({ length: count }, () => createTestUser(testDb)));
+}
+
+function minutesAgo(minutes: number) {
+  return new Date(Date.now() - minutes * 60 * 1000);
 }

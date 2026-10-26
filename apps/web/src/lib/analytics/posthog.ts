@@ -1,5 +1,8 @@
+import { knownAuthErrorCodes } from "@/lib/auth/auth-errors";
+import type { AuthProviderId } from "@ratio/auth-providers";
 import type { PostHog, Properties } from "posthog-js/dist/module.slim.no-external";
 
+export type AuthDialogSource = "conversation" | "follow" | "header" | "home_intro" | "list" | "review" | "review_like";
 export type SocialAction = "follow" | "reply" | "reply_like" | "review_like";
 
 export interface AnalyticsAlbum {
@@ -16,7 +19,10 @@ interface AlbumAnalyticsProperties {
 
 interface AnalyticsEventProperties {
   album_opened: AlbumAnalyticsProperties;
+  auth_dialog_opened: { source: AuthDialogSource };
   review_published: AlbumAnalyticsProperties & { has_body: boolean };
+  sign_in_failed: { error: string };
+  sign_in_started: { provider: AuthProviderId; source: AuthDialogSource };
   social_action_completed: { action: SocialAction };
 }
 
@@ -124,6 +130,18 @@ export function initializeAnalytics() {
 
 export function trackAlbumOpened(album: AnalyticsAlbum) {
   capture("album_opened", getAlbumAnalyticsProperties(album));
+}
+
+export function trackAuthDialogOpened(source: AuthDialogSource) {
+  capture("auth_dialog_opened", { source });
+}
+
+export function trackSignInStarted(provider: AuthProviderId, source: AuthDialogSource) {
+  capture("sign_in_started", { provider, source });
+}
+
+export function trackSignInFailed(error: string) {
+  capture("sign_in_failed", { error: knownAuthErrorCodes.has(error) ? error : "other" });
 }
 
 export function trackReviewPublished(album: AnalyticsAlbum, hasBody: boolean) {

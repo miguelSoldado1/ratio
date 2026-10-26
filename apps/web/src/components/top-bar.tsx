@@ -53,7 +53,7 @@ export function TopBar() {
 
   return (
     <>
-      <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} />
+      <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} source="header" />
       <GlobalSearch onOpenChange={setSearchOpen} open={searchOpen} />
       <div className="sticky top-0 z-40 border-border/80 border-b bg-background/95 px-3 py-3 backdrop-blur-md sm:px-5 lg:px-10">
         <div className="mx-auto grid w-full max-w-375 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">

@@ -14,6 +14,33 @@ const authErrorMessages: Record<string, string> = {
   user_already_exists_use_another_email: "An account already exists for that email. Use another email.",
 };
 
+const unmessagedAuthErrorCodes = [
+  "account_already_linked_to_different_user",
+  "email_not_found",
+  "internal_server_error",
+  "invalid_callback_request",
+  "invalid_code",
+  "invalid_request",
+  "invalid_scope",
+  "network_error",
+  "no_callback_url",
+  "no_code",
+  "oauth_provider_not_found",
+  "server_error",
+  "sign_in_request_failed",
+  "signup_disabled",
+  "state_generation_error",
+  "state_invalid",
+  "state_mismatch",
+  "state_not_found",
+  "temporarily_unavailable",
+  "unable_to_create_session",
+  "unable_to_create_user",
+  "unable_to_get_user_info",
+];
+
+export const knownAuthErrorCodes = new Set([...Object.keys(authErrorMessages), ...unmessagedAuthErrorCodes]);
+
 export function getAuthErrorMessage(error: string) {
   if (authErrorMessages[error]) return authErrorMessages[error];
 

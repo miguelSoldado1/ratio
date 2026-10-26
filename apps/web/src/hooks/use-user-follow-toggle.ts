@@ -3,6 +3,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { useCallback } from "react";
 import { toast } from "sonner";
 import { trackSocialActionCompleted } from "@/lib/analytics/posthog";
+import { authClient } from "@/lib/auth/auth-client";
+import { feedQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { setUserFollow } from "@/server/functions/follow-functions";
 import { tryCatch } from "@/try-catch";
 import type { QueryKey } from "@tanstack/react-query";
@@ -14,10 +16,15 @@ interface UseUserFollowToggleParams {
 }
 
 export function useSetUserFollowMutation() {
+  const queryClient = useQueryClient();
+  const viewerUserId = authClient.useSession().data?.user.id;
   const setUserFollowFn = useServerFn(setUserFollow);
 
   return useMutation({
     mutationFn: (input: Parameters<typeof setUserFollowFn>[0]) => setUserFollowFn(input),
+    onSuccess: () => {
+      if (viewerUserId) return queryClient.invalidateQueries({ queryKey: feedQueryKeys.following(viewerUserId) });
+    },
   });
 }
 

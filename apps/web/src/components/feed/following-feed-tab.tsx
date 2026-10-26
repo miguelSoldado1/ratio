@@ -2,6 +2,7 @@ import { useInfiniteQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { EmptyState } from "@/components/empty-state";
 import { FeedReviewsSection, FeedReviewsSectionSkeleton } from "@/components/feed/feed-reviews-section";
+import { FollowSuggestions } from "@/components/feed/follow-suggestions";
 import { InlineError } from "@/components/inline-error";
 import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
 import { feedQueryKeys } from "@/lib/tanstack-query/query-keys";
@@ -61,9 +62,11 @@ export function FollowingFeedTab({
       deletingReviewId={deletingReviewId}
       emptyState={
         <EmptyState
-          description="New reviews from people you follow will appear here."
+          description="Follow people whose taste you like and their reviews will show up here."
           title="No following reviews yet"
-        />
+        >
+          <FollowSuggestions viewerUserId={viewer.userId ?? ""} />
+        </EmptyState>
       }
       isFetchingNextPage={isFetchingNextPage}
       loadMoreRef={loadMoreRef}

@@ -146,7 +146,7 @@ function UserPage() {
 
   return (
     <>
-      <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} />
+      <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} source="follow" />
       <main className="h-[calc(100dvh-4.0625rem)] bg-background text-foreground">
         <PageContainer className="flex h-full min-h-0 flex-col">
           <SwipeableTabs className="min-h-0 flex-1" defaultValue="reviews" onValueChange={handleTabChange}>

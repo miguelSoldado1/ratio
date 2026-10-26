@@ -79,7 +79,13 @@ deferred until the product needs those dedicated surfaces.
 - Search albums via Spotify API and users by username/display username from the global search dialog
 - Link/unlink sign-in methods in settings
 - Home For You feed blending recent reviews, recently liked reviews, and followed-user reviews when signed in
+- Signed-out visitors get a "Recently reviewed" shelf in the same spot and style as the signed-in recent-listening
+  shelf: up to 6 albums from the already-loaded For You reviews, newest first, with a "Sign in to rate your own"
+  action. It appears only once the session has resolved, so signed-in users never see it flash
 - Signed-in Following feed with the viewer's reviews and reviews from followed users in reverse chronological order
+- An empty Following feed shows up to four people from the For You reviews already loaded on the page, newest review
+  first, each with that review's album and a Follow button. The order is plain recency, so this doesn't replace the
+  deferred suggested-users work. With no other reviewers, the empty state shows only its text
 - Review permalinks and basic review sharing
 - Basic admin moderation: remove bad reviews/ratings and ban abusive accounts
 - Flat review conversations with public reading, authenticated replies and reply likes, owner/admin deletion, and

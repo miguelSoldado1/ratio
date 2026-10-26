@@ -122,7 +122,7 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
 
   return (
     <>
-      <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} />
+      <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} source="review" />
       <Drawer direction="bottom" handleOnly onOpenChange={(nextOpen) => setOpen(nextOpen)} open={open}>
         <div className="min-w-0">
           <Button

@@ -4,19 +4,28 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { trackAuthDialogOpened, trackSignInFailed, trackSignInStarted } from "@/lib/analytics/posthog";
 import { authClient } from "@/lib/auth/auth-client";
+import { tryCatch } from "@/try-catch";
 import type { AuthProviderId } from "@ratio/auth-providers";
+import type { AuthDialogSource } from "@/lib/analytics/posthog";
 
 interface AuthDialogProps {
   onOpenChange: (open: boolean) => void;
   open: boolean;
+  source: AuthDialogSource;
 }
 
-export function AuthDialog({ onOpenChange, open }: AuthDialogProps) {
+export function AuthDialog({ onOpenChange, open, source }: AuthDialogProps) {
   const [pendingProvider, setPendingProvider] = useState<AuthProviderId | null>(null);
   const session = authClient.useSession();
   const canOpen = !(session.isPending || session.data?.user);
+  const isVisible = open && canOpen;
   const returnUrl = getCurrentAuthReturnUrl();
+
+  useEffect(() => {
+    if (isVisible) trackAuthDialogOpened(source);
+  }, [isVisible, source]);
 
   useEffect(() => {
     if (open && session.data?.user) onOpenChange(false);
@@ -40,23 +49,29 @@ export function AuthDialog({ onOpenChange, open }: AuthDialogProps) {
 
   async function continueWithProvider(provider: AuthProviderId) {
     setPendingProvider(provider);
+    trackSignInStarted(provider, source);
 
-    const { error: authError } = await authClient.signIn.social({
-      callbackURL: returnUrl,
-      errorCallbackURL: returnUrl,
-      provider,
-    });
+    const { data: result, error: requestError } = await tryCatch(
+      authClient.signIn.social({ callbackURL: returnUrl, errorCallbackURL: returnUrl, provider })
+    );
 
-    if (authError) {
-      toast.error("Couldn't sign in", {
-        description: authError.message ?? "Something went wrong. Try again.",
-      });
-      setPendingProvider(null);
+    if (requestError) return failSignIn("network_error", "Check your connection and try again.");
+    if (result.error) {
+      return failSignIn(
+        result.error.code?.toLowerCase() ?? "sign_in_request_failed",
+        result.error.message ?? "Something went wrong. Try again."
+      );
     }
   }
 
+  function failSignIn(code: string, description: string) {
+    trackSignInFailed(code);
+    toast.error("Couldn't sign in", { description });
+    setPendingProvider(null);
+  }
+
   return (
-    <Dialog onOpenChange={onOpenChange} open={open && canOpen}>
+    <Dialog onOpenChange={onOpenChange} open={isVisible}>
       <DialogContent size="md">
         <DialogHeader className="gap-2">
           <DialogTitle className="text-xl">Continue to Ratio</DialogTitle>

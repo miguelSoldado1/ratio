@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { toast } from "sonner";
+import { trackSignInFailed } from "@/lib/analytics/posthog";
 import { authClient } from "@/lib/auth/auth-client";
 import { getAuthErrorMessage } from "@/lib/auth/auth-errors";
 
@@ -13,6 +14,8 @@ export function useAuthRedirectErrorToast(setAuthDialogOpen: (open: boolean) => 
     const url = new URL(window.location.href);
     const error = url.searchParams.get("error");
     if (!error) return;
+
+    trackSignInFailed(error);
 
     const toastTimeoutId = window.setTimeout(() => {
       toast.error("Couldn't sign in", { description: getAuthErrorMessage(error), id: `auth-error-${error}` });

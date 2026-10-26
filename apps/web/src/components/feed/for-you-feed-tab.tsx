@@ -22,13 +22,7 @@ export function ForYouFeedTab({
   onReviewLikeToggle,
   viewer,
 }: ForYouFeedTabProps) {
-  const getFeedFn = useServerFn(getFeed);
-  const feedQuery = useInfiniteQuery({
-    getNextPageParam: (lastPage) => lastPage.nextCursor,
-    initialPageParam: null,
-    queryFn: ({ pageParam }: { pageParam: string | null }) => getFeedFn({ data: { cursor: pageParam ?? undefined } }),
-    queryKey: feedQueryKeys.root(viewer.userId),
-  });
+  const feedQuery = useForYouFeedQuery(viewer.userId);
 
   const reviews = feedQuery.data?.pages.flatMap((page) => page.reviews) ?? [];
   const { fetchNextPage, hasNextPage, isFetchNextPageError, isFetchingNextPage } = feedQuery;
@@ -58,4 +52,15 @@ export function ForYouFeedTab({
       viewer={viewer}
     />
   );
+}
+
+export function useForYouFeedQuery(viewerUserId?: string) {
+  const getFeedFn = useServerFn(getFeed);
+
+  return useInfiniteQuery({
+    getNextPageParam: (lastPage) => lastPage.nextCursor,
+    initialPageParam: null,
+    queryFn: ({ pageParam }: { pageParam: string | null }) => getFeedFn({ data: { cursor: pageParam ?? undefined } }),
+    queryKey: feedQueryKeys.root(viewerUserId),
+  });
 }
