@@ -2,7 +2,7 @@ import { knownAuthErrorCodes } from "@/lib/auth/auth-errors";
 import type { AuthProviderId } from "@ratio/auth-providers";
 import type { PostHog, Properties } from "posthog-js/dist/module.slim.no-external";
 
-export type AuthDialogSource = "conversation" | "follow" | "header" | "list" | "review" | "review_like";
+export type AuthDialogSource = "conversation" | "follow" | "header" | "home_intro" | "list" | "review" | "review_like";
 export type SocialAction = "follow" | "reply" | "reply_like" | "review_like";
 
 export interface AnalyticsAlbum {

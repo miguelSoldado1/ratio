@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { FollowingFeedTab } from "@/components/feed/following-feed-tab";
 import { ForYouFeedTab } from "@/components/feed/for-you-feed-tab";
+import { RecentlyReviewedShelf } from "@/components/feed/recently-reviewed-shelf";
 import { PageContainer, PageContainerContent } from "@/components/page-container";
 import { RecentRotation } from "@/components/recent-rotation/recent-rotation";
 import {
@@ -42,6 +43,9 @@ export const Route = createFileRoute("/")({
 function FeedPage() {
   const session = authClient.useSession();
   const [activeTab, setActiveTab] = useState<HomeFeedTab>("for-you");
+  // Better Auth re-enters isPending on every refetch while signed out, so remember the first resolution.
+  const [sessionResolved, setSessionResolved] = useState(false);
+  if (!(sessionResolved || session.isPending)) setSessionResolved(true);
   const viewerUserId = session.data?.user.id;
   const hasSession = Boolean(viewerUserId);
   const viewer = useMemo(() => ({ hasSession, userId: viewerUserId }), [hasSession, viewerUserId]);
@@ -108,7 +112,7 @@ function FeedPage() {
           </SwipeableTabs>
         ) : (
           <PageContainerContent className="flex flex-col pt-0 pb-8 lg:pb-12">
-            <RecentRotation viewerUserId={viewerUserId} />
+            {sessionResolved ? <RecentlyReviewedShelf /> : null}
             <ForYouFeedTab
               active
               deletingReviewId={deletingReviewId}
