@@ -153,7 +153,7 @@ export function AddAlbumToListAction({ albumId, albumTitle }: AddAlbumToListActi
       >
         <ListPlus />
       </Button>
-      <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} />
+      <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} source="list" />
       {viewerUserId ? (
         <>
           <AlbumListPickerDialog

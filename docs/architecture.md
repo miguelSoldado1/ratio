@@ -65,11 +65,14 @@ recording, surveys, experiments, and feature flags disabled. Automatic SPA page 
 Analytics, but album, list, review, and username path segments are normalized before capture and external referrers are
 reduced to their origin.
 
-Product analytics deliberately consists of three narrow events: album opens and successful review publication with the
+Product analytics deliberately consists of a few narrow events: album opens and successful review publication with the
 public Spotify album ID, title, and artist (publication adds only a written-body boolean), and successful positive
-social actions with a bounded action enum. PostHog never receives Ratio account IDs, usernames, search text, rating
-values, reviews, replies, or list content. The product database remains the source of truth for exact activity,
-retention, and cross-day behavior.
+social actions with a bounded action enum. The sign-in path adds three more, because the database only records people
+who finish signing up: the auth dialog opening with a bounded source enum, a provider being chosen with that provider
+and source, and a failed sign-in with its error code. Codes outside the known Better Auth and OAuth provider set in
+`auth-errors.ts` are sent as `other`, so a hand-edited `?error=` value can't carry free text. PostHog never receives Ratio account IDs, usernames,
+search text, rating values, reviews, replies, or list content. The product database remains the source of truth for
+exact activity, retention, and cross-day behavior.
 
 ## Public Document Metadata Boundary
 

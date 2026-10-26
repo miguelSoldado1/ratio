@@ -274,7 +274,7 @@ export function ReviewConversation({ reviewId: routeReviewId }: ReviewConversati
         review={review}
         viewer={viewer}
       />
-      <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} />
+      <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} source="conversation" />
       <ReviewLikesDialog
         onOpenChange={(open) => {
           if (!open) setReviewLikesId(undefined);

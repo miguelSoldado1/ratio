@@ -167,7 +167,7 @@ export function ReviewList<TReview extends ReviewListItem>({
         reviewId={reviewLikesId}
         viewer={viewer}
       />
-      <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} />
+      <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} source="review_like" />
     </>
   );
 }

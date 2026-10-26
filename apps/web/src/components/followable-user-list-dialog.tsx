@@ -147,7 +147,7 @@ export function FollowableUserListDialog<TUser extends FollowableUser>({
 
   return (
     <>
-      <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} />
+      <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} source="follow" />
       <Dialog onOpenChange={handleOpenChange} open={currentOpen}>
         {trigger ? <DialogTrigger render={trigger} /> : null}
         <DialogContent className="flex max-h-[calc(100svh-2rem)] flex-col gap-0 overflow-hidden p-0" size="md">
