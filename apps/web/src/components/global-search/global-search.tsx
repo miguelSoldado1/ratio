@@ -148,7 +148,7 @@ export function GlobalSearch({ onOpenChange, open }: GlobalSearchProps) {
             inputGroupClassName="h-10 sm:h-11"
             onClear={handleClearSearch}
             onValueChange={setInputValue}
-            placeholder="Search..."
+            placeholder="Search albums and artists..."
             ref={inputRef}
             spellCheck={false}
             value={inputValue}

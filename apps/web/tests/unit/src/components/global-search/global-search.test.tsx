@@ -69,7 +69,7 @@ describe("GlobalSearch", () => {
     renderGlobalSearch();
     fireEvent.click(screen.getByText("Kid A"));
 
-    expect((screen.getByPlaceholderText("Search...") as HTMLInputElement).value).toBe("Kid A");
+    expect((screen.getByPlaceholderText("Search albums and artists...") as HTMLInputElement).value).toBe("Kid A");
   });
 
   it("removes a recent search without filling the input", () => {
@@ -83,7 +83,7 @@ describe("GlobalSearch", () => {
 
     expect(screen.queryByText("Kid A")).toBeNull();
     expect(screen.getByText("Search for albums or users")).toBeTruthy();
-    expect((screen.getByPlaceholderText("Search...") as HTMLInputElement).value).toBe("");
+    expect((screen.getByPlaceholderText("Search albums and artists...") as HTMLInputElement).value).toBe("");
     expect(localStorage.getItem(recentSearchesStorageKey)).toBe("[]");
   });
 
