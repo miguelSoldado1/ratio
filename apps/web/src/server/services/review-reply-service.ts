@@ -5,7 +5,11 @@ import { getDb } from "@/lib/db";
 import { reviewReplies, reviewReplyLikes, reviews, user } from "@/lib/db/schema";
 import { getFollowedByViewerSql, mapFollowableUser } from "../followable-user";
 import { decodeCursor, encodeCursor, getCreatedAtIdCursorFilter, getOptionalCurrentUser } from "../server-utils";
-import { createReplyLikedNotification, createReviewRepliedNotifications } from "./notification-service";
+import {
+  createReplyLikedNotification,
+  createReviewRepliedNotifications,
+  deleteReplyLikedNotification,
+} from "./notification-service";
 import type { AnyColumn } from "drizzle-orm/column";
 import type { Db } from "@/lib/db";
 import type { AuthenticatedContext } from "../auth-middleware";
@@ -300,6 +304,8 @@ export async function deleteReviewReplyService(data: DeleteReviewReplyInput, con
 export async function setReviewReplyLikeService(data: SetReviewReplyLikeInput, context: AuthenticatedContext) {
   await assertReplyIsLikeable(data.replyId, context);
 
+  const notificationData = { actorUserId: context.user.id, replyId: data.replyId };
+
   if (data.liked) {
     await context.db.transaction(async (transaction) => {
       const [insertedLike] = await transaction
@@ -309,13 +315,16 @@ export async function setReviewReplyLikeService(data: SetReviewReplyLikeInput, c
         .returning({ replyId: reviewReplyLikes.replyId });
 
       if (insertedLike) {
-        await createReplyLikedNotification({ actorUserId: context.user.id, replyId: data.replyId }, transaction);
+        await createReplyLikedNotification(notificationData, transaction);
       }
     });
   } else {
-    await context.db
-      .delete(reviewReplyLikes)
-      .where(and(eq(reviewReplyLikes.replyId, data.replyId), eq(reviewReplyLikes.userId, context.user.id)));
+    await context.db.transaction(async (transaction) => {
+      await transaction
+        .delete(reviewReplyLikes)
+        .where(and(eq(reviewReplyLikes.replyId, data.replyId), eq(reviewReplyLikes.userId, context.user.id)));
+      await deleteReplyLikedNotification(notificationData, transaction);
+    });
   }
 
   const [likeCount] = await context.db

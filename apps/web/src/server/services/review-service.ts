@@ -12,7 +12,7 @@ import {
   getOptionalCurrentUserId,
 } from "../server-utils";
 import { ensureAlbumExistsForWrite, getMissingAlbumMetadataForWrite } from "./album-service";
-import { createReviewLikedNotification } from "./notification-service";
+import { createReviewLikedNotification, deleteReviewLikedNotification } from "./notification-service";
 import { getReviewReplyCounts, getVisibleReviewReplyCountSql } from "./review-reply-service";
 import type { Db } from "@/lib/db";
 import type { AuthenticatedContext } from "../auth-middleware";
@@ -627,6 +627,8 @@ export async function unpinProfileReviewService(data: ProfilePinnedReviewInput, 
 export async function setReviewLikeService(data: ReviewLikeInput, context: AuthenticatedContext) {
   await assertReviewIsLikeable(data.reviewId, context);
 
+  const notificationData = { actorUserId: context.user.id, reviewId: data.reviewId };
+
   if (data.liked) {
     await context.db.transaction(async (transaction) => {
       const [insertedLike] = await transaction
@@ -636,14 +638,16 @@ export async function setReviewLikeService(data: ReviewLikeInput, context: Authe
         .returning({ reviewId: reviewLikes.reviewId });
 
       if (insertedLike) {
-        const notificationData = { actorUserId: context.user.id, reviewId: data.reviewId };
         await createReviewLikedNotification(notificationData, transaction);
       }
     });
   } else {
-    await context.db
-      .delete(reviewLikes)
-      .where(and(eq(reviewLikes.reviewId, data.reviewId), eq(reviewLikes.userId, context.user.id)));
+    await context.db.transaction(async (transaction) => {
+      await transaction
+        .delete(reviewLikes)
+        .where(and(eq(reviewLikes.reviewId, data.reviewId), eq(reviewLikes.userId, context.user.id)));
+      await deleteReviewLikedNotification(notificationData, transaction);
+    });
   }
 
   const [likeCount] = await context.db

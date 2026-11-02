@@ -194,7 +194,7 @@ describe("setUserFollowService", () => {
     expect(storedNotifications).toHaveLength(1);
   });
 
-  it("unfollow does not delete the historical notification", async () => {
+  it("unfollow deletes the follow notification", async () => {
     const follower = await createTestUser(testDb);
     const target = await createTestUser(testDb);
     const context = createAuthenticatedContext(testDb, follower);
@@ -204,7 +204,7 @@ describe("setUserFollowService", () => {
 
     const storedNotifications = await testDb.select().from(notifications);
 
-    expect(storedNotifications).toHaveLength(1);
+    expect(storedNotifications).toEqual([]);
   });
 });
 

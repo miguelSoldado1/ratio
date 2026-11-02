@@ -149,6 +149,11 @@ matrix for every type. Partial unique indexes keep one updatable review-reply no
 one reply-like notification per recipient/actor/reply. Partial `review_id` and `reply_id` indexes support foreign-key
 cascades.
 
+Undoing a follow, review like, or reply like deletes its notification in the same transaction, so the notification
+table only holds live events and reads need no existence check. The Worker's scheduled handler deletes notifications
+older than the 90-day history window. Migration `0006_delete_orphaned_notifications.sql` removed rows left behind
+before this rule existed.
+
 Migration `0002_exotic_red_hulk.sql` replaces the PostgreSQL enum inside the migration transaction instead of using
 `ALTER TYPE ... ADD VALUE`, because Drizzle 0.45 wraps pending migrations together and PostgreSQL cannot use a newly
 added enum value before commit. The integration suite verifies both a fresh isolated schema and an upgrade containing

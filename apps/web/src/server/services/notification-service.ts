@@ -1,7 +1,7 @@
 import { and, desc, eq, gte, inArray, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import z from "zod";
-import { albums, notifications, reviewLikes, reviewReplies, reviewReplyLikes, reviews, user } from "@/lib/db/schema";
+import { albums, notifications, reviewReplies, reviews, user } from "@/lib/db/schema";
 import { decodeCursor, encodeCursor } from "../server-utils";
 import type { AnyColumn } from "drizzle-orm/column";
 import type { SelectedFieldsFlat } from "drizzle-orm/pg-core/query-builders/select.types";
@@ -335,6 +335,49 @@ export async function createReplyLikedNotification(data: CreateReplyLikedNotific
   `);
 }
 
+export async function deleteReviewLikedNotification(data: CreateReviewLikedNotificationInput, db: NotificationWriteDb) {
+  await db
+    .delete(notifications)
+    .where(
+      and(
+        eq(notifications.type, "review_liked"),
+        eq(notifications.actorUserId, data.actorUserId),
+        eq(notifications.reviewId, data.reviewId)
+      )
+    );
+}
+
+export async function deleteReplyLikedNotification(data: CreateReplyLikedNotificationInput, db: NotificationWriteDb) {
+  await db
+    .delete(notifications)
+    .where(
+      and(
+        eq(notifications.type, "reply_liked"),
+        eq(notifications.actorUserId, data.actorUserId),
+        eq(notifications.replyId, data.replyId)
+      )
+    );
+}
+
+export async function deleteUserFollowedNotification(
+  data: CreateUserFollowedNotificationInput,
+  db: NotificationWriteDb
+) {
+  await db
+    .delete(notifications)
+    .where(
+      and(
+        eq(notifications.type, "user_followed"),
+        eq(notifications.actorUserId, data.actorUserId),
+        eq(notifications.recipientUserId, data.recipientUserId)
+      )
+    );
+}
+
+export async function pruneExpiredNotifications(db: NotificationWriteDb) {
+  await db.delete(notifications).where(lte(notifications.createdAt, getNotificationHistoryCutoff()));
+}
+
 export async function createUserFollowedNotification(
   data: CreateUserFollowedNotificationInput,
   db: NotificationWriteDb
@@ -436,16 +479,7 @@ function getRenderableNotificationFilter(
     sql`${actor.banned} is not true`,
     or(
       eq(notifications.type, "user_followed"),
-      and(
-        eq(notifications.type, "review_liked"),
-        isNotNull(notifications.reviewId),
-        sql`exists(
-          select 1
-          from ${reviewLikes}
-          where ${reviewLikes.reviewId} = ${notifications.reviewId}
-            and ${reviewLikes.userId} = ${notifications.actorUserId}
-        )`
-      ),
+      and(eq(notifications.type, "review_liked"), isNotNull(notifications.reviewId)),
       and(
         eq(notifications.type, "review_replied"),
         isNotNull(notifications.reviewId),
@@ -467,12 +501,10 @@ function getRenderableNotificationFilter(
         isNotNull(notifications.replyId),
         sql`exists(
           select 1
-          from ${reviewReplyLikes}
-          inner join ${reviewReplies} on ${reviewReplies.id} = ${reviewReplyLikes.replyId}
+          from ${reviewReplies}
           inner join ${reviews} on ${reviews.id} = ${reviewReplies.reviewId}
           inner join ${user} on ${user.id} = ${reviews.userId}
-          where ${reviewReplyLikes.replyId} = ${notifications.replyId}
-            and ${reviewReplyLikes.userId} = ${notifications.actorUserId}
+          where ${reviewReplies.id} = ${notifications.replyId}
             and ${user.username} is not null
             and ${user.banned} is not true
         )`
