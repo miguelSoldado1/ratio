@@ -14,7 +14,6 @@ import postgres from "postgres";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import * as schema from "@/lib/db/schema";
 import { notifications, reviewReplies, reviewReplyLikes, reviews, user } from "@/lib/db/schema";
-import { getNotificationsService } from "@/server/services/notification-service";
 import {
   createReviewReplyService,
   deleteReviewReplyService,
@@ -400,7 +399,7 @@ describe("setReviewReplyLikeService", () => {
     ]);
   });
 
-  it("suppresses self-like notifications and makes an unliked notification non-renderable", async () => {
+  it("suppresses self-like notifications and deletes the notification on unlike", async () => {
     const replyAuthor = await createTestUser(testDb);
     const liker = await createTestUser(testDb);
     const reply = await createTestReviewReply(testDb, { userId: replyAuthor.id });
@@ -415,8 +414,7 @@ describe("setReviewReplyLikeService", () => {
     await setReviewReplyLikeService({ liked: true, replyId: reply.id }, likerContext);
     await setReviewReplyLikeService({ liked: false, replyId: reply.id }, likerContext);
 
-    const page = await getNotificationsService({}, createAuthenticatedContext(testDb, replyAuthor));
-    expect(page.items).toEqual([]);
+    expect(await testDb.select().from(notifications)).toEqual([]);
   });
 });
 

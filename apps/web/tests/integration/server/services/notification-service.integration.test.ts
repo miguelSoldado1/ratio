@@ -10,7 +10,7 @@ import {
 } from "@test/fixtures";
 import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { notifications, reviewReplies, reviewReplyLikes } from "@/lib/db/schema";
+import { notifications, reviewReplies } from "@/lib/db/schema";
 import {
   createReplyLikedNotification,
   createReviewLikedNotification,
@@ -19,7 +19,9 @@ import {
   getNotificationsService,
   getUnseenNotificationCountService,
   markNotificationsSeenService,
+  pruneExpiredNotifications,
 } from "@/server/services/notification-service";
+import { setReviewReplyLikeService } from "@/server/services/review-reply-service";
 
 beforeAll(async () => {
   await migrateTestDatabase();
@@ -80,6 +82,32 @@ describe("createUserFollowedNotification", () => {
     const storedNotifications = await testDb.select().from(notifications);
 
     expect(storedNotifications).toEqual([]);
+  });
+});
+
+describe("pruneExpiredNotifications", () => {
+  it("deletes notifications older than the history window and keeps recent ones", async () => {
+    const recipient = await createTestUser(testDb);
+    const oldActor = await createTestUser(testDb);
+    const recentActor = await createTestUser(testDb);
+
+    await createTestNotification(testDb, {
+      actorUserId: oldActor.id,
+      createdAt: new Date(Date.now() - 91 * 24 * 60 * 60 * 1000),
+      recipientUserId: recipient.id,
+      type: "user_followed",
+    });
+    const recentNotification = await createTestNotification(testDb, {
+      actorUserId: recentActor.id,
+      createdAt: minutesAgo(5),
+      recipientUserId: recipient.id,
+      type: "user_followed",
+    });
+
+    await pruneExpiredNotifications(testDb);
+
+    const remaining = await testDb.select({ id: notifications.id }).from(notifications);
+    expect(remaining).toEqual([{ id: recentNotification?.id }]);
   });
 });
 
@@ -258,18 +286,6 @@ describe("getNotificationsService", () => {
     expect(page.items).toEqual([]);
   });
 
-  it("excludes stale review-like notifications when the actor no longer likes the review", async () => {
-    const recipient = await createTestUser(testDb);
-    const actor = await createTestUser(testDb);
-    const review = await createTestReview(testDb, { userId: recipient.id });
-
-    await createReviewLikedNotification({ actorUserId: actor.id, reviewId: review.id }, testDb);
-
-    const page = await getNotificationsService({}, createAuthenticatedContext(testDb, recipient));
-
-    expect(page.items).toEqual([]);
-  });
-
   it("cursor pagination has no duplicates", async () => {
     const recipient = await createTestUser(testDb);
     const actors = await createUsers(19);
@@ -393,9 +409,10 @@ describe("getNotificationsService", () => {
       },
     ]);
 
-    await testDb
-      .delete(reviewReplyLikes)
-      .where(and(eq(reviewReplyLikes.replyId, reply.id), eq(reviewReplyLikes.userId, firstActor.id)));
+    await setReviewReplyLikeService(
+      { liked: false, replyId: reply.id },
+      createAuthenticatedContext(testDb, firstActor)
+    );
 
     const pageAfterUnlike = await getNotificationsService({}, createAuthenticatedContext(testDb, replyAuthor));
     const [itemAfterUnlike] = pageAfterUnlike.items;
@@ -405,7 +422,10 @@ describe("getNotificationsService", () => {
       secondActor.id,
     ]);
 
-    await testDb.delete(reviewReplyLikes);
+    await setReviewReplyLikeService(
+      { liked: false, replyId: reply.id },
+      createAuthenticatedContext(testDb, secondActor)
+    );
     await expect(getNotificationsService({}, createAuthenticatedContext(testDb, replyAuthor))).resolves.toMatchObject({
       items: [],
     });

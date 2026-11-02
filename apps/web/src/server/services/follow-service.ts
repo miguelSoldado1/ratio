@@ -5,7 +5,7 @@ import { getDb } from "@/lib/db";
 import { user, userFollows } from "@/lib/db/schema";
 import { getFollowedByViewerSql, mapFollowableUser } from "../followable-user";
 import { decodeCursor, encodeCursor, getCreatedAtIdCursorFilter, getOptionalCurrentUser } from "../server-utils";
-import { createUserFollowedNotification } from "./notification-service";
+import { createUserFollowedNotification, deleteUserFollowedNotification } from "./notification-service";
 import type { Db } from "@/lib/db";
 import type { AuthenticatedContext } from "../auth-middleware";
 import type { FollowableUserRow } from "../followable-user";
@@ -145,6 +145,8 @@ export async function setUserFollowService(data: SetUserFollowInput, context: Au
     throw new Error("User not found");
   }
 
+  const notificationData = { actorUserId: context.user.id, recipientUserId: data.userId };
+
   if (data.following) {
     await context.db.transaction(async (transaction) => {
       const [insertedFollow] = await transaction
@@ -154,14 +156,16 @@ export async function setUserFollowService(data: SetUserFollowInput, context: Au
         .returning({ followingId: userFollows.followingId });
 
       if (insertedFollow) {
-        const notificationData = { actorUserId: context.user.id, recipientUserId: data.userId };
         await createUserFollowedNotification(notificationData, transaction);
       }
     });
   } else {
-    await context.db
-      .delete(userFollows)
-      .where(and(eq(userFollows.followerId, context.user.id), eq(userFollows.followingId, data.userId)));
+    await context.db.transaction(async (transaction) => {
+      await transaction
+        .delete(userFollows)
+        .where(and(eq(userFollows.followerId, context.user.id), eq(userFollows.followingId, data.userId)));
+      await deleteUserFollowedNotification(notificationData, transaction);
+    });
   }
 
   const updatedCounts = await getUserFollowCounts(context, data.userId);

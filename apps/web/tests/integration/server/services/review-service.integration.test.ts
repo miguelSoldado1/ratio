@@ -150,13 +150,13 @@ describe("setReviewLikeService", () => {
     expect(storedLikes).toHaveLength(1);
   });
 
-  it("unliking removes the like row", async () => {
+  it("unliking removes the like row and its notification", async () => {
     const author = await createTestUser(testDb);
     const liker = await createTestUser(testDb);
     const review = await createTestReview(testDb, { userId: author.id });
     const context = createAuthenticatedContext(testDb, liker);
 
-    await createTestReviewLike(testDb, { reviewId: review.id, userId: liker.id });
+    await setReviewLikeService({ liked: true, reviewId: review.id }, context);
 
     await expect(setReviewLikeService({ liked: false, reviewId: review.id }, context)).resolves.toEqual({
       liked: false,
@@ -167,6 +167,7 @@ describe("setReviewLikeService", () => {
     const storedLikes = await testDb.select().from(reviewLikes).where(eq(reviewLikes.reviewId, review.id));
 
     expect(storedLikes).toEqual([]);
+    expect(await testDb.select().from(notifications)).toEqual([]);
   });
 
   it("returned like count excludes likes from banned users", async () => {

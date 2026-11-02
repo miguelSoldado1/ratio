@@ -43,6 +43,13 @@
       "when": 1785163927120,
       "tag": "0005_milky_swordsman",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793621146899,
+      "tag": "0006_delete_orphaned_notifications",
+      "breakpoints": true
     }
   ]
 }

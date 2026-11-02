@@ -1,8 +1,10 @@
 import { createStartHandler, defaultStreamHandler } from "@tanstack/react-start/server";
 import { createServerEntry } from "@tanstack/react-start/server-entry";
+import { getDb } from "@/lib/db";
 import { decorateDocumentResponse } from "@/server/document-head";
 import { matchDocumentMetadataRoute, resolveDocumentMetadata } from "@/server/document-metadata";
 import { isRateLimitError } from "@/server/rate-limit";
+import { pruneExpiredNotifications } from "@/server/services/notification-service";
 import { refreshSitemapCache } from "@/server/services/sitemap-service";
 import type { DocumentMetadataRoute } from "@/server/document-metadata";
 
@@ -28,6 +30,7 @@ export default {
   ...serverEntry,
   scheduled(_controller: ScheduledController, env: Env, context: ExecutionContext) {
     context.waitUntil(refreshSitemapCache(env.CACHE));
+    context.waitUntil(getDb().then(pruneExpiredNotifications));
   },
 };
 
