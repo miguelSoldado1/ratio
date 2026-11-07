@@ -24,6 +24,7 @@ const listDetailsInputSchema = z.object({
     .max(200)
     .nullable()
     .transform((description) => description?.replace(/\s+/g, " ").trim() || null),
+  isRanked: z.boolean(),
   title: z.string().trim().min(1).max(100),
 });
 

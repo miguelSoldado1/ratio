@@ -113,18 +113,22 @@ When adding the `review.albumId -> album.id` foreign key to a database with exis
 
 ## Lists
 
-`list` stores a public collection owned by one user, with a required title, optional description, and creation and
-update timestamps. Database checks enforce a non-whitespace title of 1–100 characters and, when present, a
-non-whitespace description of 1–200 characters. Deleting the owner cascades to their lists. The
-`(user_id, created_at, id)` index supports stable newest-first profile pagination.
+`list` stores a public collection owned by one user, with a required title, optional description, an `is_ranked` flag
+(default `false`) that turns on displayed numbering, and creation and update timestamps. Database checks enforce a
+non-whitespace title of 1–100 characters and, when present, a non-whitespace description of 1–200 characters. Deleting
+the owner cascades to their lists. The `(user_id, created_at, id)` index supports stable newest-first profile
+pagination.
 
 `list_item` joins a list to an album using `(list_id, album_id)` as its primary key, making duplicate album additions
 an indexed lookup and an idempotent no-op. Its album foreign key does not cascade, matching reviews: album rows outlive
 the activity that references them. The separate `album_id` index supports reverse lookups and foreign-key maintenance.
 
 Every item has a zero-based, nonnegative `position`, with a unique `(list_id, position)` index. Detail reads order by
-position descending, so `max(position) + 1` additions appear at the top while the number remains an internal sort key,
-not a displayed rank. Removing an item leaves a position gap and does not rewrite unaffected rows.
+position descending, and new additions go to the bottom, just below `min(position)`. When the lowest position is
+already 0, the add first moves every row up by `max(position) + 1` in one statement; each new value lands above every
+old one, so the non-deferrable unique index can't collide mid-update. The stored value stays an internal sort key: a
+ranked list displays its rows' 1-based order, never `position` itself. Removing an item leaves a position gap and does
+not rewrite unaffected rows.
 
 Manual reordering accepts the complete top-to-bottom album ID sequence for the bounded list. The service locks the
 parent list, verifies that the submitted IDs exactly match the current items, temporarily moves all positions above
@@ -132,7 +136,7 @@ their existing range to avoid collisions with the non-deferrable unique index, a
 one transaction. Concurrent adds, removes, and reorders therefore serialize on the same parent row.
 
 List detail reads are deliberately unpaginated and therefore capped at 100 items in the service. Adds lock the parent
-list row before checking the cap and choosing `max(position) + 1`, so concurrent requests cannot reuse a position or
+list row before checking the cap and choosing the bottom position, so concurrent requests cannot reuse a position or
 exceed the cap. Profile list reads use keyset pagination and fetch the item count plus only the first four positioned
 album covers in the paginated query. Detail reads derive the same leading cover set from their already-loaded bounded
 item rows, so choosing covers requires no additional query.

@@ -1,4 +1,4 @@
-import { and, count, desc, eq, isNotNull, max, sql } from "drizzle-orm";
+import { and, count, desc, eq, isNotNull, max, min, sql } from "drizzle-orm";
 import z from "zod";
 import { getDb } from "@/lib/db";
 import { albums, listItems, lists, reviews, user } from "@/lib/db/schema";
@@ -59,6 +59,7 @@ export interface ListDetails {
   coverAlbums: ListCoverAlbum[];
   description?: string;
   id: string;
+  isRanked: boolean;
   title: string;
   updatedAt: Date;
 }
@@ -101,6 +102,7 @@ export interface MyListsForAlbumPage {
 
 export interface ListDetailsInput {
   description: null | string;
+  isRanked: boolean;
   title: string;
 }
 
@@ -134,6 +136,7 @@ export async function getListService(data: ListIdInput) {
       list: {
         description: lists.description,
         id: lists.id,
+        isRanked: lists.isRanked,
         title: lists.title,
         updatedAt: lists.updatedAt,
         userId: lists.userId,
@@ -172,6 +175,7 @@ export async function getListService(data: ListIdInput) {
       .map(({ coverUrl, id }) => ({ coverUrl: coverUrl ?? undefined, id })),
     description: listRow.list.description ?? undefined,
     id: listRow.list.id,
+    isRanked: listRow.list.isRanked,
     title: listRow.list.title,
     updatedAt: listRow.list.updatedAt,
   };
@@ -319,7 +323,7 @@ export async function getMyListsForAlbumService(data: MyListsForAlbumInput, cont
 export async function createListService(data: CreateListInput, context: AuthenticatedContext) {
   const [createdList] = await context.db
     .insert(lists)
-    .values({ description: data.description, title: data.title, userId: context.user.id })
+    .values({ description: data.description, isRanked: data.isRanked, title: data.title, userId: context.user.id })
     .returning({ id: lists.id, updatedAt: lists.updatedAt });
 
   if (!createdList) {
@@ -336,12 +340,14 @@ export async function updateListService(data: UpdateListInput, context: Authenti
     .update(lists)
     .set({
       description: data.description,
+      isRanked: data.isRanked,
       title: data.title,
       updatedAt,
     })
     .where(and(eq(lists.id, data.listId), eq(lists.userId, context.user.id)))
     .returning({
       description: lists.description,
+      isRanked: lists.isRanked,
       title: lists.title,
       updatedAt: lists.updatedAt,
     });
@@ -389,6 +395,7 @@ export async function addListItemService(data: ListItemInput, context: Authentic
       .select({
         count: count(listItems.albumId),
         maxPosition: max(listItems.position),
+        minPosition: min(listItems.position),
       })
       .from(listItems)
       .where(eq(listItems.listId, data.listId));
@@ -397,7 +404,7 @@ export async function addListItemService(data: ListItemInput, context: Authentic
       throw new Error(`A list can contain up to ${maxListItems} albums`);
     }
 
-    const position = (itemStats?.maxPosition ?? -1) + 1;
+    const position = await getBottomPosition(data.listId, itemStats, transaction);
     await ensureAlbumExistsForWrite(albumMetadata, transaction);
 
     const [insertedItem] = await transaction
@@ -528,6 +535,25 @@ async function assertListCanAcceptAlbum(data: ListItemInput, userId: string, db:
   if (!listState.containsAlbum && listState.itemCount >= maxListItems) {
     throw new Error(`A list can contain up to ${maxListItems} albums`);
   }
+}
+
+// Rows display from the highest position down, so a new album goes below the lowest one. When the
+// lowest is already 0, every row first moves up by maxPosition + 1: each new value lands above every
+// old one, so the non-deferrable unique position index can't collide mid-update.
+async function getBottomPosition(
+  listId: string,
+  itemStats: { maxPosition: null | number; minPosition: null | number } | undefined,
+  transaction: DbTransaction
+) {
+  if (itemStats?.minPosition == null || itemStats.maxPosition == null) return 0;
+  if (itemStats.minPosition > 0) return itemStats.minPosition - 1;
+
+  await transaction
+    .update(listItems)
+    .set({ position: sql`${listItems.position} + ${itemStats.maxPosition + 1}` })
+    .where(eq(listItems.listId, listId));
+
+  return itemStats.maxPosition;
 }
 
 async function lockOwnedList(listId: string, userId: string, transaction: DbTransaction) {

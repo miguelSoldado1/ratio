@@ -75,9 +75,9 @@ deferred until the product needs those dedicated surfaces.
   author's rating for that album, if they gave one, with up to two lines of their review text underneath, linked to the
   review. Albums the author hasn't rated get a plain row, with no placeholder. On desktop the title, description, and
   actions sit under the cover, so the albums get the whole right column. People viewing someone else's list see a
-  labeled share button. New additions start at the top and can then be repositioned. Lists remain visually unranked;
-  owners create them from their profile and add, reorder, remove, rename, or delete content inline on the public list
-  page
+  labeled share button. New additions go to the bottom and can then be repositioned. Lists are unnumbered by default. An
+  owner can turn on numbering in the list details, and each row then shows its position in the order they set. Owners
+  create them from their profile and add, reorder, remove, rename, or delete content inline on the public list page
 - Album pages with community score and reviews
 - Search albums via Spotify API and users by username/display username from the global search dialog
 - Link/unlink sign-in methods in settings
@@ -105,7 +105,7 @@ deferred until the product needs those dedicated surfaces.
 ### Deferred
 
 - Spotify-personalized feed sources from top artists or saved albums; feed ranking from listening history
-- Ranked and private lists; per-item notes; list likes, comments, and feed integration
+- Private lists; per-item notes; list likes, comments, and feed integration
 - Dedicated `/search` route
 - Dedicated `/feed` route
 - Activity feed entries beyond review-card feed ranking, e.g. "X followed Y"

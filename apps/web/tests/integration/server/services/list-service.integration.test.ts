@@ -124,12 +124,13 @@ describe("list details mutations", () => {
     const context = createAuthenticatedContext(testDb, owner);
 
     const createdList = await createListService(
-      { description: "Initial description", title: "Initial title" },
+      { description: "Initial description", isRanked: false, title: "Initial title" },
       context
     );
     const updatedList = await updateListService(
       {
         description: "Updated description",
+        isRanked: true,
         listId: createdList.id,
         title: "Updated title",
       },
@@ -139,9 +140,12 @@ describe("list details mutations", () => {
 
     expect(updatedList).toMatchObject({
       description: "Updated description",
+      isRanked: true,
       title: "Updated title",
     });
-    expect(storedList).toMatchObject({ id: createdList.id, userId: owner.id });
+    expect(storedList).toMatchObject({ id: createdList.id, isRanked: true, userId: owner.id });
+    mockState.currentUser = { id: owner.id, isAdmin: false };
+    await expect(getListService({ listId: createdList.id })).resolves.toMatchObject({ isRanked: true });
   });
 
   it("rejects update and deletion by a non-owner", async () => {
@@ -154,6 +158,7 @@ describe("list details mutations", () => {
       updateListService(
         {
           description: null,
+          isRanked: false,
           listId: list.id,
           title: "Unauthorized",
         },
@@ -591,29 +596,30 @@ describe("list item mutations", () => {
     ]);
   });
 
-  it("assigns sequential positions and leaves a gap after removal", async () => {
+  it("adds each album below the last one, including after a removal", async () => {
     const owner = await createTestUser(testDb);
     const list = await createTestList(testDb, { userId: owner.id });
     const testAlbums = await Promise.all(
-      Array.from({ length: 3 }, (_, index) => createTestAlbum(testDb, { id: `ordered_album_${index}` }))
+      Array.from({ length: 4 }, (_, index) => createTestAlbum(testDb, { id: `ordered_album_${index}` }))
     );
     const context = createAuthenticatedContext(testDb, owner);
+    const [first, second, third, fourth] = testAlbums.map((album) => album.id);
 
-    for (const album of testAlbums) {
-      await addListItemService({ albumId: album.id, listId: list.id }, context);
+    // The second and third adds hit position 0 and shift the existing rows up first.
+    for (const albumId of [first, second, third]) {
+      await addListItemService({ albumId: albumId ?? "", listId: list.id }, context);
     }
-    await removeListItemService({ albumId: testAlbums[1]?.id ?? "", listId: list.id }, context);
+    await removeListItemService({ albumId: second ?? "", listId: list.id }, context);
+    await addListItemService({ albumId: fourth ?? "", listId: list.id }, context);
 
     const storedItems = await testDb
       .select({ albumId: listItems.albumId, position: listItems.position })
       .from(listItems)
       .where(eq(listItems.listId, list.id))
-      .orderBy(asc(listItems.position));
+      .orderBy(desc(listItems.position));
 
-    expect(storedItems).toEqual([
-      { albumId: testAlbums[0]?.id, position: 0 },
-      { albumId: testAlbums[2]?.id, position: 2 },
-    ]);
+    expect(storedItems.map((item) => item.albumId)).toEqual([first, third, fourth]);
+    expect(storedItems.every((item) => item.position >= 0)).toBe(true);
   });
 
   it("returns the author's review with a newly added album", async () => {

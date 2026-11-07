@@ -138,6 +138,7 @@ function ListRouteContent({ listId, sessionPending, viewerUserId }: ListRouteCon
         ? {
             ...currentList,
             description: data.description ?? undefined,
+            isRanked: data.isRanked,
             title: data.title,
             updatedAt: data.updatedAt,
           }
@@ -199,7 +200,7 @@ function ListRouteContent({ listId, sessionPending, viewerUserId }: ListRouteCon
       queryClient.setQueryData<ListDetails | null>(listQueryKey, (current) => {
         if (!current) return current;
 
-        const albums = [addedItem.album, ...current.albums];
+        const albums = [...current.albums, addedItem.album];
 
         return {
           ...current,
@@ -371,7 +372,7 @@ function ListRouteContent({ listId, sessionPending, viewerUserId }: ListRouteCon
             remainingSlots={remainingSlots}
           />
           <ListDetailsDialog
-            initialValues={{ description: list.description ?? "", title: list.title }}
+            initialValues={{ description: list.description ?? "", isRanked: list.isRanked, title: list.title }}
             isSubmitting={updateListMutation.isPending}
             onOpenChange={setDetailsOpen}
             onSubmit={handleDetailsSubmit}

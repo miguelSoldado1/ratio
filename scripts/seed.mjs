@@ -243,6 +243,8 @@ const listTemplates = [
   {
     albumIndexes: [3, 6, 7, 8, 15],
     description: "Five records that make the decade feel much bigger than nostalgia.",
+    // Numbered, so the seed covers ranked lists as well as unranked ones.
+    isRanked: true,
     title: "Start here: the 70s",
   },
   {
@@ -539,6 +541,7 @@ function buildLists(seedUsers, targetUserId) {
       createdAt,
       description: template.description,
       id,
+      isRanked: template.isRanked ?? false,
       title: template.title,
       updatedAt,
     });
@@ -560,6 +563,7 @@ function buildLists(seedUsers, targetUserId) {
     createdAt: rowStatesCreatedAt,
     description: listRowStatesTemplate.description,
     id: rowStatesListId,
+    isRanked: false,
     title: listRowStatesTemplate.title,
     updatedAt: rowStatesCreatedAt,
   });
@@ -837,8 +841,8 @@ async function insertAlbums(transaction) {
 async function insertLists(transaction, lists) {
   for (const list of lists) {
     await transaction`
-      insert into "list" (id, user_id, title, description, created_at, updated_at)
-      values (${list.id}, ${list.authorId}, ${list.title}, ${list.description}, ${list.createdAt}, ${list.updatedAt})
+      insert into "list" (id, user_id, title, description, is_ranked, created_at, updated_at)
+      values (${list.id}, ${list.authorId}, ${list.title}, ${list.description}, ${list.isRanked}, ${list.createdAt}, ${list.updatedAt})
     `;
   }
 }

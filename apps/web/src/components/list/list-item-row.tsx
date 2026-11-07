@@ -8,7 +8,7 @@ import { SpotifyAttribution } from "@/components/spotify-attribution";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { listRowClassName } from "./list-row-styles";
-import type { ListAlbum, ListAuthorReview } from "@/server/services/list-service";
+import type { ListAlbum } from "@/server/services/list-service";
 
 // Keeps a long list from taking half a second to flip into edit mode.
 const removeStaggerMaxSteps = 6;
@@ -24,10 +24,12 @@ interface ListItemRowProps {
   index: number;
   isRemoving: boolean;
   onRemove: (albumId: string) => void;
+  // Set only on numbered lists.
+  rank?: number;
   sortingDisabled: boolean;
 }
 
-export function ListItemRow({ album, editing, index, isRemoving, onRemove, sortingDisabled }: ListItemRowProps) {
+export function ListItemRow({ album, editing, index, isRemoving, onRemove, rank, sortingDisabled }: ListItemRowProps) {
   const { attributes, isDragging, listeners, setActivatorNodeRef, setNodeRef, transform } = useSortable({
     id: album.id,
     disabled: !editing || sortingDisabled,
@@ -64,32 +66,54 @@ export function ListItemRow({ album, editing, index, isRemoving, onRemove, sorti
           </Button>
         </div>
       ) : null}
-      {/* The title link stretches over the cover and text so the whole row opens the album, while the
-          review excerpt can still sit above it as its own link. */}
-      <div className="relative flex min-w-0 flex-1 items-start gap-3 py-3 [transition:opacity_150ms_ease] has-[[data-album-link]:hover]:opacity-80">
-        <AlbumArtwork
-          alt={`${album.title} by ${album.artist}`}
-          className="size-14"
-          decoding="async"
-          height={56}
-          loading="lazy"
-          src={album.coverUrl}
-          width={56}
-        />
-        <span className="min-w-0 flex-1">
-          <Link
-            className="block truncate font-semibold text-foreground text-sm leading-snug outline-none after:absolute after:inset-0 after:rounded-sm focus-visible:after:ring-3 focus-visible:after:ring-ring/30"
-            data-album-link
-            params={{ albumId: album.id }}
-            to="/album/$albumId"
-          >
-            {album.title}
-          </Link>
-          <span className="mt-0.5 block truncate text-muted-foreground text-xs">
-            {album.artist} · {album.year}
-          </span>
-          {album.authorReview ? <ListItemReview review={album.authorReview} /> : null}
+      {rank === undefined ? null : (
+        <span
+          className={cn(
+            coverBandClassName,
+            "w-(--rank-width) justify-end font-medium text-muted-foreground text-sm tabular-nums"
+          )}
+        >
+          {rank}
         </span>
+      )}
+      {/* The title link stretches over the whole row so it opens the album, while the review excerpt
+          sits above it as its own link. Like a review card, the excerpt runs full width under the
+          cover instead of leaving a hole beneath it. */}
+      <div className="relative min-w-0 flex-1 py-3 [transition:opacity_150ms_ease] has-[[data-album-link]:hover]:opacity-80">
+        <div className="flex items-center gap-3">
+          <AlbumArtwork
+            alt={`${album.title} by ${album.artist}`}
+            className="size-14"
+            decoding="async"
+            height={56}
+            loading="lazy"
+            src={album.coverUrl}
+            width={56}
+          />
+          <span className="min-w-0 flex-1">
+            <Link
+              className="block truncate font-semibold text-foreground text-sm leading-snug outline-none after:absolute after:inset-0 after:rounded-sm focus-visible:after:ring-3 focus-visible:after:ring-ring/30"
+              data-album-link
+              params={{ albumId: album.id }}
+              to="/album/$albumId"
+            >
+              {album.title}
+            </Link>
+            <span className="mt-0.5 block truncate text-muted-foreground text-xs">
+              {album.artist} · {album.year}
+            </span>
+            {album.authorReview ? <ReviewCard.Rating className="mt-1" value={album.authorReview.rating} /> : null}
+          </span>
+        </div>
+        {album.authorReview?.excerpt ? (
+          <Link
+            className="focus-ring relative z-10 mt-2 line-clamp-2 rounded-sm text-muted-foreground text-xs leading-relaxed outline-none [transition:color_150ms_ease] hover:text-foreground"
+            params={{ reviewId: album.authorReview.id }}
+            to="/review/$reviewId"
+          >
+            {album.authorReview.excerpt}
+          </Link>
+        ) : null}
       </div>
       <div className={coverBandClassName}>
         {editing && onRemove ? (
@@ -111,27 +135,5 @@ export function ListItemRow({ album, editing, index, isRemoving, onRemove, sorti
         )}
       </div>
     </li>
-  );
-}
-
-interface ListItemReviewProps {
-  review: ListAuthorReview;
-}
-
-// Same order as a review card: rating, then the body. Rating-only and unrated rows keep the plain row height.
-function ListItemReview({ review }: ListItemReviewProps) {
-  return (
-    <>
-      <ReviewCard.Rating className="mt-1" value={review.rating} />
-      {review.excerpt ? (
-        <Link
-          className="focus-ring relative z-10 mt-1 line-clamp-2 rounded-sm text-muted-foreground text-xs leading-relaxed outline-none [transition:color_150ms_ease] hover:text-foreground"
-          params={{ reviewId: review.id }}
-          to="/review/$reviewId"
-        >
-          {review.excerpt}
-        </Link>
-      ) : null}
-    </>
   );
 }

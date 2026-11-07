@@ -19,7 +19,7 @@ import { ListItemRow } from "./list-item-row";
 import { ListManagementMenu } from "./list-management-menu";
 import { listRowClassName } from "./list-row-styles";
 import type { Announcements, AutoScrollOptions, DragEndEvent } from "@dnd-kit/core";
-import type { RefObject } from "react";
+import type { CSSProperties, RefObject } from "react";
 import type { ListDetails } from "@/server/services/list-service";
 
 const screenReaderInstructions = {
@@ -160,7 +160,9 @@ export function ListPage({
               sensors={sensors}
             >
               <SortableContext items={albumIds} strategy={verticalListSortingStrategy}>
-                <ul>
+                {/* Every rank cell is as wide as the longest number, so single-digit lists don't reserve
+                    room for "100" on narrow screens. */}
+                <ul style={{ "--rank-width": `${String(displayedAlbums.length).length}ch` } as CSSProperties}>
                   {displayedAlbums.map((album, albumIndex) => (
                     <ListItemRow
                       album={album}
@@ -169,6 +171,7 @@ export function ListPage({
                       isRemoving={removingAlbumIds.has(album.id)}
                       key={album.id}
                       onRemove={onRemoveAlbum}
+                      rank={list.isRanked ? albumIndex + 1 : undefined}
                       sortingDisabled={sortingDisabled}
                     />
                   ))}
@@ -229,25 +232,28 @@ export function ListPageSkeleton() {
             <Skeleton className="aspect-square w-44 rounded-none sm:w-full" />
           </div>
           <div className="min-w-0 sm:self-end lg:self-auto">
-            <Skeleton className="h-7.5 w-full max-w-70 sm:h-9.5" />
+            <Skeleton className="h-7.5 w-full max-w-70 sm:h-9.5 lg:h-11.25" />
           </div>
         </div>
-        <Skeleton className="mx-auto mt-3 h-5 w-4/5 max-w-md sm:mx-0" />
-        <Skeleton className="mx-auto mt-1.5 h-4 w-2/3 max-w-56 sm:mx-0" />
-        <div className="mt-5 grid grid-cols-[1fr_auto_auto] gap-2">
-          <Skeleton className="h-10 min-w-0 rounded-4xl" />
-          <Skeleton className="size-10 rounded-4xl" />
-          <Skeleton className="size-10 rounded-4xl" />
+        {/* Two lines of the desktop subtitle (24px each) fit in the same 48px the real text takes. */}
+        <div className="mx-auto mt-3 max-w-md sm:mx-0 lg:flex lg:h-12 lg:max-w-none lg:flex-col lg:justify-around">
+          <Skeleton className="mx-auto h-5 w-4/5 sm:mx-0 lg:w-full" />
+          <Skeleton className="hidden h-5 w-3/5 lg:block" />
         </div>
+        <Skeleton className="mx-auto mt-1.5 h-4 w-2/3 max-w-56 sm:mx-0 lg:h-5" />
+        {/* One pill: the viewer's Share list button and the owner's button row both span this width. */}
+        <Skeleton className="mt-5 h-10 w-full rounded-4xl sm:w-28 lg:w-full" />
       </div>
-      <div className="flex max-w-2xl flex-col gap-3 border-border border-t pt-4">
-        {Array.from({ length: 4 }, (_, index) => (
+      <div className="max-w-2xl border-border border-t pt-1">
+        {Array.from({ length: 5 }, (_, index) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: static loading placeholders
-          <div className="flex items-center gap-3" key={index}>
-            <Skeleton className="size-14 shrink-0 rounded-none" />
-            <div className="flex min-w-0 flex-1 flex-col gap-2">
-              <Skeleton className="h-4 w-2/3" />
-              <Skeleton className="h-3 w-1/3" />
+          <div className={listRowClassName} key={index}>
+            <div className="flex min-w-0 flex-1 items-center gap-3 py-3">
+              <Skeleton className="size-14 shrink-0 rounded-none" />
+              <div className="flex min-w-0 flex-1 flex-col gap-2">
+                <Skeleton className="h-4 w-2/3" />
+                <Skeleton className="h-3 w-1/3" />
+              </div>
             </div>
           </div>
         ))}

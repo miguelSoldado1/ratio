@@ -8,8 +8,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Field, FieldContent, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import type { FormEvent } from "react";
 import type { ListDetailsInput } from "@/server/services/list-service";
@@ -20,6 +21,8 @@ const listDescriptionMaxLength = 200;
 const fieldIds = {
   description: "list-description",
   descriptionHint: "list-description-hint",
+  ranked: "list-ranked",
+  rankedHint: "list-ranked-hint",
   title: "list-title",
   titleError: "list-title-error",
 } as const;
@@ -31,7 +34,7 @@ const listDetailsCopy = {
     title: "New list",
   },
   edit: {
-    description: "Only the title and subtitle change here.",
+    description: "Albums are added, removed, and reordered on the list itself.",
     submitLabel: "Save changes",
     title: "Edit list",
   },
@@ -39,6 +42,7 @@ const listDetailsCopy = {
 
 interface ListDetailsInitialValues {
   description: string;
+  isRanked: boolean;
   title: string;
 }
 
@@ -61,6 +65,7 @@ export function ListDetailsDialog({
 }: ListDetailsDialogProps) {
   const [title, setTitle] = useState(initialValues?.title ?? "");
   const [description, setDescription] = useState(initialValues?.description ?? "");
+  const [isRanked, setIsRanked] = useState(initialValues?.isRanked ?? false);
   const [titleError, setTitleError] = useState<string | undefined>(undefined);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
 
@@ -71,8 +76,9 @@ export function ListDetailsDialog({
 
     setTitle(initialValues?.title ?? "");
     setDescription(initialValues?.description ?? "");
+    setIsRanked(initialValues?.isRanked ?? false);
     setTitleError(undefined);
-  }, [initialValues?.description, initialValues?.title, open]);
+  }, [initialValues?.description, initialValues?.isRanked, initialValues?.title, open]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -90,6 +96,7 @@ export function ListDetailsDialog({
     setTitleError(undefined);
     onSubmit({
       description: trimmedDescription || null,
+      isRanked,
       title: trimmedTitle,
     });
   }
@@ -147,6 +154,20 @@ export function ListDetailsDialog({
               >
                 {description.length}/{listDescriptionMaxLength} characters
               </FieldDescription>
+            </Field>
+            <Field orientation="horizontal">
+              <FieldContent>
+                <FieldLabel htmlFor={fieldIds.ranked}>Numbered</FieldLabel>
+                <FieldDescription className="text-muted-foreground-subtle text-xs" id={fieldIds.rankedHint}>
+                  Show each album's place in the order you set.
+                </FieldDescription>
+              </FieldContent>
+              <Switch
+                aria-describedby={fieldIds.rankedHint}
+                checked={isRanked}
+                id={fieldIds.ranked}
+                onCheckedChange={setIsRanked}
+              />
             </Field>
           </FieldGroup>
           <DialogFooter className="mt-6">

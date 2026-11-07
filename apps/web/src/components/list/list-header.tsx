@@ -91,7 +91,7 @@ export function ListHeader({
               variant={editing ? "outline" : "default"}
             >
               <Plus data-icon="inline-start" />
-              {canAddAlbum ? "Add album" : "List full"}
+              Add album
             </Button>
             {itemCount > 0 ? (
               <Button

@@ -70,6 +70,7 @@ const list: ListDetails = {
   ],
   description: "Records worth keeping close.",
   id: "00000000-0000-4000-8000-000000000001",
+  isRanked: false,
   title: "Lifers",
   updatedAt: new Date("2026-01-01T00:00:00.000Z"),
 };
@@ -164,7 +165,31 @@ describe("ListPage", () => {
     );
     expect(container.querySelector("img")?.getAttribute("src")).toBe("https://example.com/spiderland.jpg");
     expect(within(albumList).queryByText(rankingNumberPattern)).toBeNull();
-    expect(container.querySelector("ol")).toBeNull();
+  });
+
+  it("numbers the rows of a ranked list", () => {
+    const { container } = render(
+      <ListPage
+        canAddAlbum
+        editing={false}
+        isReordering={false}
+        list={{ ...list, isRanked: true }}
+        onAddAlbum={vi.fn()}
+        onDelete={vi.fn()}
+        onEditDetails={vi.fn()}
+        onEditingChange={vi.fn()}
+        onRemoveAlbum={vi.fn()}
+        onReorderAlbums={vi.fn(async () => true)}
+      />
+    );
+
+    const albumList = container.querySelector("ul");
+    expect(albumList).not.toBeNull();
+    if (!albumList) return;
+
+    const rows = within(albumList).getAllByRole("listitem");
+    expect(rows.map((row) => row.querySelector(":scope > span")?.textContent)).toEqual(["1", "2"]);
+    expect(rows[0]?.textContent).toContain("Spiderland");
   });
 
   it("keeps the list and album artwork mounted when edit mode changes", () => {
@@ -281,8 +306,7 @@ describe("ListPage", () => {
       />
     );
 
-    expect((screen.getByRole("button", { name: "List full" }) as HTMLButtonElement).disabled).toBe(true);
-    expect(screen.queryByRole("button", { name: "Add album" })).toBeNull();
+    expect((screen.getByRole("button", { name: "Add album" }) as HTMLButtonElement).disabled).toBe(true);
   });
 });
 
