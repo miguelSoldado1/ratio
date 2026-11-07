@@ -47,7 +47,9 @@ export function ListItemRow({ album, editing, index, isRemoving, onRemove, rank,
         isDragging && "z-10 bg-background shadow-md"
       )}
       ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform) }}
+      // Translate only: rows differ in height once review text is shown, and dnd-kit's scale would stretch a row
+      // to fill the slot it passes over.
+      style={{ transform: CSS.Translate.toString(transform) }}
     >
       {editing ? (
         <div className={coverBandClassName}>
