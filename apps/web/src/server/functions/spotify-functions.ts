@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import z from "zod";
 import { createCloudflareRateLimitMiddleware, spotifyCatalogRateLimit } from "../rate-limit";
 import * as spotifyService from "../services/spotify-service";
+import { spotifyIdSchema } from "../spotify";
 
 // Schemas
 
@@ -10,12 +11,12 @@ const searchAlbumsSchema = z.object({
 });
 
 const albumDetailsSchema = z.object({
-  albumId: z.string().trim().min(1).max(64),
+  albumId: spotifyIdSchema,
 });
 
 const artistAlbumsSchema = z.object({
-  albumId: z.string().trim().min(1).max(64),
-  artistId: z.string().trim().min(1).max(64),
+  albumId: spotifyIdSchema,
+  artistId: spotifyIdSchema,
 });
 
 // Server functions

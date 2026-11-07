@@ -29,6 +29,21 @@ Do not use `pnpm db:push` against databases with real data. Reserve `db:push` on
 
 The current database has been baselined against the generated `0000` migration. Keep the `drizzle/` folder committed so future `db:generate` runs have a stable migration history.
 
+### Applying migrations to hosted databases
+
+GitHub Actions applies migrations, not the Cloudflare build. `.github/workflows/migrate.yml` runs `pnpm db:migrate`
+when a push to `develop` or `main` changes `drizzle/**`. `develop` migrates the development database and `main`
+migrates production. You can also start it by hand from the Actions tab and pick the branch.
+
+Each GitHub environment (`development`, `production`) holds its own `DATABASE_URL` secret. Use Supabase's session
+pooler URL there (`postgres.<ref>@aws-0-<region>.pooler.supabase.com:5432`). The direct `db.<ref>.supabase.co` host
+is IPv6-only and GitHub runners can't reach it. drizzle-kit hides connection errors, so a run that fails right after
+"applying migrations..." almost always means a bad URL.
+
+Cloudflare deploys on the same push and nothing orders the two, so new code can go live a few seconds before its
+migration lands. That's fine for additive changes. For anything that drops or renames something the running code
+uses, merge the migration first and the code after.
+
 ## Better Auth Schema Changes
 
 Drizzle owns database migrations in this repo. Do not let Better Auth and Drizzle both apply migrations to the same database.
@@ -48,7 +63,7 @@ Avoid Better Auth's migrate command for this project because it mutates the data
 
 Cloudflare Worker database access goes through each app's `HYPERDRIVE` binding in `apps/web/wrangler.jsonc` and `apps/admin/wrangler.jsonc`. Local development, Drizzle Kit migrations, and seed scripts continue to use `DATABASE_URL` directly.
 
-Create Hyperdrive configs from Supabase's direct Postgres connection string on port `5432`, not the Supabase transaction pooler on port `6543`. Both Workers reuse the existing production and development Hyperdrive configurations; do not create separate Supabase projects for admin.
+Create Hyperdrive configs from Supabase's direct Postgres connection string on port `5432`, not the Supabase transaction pooler on port `6543`. This is the opposite of the GitHub migration secrets, which need the session pooler because runners lack IPv6. Both Workers reuse the existing production and development Hyperdrive configurations; do not create separate Supabase projects for admin.
 
 ### Database Credential Rotation
 

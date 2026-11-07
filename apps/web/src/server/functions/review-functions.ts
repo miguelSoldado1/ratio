@@ -9,11 +9,12 @@ import {
   userMutationRateLimit,
 } from "../rate-limit";
 import * as reviewService from "../services/review-service";
+import { spotifyIdSchema } from "../spotify";
 
 // Schemas
 
 const albumIdSchema = z.object({
-  albumId: z.string().trim().min(1).max(64),
+  albumId: spotifyIdSchema,
 });
 
 const albumReviewsSchema = albumIdSchema.extend({
@@ -56,7 +57,7 @@ const profilePinnedReviewSchema = z.object({
 });
 
 const createReviewSchema = z.object({
-  albumId: z.string().trim().min(1).max(64),
+  albumId: spotifyIdSchema,
   body: z.string().trim().max(2000).optional(),
   rating: z.number().int().min(1).max(10),
 });

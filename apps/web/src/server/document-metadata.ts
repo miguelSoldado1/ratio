@@ -6,9 +6,9 @@ import { createAlbumPageTitle, createProfilePageTitle, createReviewPageTitle } f
 import { getCanonicalUrl, siteName } from "@/lib/seo";
 import { enforceCloudflareRateLimitForRequest, spotifyCatalogRateLimit } from "./rate-limit";
 import { getAlbumPersistenceMetadata } from "./services/spotify-service";
+import { spotifyIdSchema } from "./spotify";
 import type { DocumentMetadata } from "@/lib/document-metadata";
 
-const albumIdSchema = z.string().trim().min(1).max(64);
 const reviewIdSchema = z.uuid();
 const usernameSchema = z.string().trim().min(1).max(64);
 
@@ -35,7 +35,7 @@ export function matchDocumentMetadataRoute(pathname: string): DocumentMetadataRo
   if (!value) return null;
 
   if (segments[0] === "album") {
-    const result = albumIdSchema.safeParse(value);
+    const result = spotifyIdSchema.safeParse(value);
     return result.success ? { albumId: result.data, kind: "album" } : null;
   }
 

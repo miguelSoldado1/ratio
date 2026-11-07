@@ -1,10 +1,16 @@
 import SpotifyWebApi from "spotify-web-api-node";
+import z from "zod";
 import { env } from "@/env";
 import { getSpotifyCache } from "./spotify-cache";
 import { logSpotifyCacheError, logSpotifyTokenError, SpotifyTokenError } from "./spotify-observability";
 
 const TOKEN_REFRESH_BUFFER_MS = 5 * 60 * 1000;
 const CLIENT_CREDENTIALS_CACHE_KEY = "spotify:client-credentials-token";
+
+export const spotifyIdSchema = z
+  .string()
+  .regex(/^[0-9A-Za-z]+$/)
+  .max(64);
 
 interface ClientCredentialsToken {
   accessToken: string;
