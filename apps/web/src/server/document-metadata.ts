@@ -1,19 +1,27 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
 import z from "zod";
 import { getDb } from "@/lib/db";
-import { albums, reviews, user } from "@/lib/db/schema";
-import { createAlbumPageTitle, createProfilePageTitle, createReviewPageTitle } from "@/lib/page-titles";
+import { albums, listItems, lists, reviews, user } from "@/lib/db/schema";
+import {
+  createAlbumPageTitle,
+  createListPageTitle,
+  createProfilePageTitle,
+  createReviewPageTitle,
+} from "@/lib/page-titles";
 import { getCanonicalUrl, siteName } from "@/lib/seo";
 import { enforceCloudflareRateLimitForRequest, spotifyCatalogRateLimit } from "./rate-limit";
 import { getAlbumPersistenceMetadata } from "./services/spotify-service";
 import { spotifyIdSchema } from "./spotify";
 import type { DocumentMetadata } from "@/lib/document-metadata";
 
+const listIdSchema = z.uuid();
+const maxListItems = 100;
 const reviewIdSchema = z.uuid();
 const usernameSchema = z.string().trim().min(1).max(64);
 
 export type DocumentMetadataRoute =
   | { albumId: string; kind: "album" }
+  | { kind: "list"; listId: string }
   | { kind: "profile"; username: string }
   | { kind: "review"; reviewId: string };
 
@@ -39,6 +47,11 @@ export function matchDocumentMetadataRoute(pathname: string): DocumentMetadataRo
     return result.success ? { albumId: result.data, kind: "album" } : null;
   }
 
+  if (segments[0] === "list") {
+    const result = listIdSchema.safeParse(value);
+    return result.success ? { kind: "list", listId: result.data } : null;
+  }
+
   if (segments[0] === "user") {
     const result = usernameSchema.safeParse(value);
     return result.success ? { kind: "profile", username: result.data } : null;
@@ -54,6 +67,7 @@ export function matchDocumentMetadataRoute(pathname: string): DocumentMetadataRo
 
 export async function resolveDocumentMetadata(route: DocumentMetadataRoute, request: Request) {
   if (route.kind === "album") return await resolveAlbumDocumentMetadata(route.albumId, request);
+  if (route.kind === "list") return await resolveListDocumentMetadata(route.listId);
   if (route.kind === "profile") return await resolveProfileDocumentMetadata(route.username);
 
   return await resolveReviewDocumentMetadata(route.reviewId);
@@ -126,6 +140,74 @@ function createAlbumDocumentMetadata(albumId: string, album: AlbumDocumentMetada
     path,
     title: createAlbumPageTitle(album.title, artistNames[0]),
     type: "music.album",
+  } satisfies DocumentMetadata;
+}
+
+// One bounded query: the list and author repeat on each item row, and an empty list still returns its
+// list row through the left joins.
+async function resolveListDocumentMetadata(listId: string) {
+  const db = await getDb();
+  const rows = await db
+    .select({
+      album: {
+        artistNames: albums.artistNames,
+        coverUrl: albums.coverUrl,
+        id: albums.id,
+        title: albums.title,
+      },
+      authorDisplayUsername: user.displayUsername,
+      authorName: user.name,
+      description: lists.description,
+      isRanked: lists.isRanked,
+      title: lists.title,
+    })
+    .from(lists)
+    .innerJoin(user, eq(lists.userId, user.id))
+    .leftJoin(listItems, eq(listItems.listId, lists.id))
+    .leftJoin(albums, eq(listItems.albumId, albums.id))
+    .where(and(eq(lists.id, listId), sql`${user.banned} is not true`, isNotNull(user.username)))
+    .orderBy(desc(listItems.position))
+    .limit(maxListItems);
+
+  const [listRow] = rows;
+  if (!listRow) return null;
+
+  const path = `/list/${encodeURIComponent(listId)}`;
+  const authorDisplayName = listRow.authorDisplayUsername ?? listRow.authorName;
+  const listAlbums = rows.flatMap((row) => (row.album ? [row.album] : []));
+  const [topAlbum] = listAlbums;
+  const albumLabel = listAlbums.length === 1 ? "album" : "albums";
+  const summary = `${listAlbums.length} ${albumLabel} by ${authorDisplayName} on ${siteName}.`;
+
+  return {
+    description: listRow.description ? `${listRow.description} ${summary}` : `A list of ${summary}`,
+    image: topAlbum?.coverUrl ?? null,
+    imageAlt: topAlbum?.coverUrl ? `${topAlbum.title} album cover` : `${siteName} album list`,
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "ItemList",
+      author: { "@type": "Person", name: authorDisplayName },
+      ...(listRow.description ? { description: listRow.description } : {}),
+      itemListElement: listAlbums.map((album, index) => ({
+        "@type": "ListItem",
+        item: {
+          "@type": "MusicAlbum",
+          byArtist: album.artistNames.map((name) => ({ "@type": "MusicGroup", name })),
+          name: album.title,
+          url: getCanonicalUrl(`/album/${encodeURIComponent(album.id)}`),
+        },
+        position: index + 1,
+      })),
+      itemListOrder: listRow.isRanked
+        ? "https://schema.org/ItemListOrderAscending"
+        : "https://schema.org/ItemListUnordered",
+      name: listRow.title,
+      numberOfItems: listAlbums.length,
+      url: getCanonicalUrl(path),
+    },
+    path,
+    title: createListPageTitle(listRow.title, authorDisplayName),
+    type: "article",
   } satisfies DocumentMetadata;
 }
 

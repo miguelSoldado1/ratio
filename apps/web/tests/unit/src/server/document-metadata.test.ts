@@ -22,7 +22,16 @@ beforeEach(() => {
 
 describe("document metadata route matching", () => {
   it("matches only supported public document paths", () => {
-    expect(matchDocumentMetadataRoute("/album/album-a")).toEqual({ albumId: "album-a", kind: "album" });
+    expect(matchDocumentMetadataRoute("/album/5vkqYmiPBYLaalcmjujWxK")).toEqual({
+      albumId: "5vkqYmiPBYLaalcmjujWxK",
+      kind: "album",
+    });
+    expect(matchDocumentMetadataRoute("/list/43e2f9c6-2355-4216-8f27-c607cb54d956")).toEqual({
+      kind: "list",
+      listId: "43e2f9c6-2355-4216-8f27-c607cb54d956",
+    });
+    expect(matchDocumentMetadataRoute("/list/not-a-uuid")).toBeNull();
+    expect(matchDocumentMetadataRoute("/album/album-a")).toBeNull();
     expect(matchDocumentMetadataRoute("/user/listener")).toEqual({ kind: "profile", username: "listener" });
     expect(matchDocumentMetadataRoute("/review/8ad8b676-8e99-4d4a-8e99-95a56fe78c5a")).toEqual({
       kind: "review",
@@ -127,6 +136,83 @@ describe("document metadata resolution", () => {
     });
   });
 
+  it("creates list metadata with the top album's cover and an ordered item list", async () => {
+    const listRow = {
+      authorDisplayUsername: "Miguel",
+      authorName: "Account Name",
+      description: "Five records that make the decade.",
+      isRanked: true,
+      title: "Start here: the 70s",
+    };
+    mocks.getDb.mockResolvedValue(
+      createDbWithRows([
+        {
+          ...listRow,
+          album: { artistNames: ["Marvin Gaye"], coverUrl: "top.jpg", id: "album-1", title: "What's Going On" },
+        },
+        {
+          ...listRow,
+          album: { artistNames: ["Fleetwood Mac"], coverUrl: "second.jpg", id: "album-2", title: "Rumours" },
+        },
+      ])
+    );
+
+    const metadata = await resolveDocumentMetadata(
+      { kind: "list", listId: "43e2f9c6-2355-4216-8f27-c607cb54d956" },
+      new Request("https://ratiomusic.live/list/43e2f9c6-2355-4216-8f27-c607cb54d956")
+    );
+
+    expect(metadata).toMatchObject({
+      description: "Five records that make the decade. 2 albums by Miguel on Ratio.",
+      image: "top.jpg",
+      imageAlt: "What's Going On album cover",
+      jsonLd: {
+        "@type": "ItemList",
+        itemListOrder: "https://schema.org/ItemListOrderAscending",
+        name: "Start here: the 70s",
+        numberOfItems: 2,
+      },
+      title: "Start here: the 70s — Album list by Miguel | Ratio",
+      type: "article",
+    });
+    expect(metadata).toHaveProperty("jsonLd.itemListElement.1", {
+      "@type": "ListItem",
+      item: {
+        "@type": "MusicAlbum",
+        byArtist: [{ "@type": "MusicGroup", name: "Fleetwood Mac" }],
+        name: "Rumours",
+        url: "https://ratiomusic.live/album/album-2",
+      },
+      position: 2,
+    });
+  });
+
+  it("describes an empty list without an image", async () => {
+    mocks.getDb.mockResolvedValue(
+      createDbWithRows([
+        {
+          album: null,
+          authorDisplayUsername: null,
+          authorName: "Account Name",
+          description: null,
+          isRanked: false,
+          title: "Empty",
+        },
+      ])
+    );
+
+    const metadata = await resolveDocumentMetadata(
+      { kind: "list", listId: "43e2f9c6-2355-4216-8f27-c607cb54d956" },
+      new Request("https://ratiomusic.live/list/43e2f9c6-2355-4216-8f27-c607cb54d956")
+    );
+
+    expect(metadata).toMatchObject({
+      description: "A list of 0 albums by Account Name on Ratio.",
+      image: null,
+      jsonLd: { itemListElement: [], itemListOrder: "https://schema.org/ItemListUnordered", numberOfItems: 0 },
+    });
+  });
+
   it("creates review metadata without reading the review body", async () => {
     mocks.getDb.mockResolvedValue(
       createDbWithRows([
@@ -163,6 +249,7 @@ function createDbWithRows(rows: unknown[]) {
     innerJoin: vi.fn(),
     leftJoin: vi.fn(),
     limit: vi.fn().mockResolvedValue(rows),
+    orderBy: vi.fn(),
     where: vi.fn(),
   };
 
@@ -170,6 +257,7 @@ function createDbWithRows(rows: unknown[]) {
   query.groupBy.mockReturnValue(query);
   query.innerJoin.mockReturnValue(query);
   query.leftJoin.mockReturnValue(query);
+  query.orderBy.mockReturnValue(query);
   query.where.mockReturnValue(query);
 
   return {
