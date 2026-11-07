@@ -10,6 +10,20 @@ vi.mock("@tanstack/react-router", () => ({
 }));
 
 const ratingAccessibleNamePattern = /out of 5 stars/;
+// jsdom has no ResizeObserver; the header pinning only needs the methods to exist.
+vi.stubGlobal(
+  "ResizeObserver",
+  class {
+    disconnect() {
+      // no-op
+    }
+
+    observe() {
+      // no-op
+    }
+  }
+);
+
 const rankingNumberPattern = /^[12][.)]?$/;
 const removeAlbumAccessibleNamePattern = /Remove .* from this list/;
 const reorderAlbumAccessibleNamePattern = /Drag .* to reorder/;
@@ -148,7 +162,7 @@ describe("ListPage", () => {
     expect(screen.getByRole("link", { name: "Open Spiderland on Spotify" }).getAttribute("href")).toBe(
       "https://open.spotify.com/album/album-1"
     );
-    expect(container.querySelector("aside img")?.getAttribute("src")).toBe("https://example.com/spiderland.jpg");
+    expect(container.querySelector("img")?.getAttribute("src")).toBe("https://example.com/spiderland.jpg");
     expect(within(albumList).queryByText(rankingNumberPattern)).toBeNull();
     expect(container.querySelector("ol")).toBeNull();
   });

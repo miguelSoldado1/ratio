@@ -19,9 +19,9 @@ interface ListHeaderProps {
   onEditingChange: (editing: boolean) => void;
 }
 
-// Mirrors the album header: cover beside a bottom-aligned title block below the two-column
-// breakpoint, three descending text levels, then the action row. A list and an album are the same
-// kind of page, so they use the same shell.
+// Below the two-column breakpoint this mirrors the album header: cover beside a bottom-aligned title
+// block, three descending text levels, then the action row. On desktop it sits under the cover in the
+// side column, so the type stays at the narrower column's scale.
 export function ListHeader({
   canAddAlbum,
   className,
@@ -46,36 +46,44 @@ export function ListHeader({
           <ListCoverMosaic albums={list.coverAlbums} className="w-44 sm:w-full" size={352} />
         </div>
         <div className="min-w-0 sm:self-end lg:self-auto">
-          <h1 className="max-w-4xl font-semibold text-2xl leading-tight tracking-normal sm:text-3xl lg:text-4xl xl:text-5xl">
+          <h1 className="wrap-break-word max-w-4xl font-semibold text-2xl leading-tight tracking-normal sm:text-3xl lg:text-4xl">
             {list.title}
           </h1>
         </div>
       </div>
       {list.description ? (
-        <p className="wrap-break-word mx-auto mt-3 max-w-2xl text-muted-foreground text-sm sm:mx-0 lg:text-lg">
+        <p className="wrap-break-word mx-auto mt-3 max-w-2xl text-muted-foreground text-sm sm:mx-0 lg:text-base">
           {list.description}
         </p>
       ) : null}
-      <p className="mt-1.5 text-muted-foreground-subtle text-xs lg:text-sm">
+      {/* A flex row so the avatar link and the plain text centre on the same axis; inline, the 20px avatar
+          pushed the name a pixel off the text's baseline. */}
+      <p className="mt-1.5 flex flex-wrap items-center justify-center gap-x-1.5 text-muted-foreground-subtle text-xs sm:justify-start lg:text-sm">
         <Link
-          className="focus-ring inline-flex items-center gap-1.5 rounded-sm align-middle outline-none [transition:color_150ms_ease] hover:text-foreground"
+          className="focus-ring inline-flex items-center gap-1.5 rounded-sm outline-none [transition:color_150ms_ease] hover:text-foreground"
           params={{ username: list.author.username }}
           to="/user/$username"
         >
           <UserAvatar className="size-5 text-2xs" name={list.author.displayName} src={list.author.avatarUrl} />
           {list.author.displayName}
         </Link>
-        {` · ${itemCount} ${albumLabel} · `}
-        {/* "updated" is carried for screen readers only; spelling it out pushes this past one line. */}
-        <span className="sr-only">updated </span>
-        {formatRelativeTimeAgo(list.updatedAt)}
+        <span aria-hidden="true">·</span>
+        <span>
+          {itemCount} {albumLabel}
+        </span>
+        <span aria-hidden="true">·</span>
+        <span>
+          {/* "updated" is carried for screen readers only; spelling it out pushes this past one line. */}
+          <span className="sr-only">updated </span>
+          {formatRelativeTimeAgo(list.updatedAt)}
+        </span>
       </p>
       {/* Primary absorbs the slack so the row can never wrap, the way the album actions grid does. */}
-      <div className="mt-5 flex items-center justify-center gap-2 sm:justify-start lg:mt-6 lg:flex-wrap lg:gap-3">
+      <div className="mt-5 flex max-w-2xl items-center justify-center gap-2 sm:justify-start">
         {list.canEdit ? (
           <>
             <Button
-              className="min-w-0 flex-1 lg:flex-none"
+              className="min-w-0 flex-1"
               disabled={!canAddAlbum}
               onClick={onAddAlbum}
               size="lg"
@@ -100,7 +108,9 @@ export function ListHeader({
         ) : null}
         <ListShareButton
           authorDisplayName={list.author.displayName}
+          className={list.canEdit ? undefined : "min-w-0 flex-1 sm:flex-none lg:flex-1"}
           itemCount={itemCount}
+          labeled={!list.canEdit}
           listId={list.id}
           title={list.title}
         />

@@ -9,11 +9,20 @@ interface ListShareButtonProps {
   authorDisplayName: string;
   className?: string;
   itemCount: number;
+  // Viewers get no other action in the header row, so the button carries a label instead of a lone glyph.
+  labeled?: boolean;
   listId: string;
   title: string;
 }
 
-export function ListShareButton({ authorDisplayName, className, itemCount, listId, title }: ListShareButtonProps) {
+export function ListShareButton({
+  authorDisplayName,
+  className,
+  itemCount,
+  labeled = false,
+  listId,
+  title,
+}: ListShareButtonProps) {
   const sharingRef = useRef(false);
 
   async function handleShareClick() {
@@ -34,6 +43,15 @@ export function ListShareButton({ authorDisplayName, className, itemCount, listI
     if (copiedToClipboard) {
       return toast.success("List copied", { description: "The link is on your clipboard." });
     }
+  }
+
+  if (labeled) {
+    return (
+      <Button className={className} onClick={handleShareClick} size="lg" type="button" variant="outline">
+        <Share2 data-icon="inline-start" />
+        Share list
+      </Button>
+    );
   }
 
   return (
