@@ -248,12 +248,17 @@ export function ListPageSkeleton() {
         {Array.from({ length: 5 }, (_, index) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: static loading placeholders
           <div className={listRowClassName} key={index}>
+            {/* Title, artist and rating lines, plus the Spotify icon: the shape most real rows have. */}
             <div className="flex min-w-0 flex-1 items-center gap-3 py-3">
               <Skeleton className="size-14 shrink-0 rounded-none" />
-              <div className="flex min-w-0 flex-1 flex-col gap-2">
-                <Skeleton className="h-4 w-2/3" />
+              <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                <Skeleton className="h-4 w-1/2" />
                 <Skeleton className="h-3 w-1/3" />
+                <Skeleton className="h-3.5 w-24" />
               </div>
+            </div>
+            <div className="flex h-20 shrink-0 items-center">
+              <Skeleton className="size-5.25 rounded-full" />
             </div>
           </div>
         ))}
