@@ -11,6 +11,7 @@ import {
   userMutationRateLimit,
 } from "../rate-limit";
 import * as listService from "../services/list-service";
+import { spotifyIdSchema } from "../spotify";
 
 // Schemas
 
@@ -31,19 +32,19 @@ const listIdSchema = z.object({
 });
 
 const listItemSchema = listIdSchema.extend({
-  albumId: z.string().trim().min(1).max(64),
+  albumId: spotifyIdSchema,
 });
 
 const reorderListItemsSchema = listIdSchema.extend({
   albumIds: z
-    .array(z.string().trim().min(1).max(64))
+    .array(spotifyIdSchema)
     .min(1)
     .max(100)
     .refine((albumIds) => new Set(albumIds).size === albumIds.length, "Album IDs must be unique"),
 });
 
 const myListsForAlbumSchema = z.object({
-  albumId: z.string().trim().min(1).max(64),
+  albumId: spotifyIdSchema,
   cursor: z.string().trim().min(1).max(2048).optional(),
 });
 
