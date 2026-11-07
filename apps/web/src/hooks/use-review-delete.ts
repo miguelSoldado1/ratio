@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useCallback, useState } from "react";
 import { toast } from "sonner";
-import { albumQueryKeys, feedQueryKeys, userQueryKeys } from "@/lib/tanstack-query/query-keys";
+import { albumQueryKeys, feedQueryKeys, listQueryKeys, userQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { deleteReview as deleteReviewServerFn } from "@/server/functions/review-functions";
 import { tryCatch } from "@/try-catch";
 
@@ -23,7 +23,7 @@ export function useReviewDelete({ onDeleted }: UseReviewDeleteParams = {}) {
     mutationFn: deleteReviewFn,
     onSuccess: () =>
       Promise.all(
-        [albumQueryKeys.all(), feedQueryKeys.all(), userQueryKeys.all()].map((queryKey) =>
+        [albumQueryKeys.all(), feedQueryKeys.all(), listQueryKeys.all(), userQueryKeys.all()].map((queryKey) =>
           queryClient.invalidateQueries({ queryKey })
         )
       ),

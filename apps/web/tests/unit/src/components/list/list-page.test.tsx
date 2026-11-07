@@ -9,6 +9,7 @@ vi.mock("@tanstack/react-router", () => ({
   Link: ({ children }: { children: ReactNode }) => <a href="/">{children}</a>,
 }));
 
+const ratingAccessibleNamePattern = /out of 5 stars/;
 const rankingNumberPattern = /^[12][.)]?$/;
 const removeAlbumAccessibleNamePattern = /Remove .* from this list/;
 const reorderAlbumAccessibleNamePattern = /Drag .* to reorder/;
@@ -16,8 +17,12 @@ const reorderAlbumAccessibleNamePattern = /Drag .* to reorder/;
 const list: ListDetails = {
   albums: [
     {
-      addedAt: new Date("2026-01-02T00:00:00.000Z"),
       artist: "Slint",
+      authorReview: {
+        excerpt: "Quiet until it isn't.",
+        id: "review-1",
+        rating: 4.5,
+      },
       coverUrl: "https://example.com/spiderland.jpg",
       id: "album-1",
       spotifyUrl: "https://open.spotify.com/album/album-1",
@@ -25,7 +30,6 @@ const list: ListDetails = {
       year: "1991",
     },
     {
-      addedAt: new Date("2026-01-01T00:00:00.000Z"),
       artist: "Sufjan Stevens",
       coverUrl: "https://example.com/illinois.jpg",
       id: "album-2",
@@ -137,8 +141,10 @@ describe("ListPage", () => {
     const rows = within(albumList).getAllByRole("listitem");
     expect(rows).toHaveLength(2);
     expect(rows[0]?.textContent).toContain("Spiderland");
-    expect(rows[0]?.textContent).toContain("Added Jan 2, 2026");
+    expect(within(rows[0] as HTMLElement).getByRole("img", { name: "4.5 out of 5 stars" })).toBeDefined();
+    expect(rows[0]?.textContent).toContain("Quiet until it isn't.");
     expect(rows[1]?.textContent).toContain("Illinois");
+    expect(within(rows[1] as HTMLElement).queryByRole("img", { name: ratingAccessibleNamePattern })).toBeNull();
     expect(screen.getByRole("link", { name: "Open Spiderland on Spotify" }).getAttribute("href")).toBe(
       "https://open.spotify.com/album/album-1"
     );
