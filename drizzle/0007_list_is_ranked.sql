@@ -1,0 +1,1 @@
+ALTER TABLE "list" ADD COLUMN "is_ranked" boolean DEFAULT false NOT NULL;

@@ -1,7 +1,7 @@
-import { and, count, desc, eq, isNotNull, max, sql } from "drizzle-orm";
+import { and, count, desc, eq, isNotNull, max, min, sql } from "drizzle-orm";
 import z from "zod";
 import { getDb } from "@/lib/db";
-import { albums, listItems, lists, user } from "@/lib/db/schema";
+import { albums, listItems, lists, reviews, user } from "@/lib/db/schema";
 import { decodeCursor, encodeCursor, getCreatedAtIdCursorFilter, getOptionalCurrentUser } from "../server-utils";
 import { ensureAlbumExistsForWrite, getMissingAlbumMetadataForWrite } from "./album-service";
 import type { Db } from "@/lib/db";
@@ -10,6 +10,7 @@ import type { AuthenticatedContext } from "../auth-middleware";
 // Constants
 
 const listCoverAlbumLimit = 4;
+const listReviewExcerptLength = 280;
 const listsPageSize = 20;
 const maxListItems = 100;
 
@@ -30,9 +31,15 @@ export interface ListCoverAlbum {
   id: string;
 }
 
+export interface ListAuthorReview {
+  excerpt?: string;
+  id: string;
+  rating: number;
+}
+
 export interface ListAlbum extends ListCoverAlbum {
-  addedAt: Date;
   artist: string;
+  authorReview?: ListAuthorReview;
   spotifyUrl: string;
   title: string;
   year: string;
@@ -52,6 +59,7 @@ export interface ListDetails {
   coverAlbums: ListCoverAlbum[];
   description?: string;
   id: string;
+  isRanked: boolean;
   title: string;
   updatedAt: Date;
 }
@@ -94,6 +102,7 @@ export interface MyListsForAlbumPage {
 
 export interface ListDetailsInput {
   description: null | string;
+  isRanked: boolean;
   title: string;
 }
 
@@ -127,6 +136,7 @@ export async function getListService(data: ListIdInput) {
       list: {
         description: lists.description,
         id: lists.id,
+        isRanked: lists.isRanked,
         title: lists.title,
         updatedAt: lists.updatedAt,
         userId: lists.userId,
@@ -141,8 +151,8 @@ export async function getListService(data: ListIdInput) {
 
   const itemRows = await db
     .select({
-      addedAt: listItems.createdAt,
       artistNames: albums.artistNames,
+      authorReview: authorReviewColumns,
       coverUrl: albums.coverUrl,
       id: albums.id,
       releaseDate: albums.releaseDate,
@@ -150,10 +160,11 @@ export async function getListService(data: ListIdInput) {
     })
     .from(listItems)
     .innerJoin(albums, eq(listItems.albumId, albums.id))
+    .leftJoin(reviews, authorReviewJoin(listRow.list.userId))
     .where(eq(listItems.listId, data.listId))
     .orderBy(desc(listItems.position));
 
-  const listAlbums = itemRows.map((item) => mapListAlbum(item, item.addedAt));
+  const listAlbums = itemRows.map(mapListAlbum);
 
   return {
     albums: listAlbums,
@@ -164,6 +175,7 @@ export async function getListService(data: ListIdInput) {
       .map(({ coverUrl, id }) => ({ coverUrl: coverUrl ?? undefined, id })),
     description: listRow.list.description ?? undefined,
     id: listRow.list.id,
+    isRanked: listRow.list.isRanked,
     title: listRow.list.title,
     updatedAt: listRow.list.updatedAt,
   };
@@ -311,7 +323,7 @@ export async function getMyListsForAlbumService(data: MyListsForAlbumInput, cont
 export async function createListService(data: CreateListInput, context: AuthenticatedContext) {
   const [createdList] = await context.db
     .insert(lists)
-    .values({ description: data.description, title: data.title, userId: context.user.id })
+    .values({ description: data.description, isRanked: data.isRanked, title: data.title, userId: context.user.id })
     .returning({ id: lists.id, updatedAt: lists.updatedAt });
 
   if (!createdList) {
@@ -328,12 +340,14 @@ export async function updateListService(data: UpdateListInput, context: Authenti
     .update(lists)
     .set({
       description: data.description,
+      isRanked: data.isRanked,
       title: data.title,
       updatedAt,
     })
     .where(and(eq(lists.id, data.listId), eq(lists.userId, context.user.id)))
     .returning({
       description: lists.description,
+      isRanked: lists.isRanked,
       title: lists.title,
       updatedAt: lists.updatedAt,
     });
@@ -366,12 +380,12 @@ export async function addListItemService(data: ListItemInput, context: Authentic
 
   return await context.db.transaction(async (transaction) => {
     const lockedList = await lockOwnedList(data.listId, context.user.id, transaction);
-    const existingItem = await getListItem(data, transaction);
+    const existingItem = await getListItem(data, context.user.id, transaction);
 
     if (existingItem) {
       return {
         added: false,
-        album: mapListAlbum(existingItem.album, existingItem.createdAt),
+        album: mapListAlbum({ ...existingItem.album, authorReview: existingItem.authorReview }),
         position: existingItem.position,
         updatedAt: lockedList.updatedAt,
       };
@@ -381,6 +395,7 @@ export async function addListItemService(data: ListItemInput, context: Authentic
       .select({
         count: count(listItems.albumId),
         maxPosition: max(listItems.position),
+        minPosition: min(listItems.position),
       })
       .from(listItems)
       .where(eq(listItems.listId, data.listId));
@@ -389,7 +404,7 @@ export async function addListItemService(data: ListItemInput, context: Authentic
       throw new Error(`A list can contain up to ${maxListItems} albums`);
     }
 
-    const position = (itemStats?.maxPosition ?? -1) + 1;
+    const position = await getBottomPosition(data.listId, itemStats, transaction);
     await ensureAlbumExistsForWrite(albumMetadata, transaction);
 
     const [insertedItem] = await transaction
@@ -400,7 +415,6 @@ export async function addListItemService(data: ListItemInput, context: Authentic
         position,
       })
       .returning({
-        createdAt: listItems.createdAt,
         position: listItems.position,
       });
 
@@ -408,12 +422,12 @@ export async function addListItemService(data: ListItemInput, context: Authentic
       throw new Error("Could not add album to list");
     }
 
-    const album = await getAlbumForList(data.albumId, transaction);
+    const album = await getAlbumForList(data.albumId, context.user.id, transaction);
     const updatedAt = await touchList(data.listId, transaction);
 
     return {
       added: true,
-      album: mapListAlbum(album, insertedItem.createdAt),
+      album: mapListAlbum(album),
       position: insertedItem.position,
       updatedAt,
     };
@@ -523,6 +537,25 @@ async function assertListCanAcceptAlbum(data: ListItemInput, userId: string, db:
   }
 }
 
+// Rows display from the highest position down, so a new album goes below the lowest one. When the
+// lowest is already 0, every row first moves up by maxPosition + 1: each new value lands above every
+// old one, so the non-deferrable unique position index can't collide mid-update.
+async function getBottomPosition(
+  listId: string,
+  itemStats: { maxPosition: null | number; minPosition: null | number } | undefined,
+  transaction: DbTransaction
+) {
+  if (itemStats?.minPosition == null || itemStats.maxPosition == null) return 0;
+  if (itemStats.minPosition > 0) return itemStats.minPosition - 1;
+
+  await transaction
+    .update(listItems)
+    .set({ position: sql`${listItems.position} + ${itemStats.maxPosition + 1}` })
+    .where(eq(listItems.listId, listId));
+
+  return itemStats.maxPosition;
+}
+
 async function lockOwnedList(listId: string, userId: string, transaction: DbTransaction) {
   const [lockedList] = await transaction
     .select({
@@ -541,7 +574,7 @@ async function lockOwnedList(listId: string, userId: string, transaction: DbTran
   return lockedList;
 }
 
-async function getListItem(data: ListItemInput, db: ListMutationDb) {
+async function getListItem(data: ListItemInput, authorId: string, db: ListMutationDb) {
   const [item] = await db
     .select({
       album: {
@@ -551,27 +584,30 @@ async function getListItem(data: ListItemInput, db: ListMutationDb) {
         releaseDate: albums.releaseDate,
         title: albums.title,
       },
-      createdAt: listItems.createdAt,
+      authorReview: authorReviewColumns,
       position: listItems.position,
     })
     .from(listItems)
     .innerJoin(albums, eq(listItems.albumId, albums.id))
+    .leftJoin(reviews, authorReviewJoin(authorId))
     .where(and(eq(listItems.listId, data.listId), eq(listItems.albumId, data.albumId)))
     .limit(1);
 
   return item;
 }
 
-async function getAlbumForList(albumId: string, db: ListMutationDb) {
+async function getAlbumForList(albumId: string, authorId: string, db: ListMutationDb) {
   const [album] = await db
     .select({
       artistNames: albums.artistNames,
+      authorReview: authorReviewColumns,
       coverUrl: albums.coverUrl,
       id: albums.id,
       releaseDate: albums.releaseDate,
       title: albums.title,
     })
     .from(albums)
+    .leftJoin(reviews, authorReviewJoin(authorId))
     .where(eq(albums.id, albumId))
     .limit(1);
 
@@ -625,19 +661,44 @@ function mapListAuthor(author: {
   };
 }
 
-function mapListAlbum(
-  album: {
-    artistNames: string[];
-    coverUrl: null | string;
-    id: string;
-    releaseDate: string;
-    title: string;
-  },
-  addedAt: Date
-) {
+// Left-joined, so every field is null when the list author hasn't reviewed the album.
+const authorReviewColumns = {
+  excerpt: sql<null | string>`left(${reviews.body}, ${listReviewExcerptLength})`,
+  id: reviews.id,
+  rating: reviews.rating,
+};
+
+function authorReviewJoin(authorId: string) {
+  return and(eq(reviews.albumId, albums.id), eq(reviews.userId, authorId));
+}
+
+interface ListAuthorReviewRow {
+  excerpt: null | string;
+  id: null | string;
+  rating: null | number;
+}
+
+function mapListAuthorReview(review: ListAuthorReviewRow | null) {
+  if (!(review?.id && review.rating)) return;
+
   return {
-    addedAt,
+    excerpt: review.excerpt ?? undefined,
+    id: review.id,
+    rating: review.rating / 2,
+  };
+}
+
+function mapListAlbum(album: {
+  artistNames: string[];
+  authorReview: ListAuthorReviewRow | null;
+  coverUrl: null | string;
+  id: string;
+  releaseDate: string;
+  title: string;
+}) {
+  return {
     artist: album.artistNames.join(", "),
+    authorReview: mapListAuthorReview(album.authorReview),
     coverUrl: album.coverUrl ?? undefined,
     id: album.id,
     spotifyUrl: `https://open.spotify.com/album/${album.id}`,

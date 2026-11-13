@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { InlineError } from "@/components/inline-error";
 import { AlbumPickerDialog } from "@/components/list/album-picker-dialog";
@@ -12,7 +12,13 @@ import { ListPage, ListPageSkeleton } from "@/components/list/list-page";
 import { NotFoundPage } from "@/components/not-found-page";
 import { PageContainer, PageContainerContent } from "@/components/page-container";
 import { authClient } from "@/lib/auth/auth-client";
-import { createCanonicalLink, createSeoMeta, siteName } from "@/lib/seo";
+import {
+  createDocumentRouteHead,
+  DOCUMENT_JSON_LD_SCRIPT_ID,
+  getInitialDocumentMetadata,
+} from "@/lib/document-metadata";
+import { createListPageTitle } from "@/lib/page-titles";
+import { createCanonicalLink, createJsonLdScript, createSeoMeta, siteName } from "@/lib/seo";
 import { listQueryKeys } from "@/lib/tanstack-query/query-keys";
 import {
   addListItem,
@@ -32,7 +38,9 @@ export const Route = createFileRoute("/list/$listId")({
   component: ListRoute,
   notFoundComponent: NotFoundPage,
   head: ({ params }) => {
-    const path = `/list/${params.listId}`;
+    const path = `/list/${encodeURIComponent(params.listId)}`;
+    const initialMetadata = getInitialDocumentMetadata(path);
+    if (initialMetadata) return createDocumentRouteHead(initialMetadata);
 
     return {
       links: [createCanonicalLink(path)],
@@ -42,6 +50,7 @@ export const Route = createFileRoute("/list/$listId")({
         title: `Album List | ${siteName}`,
         type: "article",
       }),
+      scripts: [{ ...createJsonLdScript([]), id: DOCUMENT_JSON_LD_SCRIPT_ID }],
     };
   },
 });
@@ -109,6 +118,14 @@ function ListRouteContent({ listId, sessionPending, viewerUserId }: ListRouteCon
   const reorderListItemsMutation = useMutation({ mutationFn: reorderListItemsFn });
 
   const list = listQuery.data;
+  const listTitle = list?.title;
+  const listAuthorName = list?.author.displayName;
+
+  useEffect(() => {
+    if (!(listTitle && listAuthorName)) return;
+
+    document.title = createListPageTitle(listTitle, listAuthorName);
+  }, [listAuthorName, listTitle]);
 
   function invalidateListMetadata(authorId: string) {
     return Promise.all([
@@ -138,6 +155,7 @@ function ListRouteContent({ listId, sessionPending, viewerUserId }: ListRouteCon
         ? {
             ...currentList,
             description: data.description ?? undefined,
+            isRanked: data.isRanked,
             title: data.title,
             updatedAt: data.updatedAt,
           }
@@ -199,7 +217,7 @@ function ListRouteContent({ listId, sessionPending, viewerUserId }: ListRouteCon
       queryClient.setQueryData<ListDetails | null>(listQueryKey, (current) => {
         if (!current) return current;
 
-        const albums = [addedItem.album, ...current.albums];
+        const albums = [...current.albums, addedItem.album];
 
         return {
           ...current,
@@ -371,7 +389,7 @@ function ListRouteContent({ listId, sessionPending, viewerUserId }: ListRouteCon
             remainingSlots={remainingSlots}
           />
           <ListDetailsDialog
-            initialValues={{ description: list.description ?? "", title: list.title }}
+            initialValues={{ description: list.description ?? "", isRanked: list.isRanked, title: list.title }}
             isSubmitting={updateListMutation.isPending}
             onOpenChange={setDetailsOpen}
             onSubmit={handleDetailsSubmit}

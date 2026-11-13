@@ -82,15 +82,17 @@ defines an immediate `pendingComponent`; TanStack Start emits that static skelet
 same shape remains available locally while the client route chunk and normal TanStack Query data load.
 
 Dynamic crawler metadata belongs to the HTML document response rather than the route lifecycle. The public app's
-custom `src/server.ts` entry recognizes direct `GET` requests for `/album/:albumId`, `/review/:reviewId`, and
-`/user/:username`, resolves a narrow public metadata record in parallel with the ordinary TanStack Start shell, and
-decorates the returned `<head>`. Server-function, API, asset, and client-navigation traffic bypass this path. The
-decorator replaces only managed title, description, robots, canonical, Open Graph, and Twitter tags; metadata lookup
-failures leave the route's generic head intact and never prevent the app shell from loading. It also writes the same
-path-scoped metadata into a small inline bootstrap snapshot so the first client hydration reproduces the decorated
-head instead of restoring generic tags. The snapshot is ignored as soon as the browser is on a different path.
+custom `src/server.ts` entry recognizes direct `GET` requests for `/album/:albumId`, `/list/:listId`,
+`/review/:reviewId`, and `/user/:username`, resolves a narrow public metadata record in parallel with the ordinary
+TanStack Start shell, and decorates the returned `<head>`. Server-function, API, asset, and client-navigation traffic
+bypass this path. The decorator replaces only managed title, description, robots, canonical, Open Graph, and Twitter
+tags; metadata lookup failures leave the route's generic head intact and never prevent the app shell from loading. It
+also writes the same path-scoped metadata into a small inline bootstrap snapshot so the first client hydration
+reproduces the decorated head instead of restoring generic tags. The snapshot is ignored as soon as the browser is on
+a different path.
 
-Profile and review document metadata each use one bounded public database query with no session or relationship state.
+Profile, review, and list document metadata each use one bounded public database query with no session or relationship
+state.
 Album metadata reads the local album row first; an album outside Ratio's durable graph uses the rate-limited Spotify
 catalog metadata cache without creating a database row. Client components update only `document.title` from the page
 data their existing TanStack Query request already returned. Social metadata is not recreated in the browser because
@@ -98,10 +100,11 @@ unfurlers make their own direct document request.
 
 Album pages include `MusicAlbum` JSON-LD. The local album query also calculates the rating from non-banned users,
 rounded to match the album page. Albums without ratings, including Spotify-only albums, omit `aggregateRating`.
-The album route declares JSON-LD through TanStack's `head.scripts`. It renders an empty script on the server, which the
-document decorator fills alongside the metadata snapshot. The first client render uses that snapshot, and TanStack
-removes the script when navigation leaves the album route. Other album routes start with an empty JSON-LD array until
-a direct document request supplies metadata.
+
+List pages include `ItemList` JSON-LD with each album as a `MusicAlbum`, in display order. Numbered lists are marked
+ascending and the rest unordered. The share image is the first album's cover. Using the page's 2×2 mosaic would mean
+rendering a new image per list, and that doesn't fit in the free Workers CPU limit. Lists by banned authors, or by
+authors without a username, get no metadata, the same as the list page itself.
 
 ## Sitemap
 

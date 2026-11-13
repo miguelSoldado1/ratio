@@ -243,6 +243,8 @@ const listTemplates = [
   {
     albumIndexes: [3, 6, 7, 8, 15],
     description: "Five records that make the decade feel much bigger than nostalgia.",
+    // Numbered, so the seed covers ranked lists as well as unranked ones.
+    isRanked: true,
     title: "Start here: the 70s",
   },
   {
@@ -311,6 +313,39 @@ const listTemplates = [
     title: "Pop architecture",
   },
 ];
+
+// Each row exercises one way a list row can render for its author's review. Listed top to bottom as displayed.
+const listRowStatesTemplate = {
+  description: "One album per way a row can look: written, rating-only, unrated, and the edge cases between.",
+  rows: [
+    // Long written review: the excerpt is cut server-side and truncated on screen.
+    { albumIndex: 0 },
+    {
+      albumIndex: 6,
+      review: { body: "Side two is the album.", rating: 8 },
+    },
+    // Paragraph breaks must flatten into one excerpt line.
+    {
+      albumIndex: 7,
+      review: {
+        body: "Too long by a third, and I would not cut a second of it.\n\nThe second disc is where it stops being a great album and becomes a whole world.",
+        rating: 5,
+      },
+    },
+    { albumIndex: 8, review: { body: null, rating: 7 } },
+    // Lowest possible rating: a single half star.
+    { albumIndex: 12, review: { body: null, rating: 1 } },
+    // Longest seeded title, truncating above a review line.
+    {
+      albumIndex: 9,
+      review: { body: "Every interlude earns its place.", rating: 10 },
+    },
+    // Reviewed by plenty of seed users but not the author: must stay a two-line row.
+    { albumIndex: 10 },
+    { albumIndex: 14 },
+  ],
+  title: "List row states",
+};
 
 const options = getOptions();
 const databaseUrl = requireEnv("DATABASE_URL");
@@ -445,6 +480,11 @@ function buildFixture(targetUserId, seedUsers) {
     })
   );
 
+  for (const { albumIndex, review } of listRowStatesTemplate.rows) {
+    if (!review) continue;
+    addReview({ albumIndex, authorId: targetUserId, hoursAgo: 3, ...review });
+  }
+
   for (const [userIndex, user] of seedUsers.entries()) {
     for (const offset of [0, 5, 10]) {
       addReview({
@@ -501,6 +541,7 @@ function buildLists(seedUsers, targetUserId) {
       createdAt,
       description: template.description,
       id,
+      isRanked: template.isRanked ?? false,
       title: template.title,
       updatedAt,
     });
@@ -513,6 +554,29 @@ function buildLists(seedUsers, targetUserId) {
         position,
       });
     }
+  }
+
+  const rowStatesListId = uuidFor("list", `${targetUserId}:${listRowStatesTemplate.title}`);
+  const rowStatesCreatedAt = hoursFromNow(1);
+  lists.push({
+    authorId: targetUserId,
+    createdAt: rowStatesCreatedAt,
+    description: listRowStatesTemplate.description,
+    id: rowStatesListId,
+    isRanked: false,
+    title: listRowStatesTemplate.title,
+    updatedAt: rowStatesCreatedAt,
+  });
+
+  const rowCount = listRowStatesTemplate.rows.length;
+  for (const [index, { albumIndex }] of listRowStatesTemplate.rows.entries()) {
+    listItems.push({
+      albumId: albums[albumIndex].id,
+      createdAt: rowStatesCreatedAt,
+      listId: rowStatesListId,
+      // Lists display highest position first.
+      position: rowCount - 1 - index,
+    });
   }
 
   return { listItems, lists };
@@ -777,8 +841,8 @@ async function insertAlbums(transaction) {
 async function insertLists(transaction, lists) {
   for (const list of lists) {
     await transaction`
-      insert into "list" (id, user_id, title, description, created_at, updated_at)
-      values (${list.id}, ${list.authorId}, ${list.title}, ${list.description}, ${list.createdAt}, ${list.updatedAt})
+      insert into "list" (id, user_id, title, description, is_ranked, created_at, updated_at)
+      values (${list.id}, ${list.authorId}, ${list.title}, ${list.description}, ${list.isRanked}, ${list.createdAt}, ${list.updatedAt})
     `;
   }
 }

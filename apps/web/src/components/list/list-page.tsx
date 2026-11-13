@@ -7,10 +7,11 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { Plus } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { PageContainerContent } from "@/components/page-container";
 import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
 import { tryCatch } from "@/try-catch";
 import { ListCoverMosaic } from "./list-cover-mosaic";
 import { ListHeader } from "./list-header";
@@ -18,6 +19,7 @@ import { ListItemRow } from "./list-item-row";
 import { ListManagementMenu } from "./list-management-menu";
 import { listRowClassName } from "./list-row-styles";
 import type { Announcements, AutoScrollOptions, DragEndEvent } from "@dnd-kit/core";
+import type { CSSProperties, RefObject } from "react";
 import type { ListDetails } from "@/server/services/list-service";
 
 const screenReaderInstructions = {
@@ -64,6 +66,8 @@ export function ListPage({
   removingAlbumIds = new Set(),
 }: ListPageProps) {
   const [pendingAlbumIds, setPendingAlbumIds] = useState<string[] | null>(null);
+  const headerColumnRef = useRef<HTMLDivElement>(null);
+  const canPinHeader = useFitsBelowPinOffset(headerColumnRef);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -123,17 +127,16 @@ export function ListPage({
   }
 
   return (
-    // Unlike the album page, nothing here spans the content column — the rows stay at the
-    // description's measure. Capping the page to cover + gap + rows turns the leftover into even
-    // margins instead of a 300px hole against the right edge.
-    <PageContainerContent className="grid max-w-285 gap-8 py-6 lg:grid-cols-[minmax(240px,340px)_1fr] xl:gap-12">
-      {/* Cover lives inline in the header below the two-column breakpoint, matching the album page. */}
-      <aside className="hidden lg:sticky lg:top-20 lg:block lg:self-start">
-        <ListCoverMosaic albums={list.coverAlbums} className="w-full" size={640} />
-      </aside>
-      <section className="min-w-0 lg:pt-10">
+    // Lists have no tracks to fill the cover column, so on desktop the header moves under the cover and the
+    // right column is only the albums. Below lg it's one column: header (with its inline cover), then rows.
+    <PageContainerContent className="grid max-w-285 gap-6 py-6 lg:grid-cols-[minmax(240px,340px)_1fr] lg:gap-8 xl:gap-12">
+      {/* Pinned only when cover + header fit the window; a long title or description would otherwise leave
+          the action buttons below the fold for as long as the albums scroll. */}
+      <div className={cn("min-w-0 lg:self-start", canPinHeader && "lg:sticky lg:top-20")} ref={headerColumnRef}>
+        <ListCoverMosaic albums={list.coverAlbums} className="hidden w-full lg:grid" size={640} />
         <ListHeader
           canAddAlbum={canAddAlbum}
+          className="lg:mt-6"
           editing={isEditing}
           list={list}
           managementMenu={
@@ -144,8 +147,9 @@ export function ListPage({
           onAddAlbum={onAddAlbum}
           onEditingChange={onEditingChange}
         />
-        {/* Matches the description's max width so the row rules align with the text above them. */}
-        <div className="mt-6 max-w-2xl border-border border-t pt-1 lg:mt-8">
+      </div>
+      <section aria-label="Albums" className="min-w-0">
+        <div className="max-w-2xl border-border border-t pt-1">
           {hasAlbums ? (
             <DndContext
               accessibility={{ announcements, screenReaderInstructions }}
@@ -156,7 +160,9 @@ export function ListPage({
               sensors={sensors}
             >
               <SortableContext items={albumIds} strategy={verticalListSortingStrategy}>
-                <ul>
+                {/* Every rank cell is as wide as the longest number, so single-digit lists don't reserve
+                    room for "100" on narrow screens. */}
+                <ul style={{ "--rank-width": `${String(displayedAlbums.length).length}ch` } as CSSProperties}>
                   {displayedAlbums.map((album, albumIndex) => (
                     <ListItemRow
                       album={album}
@@ -165,6 +171,7 @@ export function ListPage({
                       isRemoving={removingAlbumIds.has(album.id)}
                       key={album.id}
                       onRemove={onRemoveAlbum}
+                      rank={list.isRanked ? albumIndex + 1 : undefined}
                       sortingDisabled={sortingDisabled}
                     />
                   ))}
@@ -180,6 +187,31 @@ export function ListPage({
   );
 }
 
+// Matches lg:top-20 plus a little breathing room under the column.
+const pinnedHeaderOffsetPx = 80 + 24;
+
+function useFitsBelowPinOffset(ref: RefObject<HTMLElement | null>) {
+  const [fits, setFits] = useState(false);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+
+    const update = () => setFits(element.offsetHeight + pinnedHeaderOffsetPx <= window.innerHeight);
+    const resizeObserver = new ResizeObserver(update);
+    resizeObserver.observe(element);
+    window.addEventListener("resize", update);
+    update();
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, [ref]);
+
+  return fits;
+}
+
 function haveSameOrder(firstIds: string[], secondIds: string[]) {
   return firstIds.length === secondIds.length && firstIds.every((albumId, index) => albumId === secondIds[index]);
 }
@@ -188,41 +220,49 @@ export function ListPageSkeleton() {
   return (
     <PageContainerContent
       aria-label="Loading list"
-      className="grid max-w-285 gap-8 py-6 lg:grid-cols-[minmax(240px,340px)_1fr] xl:gap-12"
+      className="grid max-w-285 gap-6 py-6 lg:grid-cols-[minmax(240px,340px)_1fr] lg:gap-8 xl:gap-12"
       role="status"
     >
-      <Skeleton className="hidden aspect-square w-full rounded-none lg:block" />
-      <section className="min-w-0 lg:pt-10">
-        {/* Same shape as the album header skeleton, including the inline cover below lg — otherwise
-            the real mosaic lands after paint and shoves the whole page down. */}
-        <div className="flex flex-col items-center gap-4 sm:grid sm:grid-cols-[144px_1fr] sm:items-end lg:block">
+      <div className="min-w-0">
+        <Skeleton className="hidden aspect-square w-full rounded-none lg:block" />
+        {/* Same shape as the real header, including the inline cover below lg — otherwise the mosaic
+            lands after paint and shoves the whole page down. */}
+        <div className="flex flex-col items-center gap-4 sm:grid sm:grid-cols-[144px_1fr] sm:items-end lg:mt-6 lg:block">
           <div className="lg:hidden">
             <Skeleton className="aspect-square w-44 rounded-none sm:w-full" />
           </div>
           <div className="min-w-0 sm:self-end lg:self-auto">
-            <Skeleton className="h-7.5 w-full max-w-70 sm:h-9.5 lg:h-11 lg:max-w-4xl xl:h-14" />
+            <Skeleton className="h-7.5 w-full max-w-70 sm:h-9.5 lg:h-11.25" />
           </div>
         </div>
-        <Skeleton className="mx-auto mt-3 h-5 w-4/5 max-w-md sm:mx-0 lg:h-7 lg:max-w-80" />
-        <Skeleton className="mx-auto mt-1.5 h-4 w-2/3 max-w-56 sm:mx-0 lg:h-5 lg:max-w-52" />
-        <div className="mt-5 grid grid-cols-[1fr_auto_auto] gap-2 lg:mt-6 lg:flex lg:flex-wrap lg:items-center lg:gap-3">
-          <Skeleton className="h-10 min-w-0 rounded-4xl lg:w-36" />
-          <Skeleton className="size-10 rounded-4xl" />
-          <Skeleton className="size-10 rounded-4xl" />
+        {/* Two lines of the desktop subtitle (24px each) fit in the same 48px the real text takes. */}
+        <div className="mx-auto mt-3 max-w-md sm:mx-0 lg:flex lg:h-12 lg:max-w-none lg:flex-col lg:justify-around">
+          <Skeleton className="mx-auto h-5 w-4/5 sm:mx-0 lg:w-full" />
+          <Skeleton className="hidden h-5 w-3/5 lg:block" />
         </div>
-        <div className="mt-8 flex max-w-2xl flex-col gap-3 border-border border-t pt-4">
-          {Array.from({ length: 4 }, (_, index) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: static loading placeholders
-            <div className="flex items-center gap-3" key={index}>
+        <Skeleton className="mx-auto mt-1.5 h-4 w-2/3 max-w-56 sm:mx-0 lg:h-5" />
+        {/* One pill: the viewer's Share list button and the owner's button row both span this width. */}
+        <Skeleton className="mt-5 h-10 w-full rounded-4xl sm:w-28 lg:w-full" />
+      </div>
+      <div className="max-w-2xl border-border border-t pt-1">
+        {Array.from({ length: 5 }, (_, index) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: static loading placeholders
+          <div className={listRowClassName} key={index}>
+            {/* Title, artist and rating lines, plus the Spotify icon: the shape most real rows have. */}
+            <div className="flex min-w-0 flex-1 items-center gap-3 py-3">
               <Skeleton className="size-14 shrink-0 rounded-none" />
-              <div className="flex min-w-0 flex-1 flex-col gap-2">
-                <Skeleton className="h-4 w-2/3" />
+              <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                <Skeleton className="h-4 w-1/2" />
                 <Skeleton className="h-3 w-1/3" />
+                <Skeleton className="h-3.5 w-24" />
               </div>
             </div>
-          ))}
-        </div>
-      </section>
+            <div className="flex h-20 shrink-0 items-center">
+              <Skeleton className="size-5.25 rounded-full" />
+            </div>
+          </div>
+        ))}
+      </div>
     </PageContainerContent>
   );
 }

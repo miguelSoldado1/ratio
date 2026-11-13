@@ -11,3 +11,7 @@ export function createReviewPageTitle(albumTitle: string, authorDisplayName: str
 export function createProfilePageTitle(displayName: string, username: string) {
   return `${displayName} (@${username}) — Album Reviews | ${siteName}`;
 }
+
+export function createListPageTitle(listTitle: string, authorDisplayName: string) {
+  return `${listTitle} — Album list by ${authorDisplayName} | ${siteName}`;
+}

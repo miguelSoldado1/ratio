@@ -167,6 +167,7 @@ describe("AddAlbumToListAction", () => {
         {
           data: {
             description: null,
+            isRanked: false,
             title: "New favorites",
           },
         },

@@ -18,7 +18,7 @@ import { Field, FieldDescription, FieldGroup, FieldLabel, FieldTitle } from "@/c
 import { Textarea } from "@/components/ui/textarea";
 import { trackReviewPublished } from "@/lib/analytics/posthog";
 import { authClient } from "@/lib/auth/auth-client";
-import { albumQueryKeys } from "@/lib/tanstack-query/query-keys";
+import { albumQueryKeys, listQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { cn } from "@/lib/utils";
 import { createReview, hasMyAlbumReview } from "@/server/functions/review-functions";
 import { tryCatch } from "@/try-catch";
@@ -93,7 +93,11 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
     }
 
     trackReviewPublished({ artist: albumArtist, id: albumId, title: albumTitle }, trimmedBody.length > 0);
-    await queryClient.invalidateQueries({ queryKey: albumQueryKeys.review(albumId) });
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: albumQueryKeys.review(albumId) }),
+      // List rows show their author's rating, so cached lists refetch next time they're opened.
+      queryClient.invalidateQueries({ queryKey: listQueryKeys.all(), refetchType: "none" }),
+    ]);
 
     setOpen(false);
     setReviewForm({ body: "", rating: 0 });
