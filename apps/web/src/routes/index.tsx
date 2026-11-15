@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { FollowingFeedTab } from "@/components/feed/following-feed-tab";
@@ -41,6 +42,7 @@ export const Route = createFileRoute("/")({
 });
 
 function FeedPage() {
+  const queryClient = useQueryClient();
   const session = authClient.useSession();
   const [activeTab, setActiveTab] = useState<HomeFeedTab>("for-you");
   // Better Auth re-enters isPending on every refetch while signed out, so remember the first resolution.
@@ -63,6 +65,20 @@ function FeedPage() {
     if (value === "following" || value === "for-you") setActiveTab(value);
   }
 
+  // Follows from the empty-state suggestions defer the refetch so the list stays put; swap it in once the tab has slid offscreen.
+  function handleTabSettled(value: string) {
+    if (value === "following") return;
+
+    queryClient.refetchQueries(
+      {
+        // Errors also set isInvalidated, so only refetch a successful query a follow has invalidated.
+        predicate: (query) => query.state.isInvalidated && query.state.status === "success",
+        queryKey: followingFeedQueryKey,
+      },
+      { cancelRefetch: false }
+    );
+  }
+
   return (
     <main className={cn("bg-background text-foreground", hasSession ? "h-[calc(100dvh-4.0625rem)]" : "min-h-screen")}>
       <PageContainer className={cn(hasSession && "flex h-full min-h-0 flex-col")}>
@@ -72,6 +88,7 @@ function FeedPage() {
             className="feed-tabs-enter min-h-0 flex-1"
             defaultValue="for-you"
             onValueChange={handleTabChange}
+            onValueSettled={handleTabSettled}
           >
             <SwipeableTabsHeader>
               <PageContainerContent className="py-0">

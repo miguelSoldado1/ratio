@@ -48,6 +48,7 @@ interface SwipeableTabsContextValue {
   indicatorRef: RefObject<HTMLSpanElement | null>;
   listHeight: number;
   listRef: RefObject<HTMLDivElement | null>;
+  notifyValueSettled: (value: string) => void;
   scrollerRef: RefObject<HTMLDivElement | null>;
   setActiveFromScroll: (value: string) => void;
   setCount: (count: number) => void;
@@ -66,6 +67,8 @@ type SwipeableTabsProps = Omit<
 > & {
   defaultValue?: string;
   onValueChange?: (value: string) => void;
+  /** Called with the visible tab once the viewport comes to rest, after any slide has finished. */
+  onValueSettled?: (value: string) => void;
   value?: string;
 };
 type SwipeableTabsHeaderProps = Omit<ComponentProps<"div">, "ref">;
@@ -101,6 +104,7 @@ function SwipeableTabs({
   className,
   defaultValue,
   onValueChange,
+  onValueSettled,
   value: controlledValue,
   ...props
 }: SwipeableTabsProps) {
@@ -122,6 +126,10 @@ function SwipeableTabs({
   const scrollActivationRef = useRef(false);
   const scrollDrivenValueRef = useRef<string | null>(null);
   const unlockTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onValueSettledRef = useRef(onValueSettled);
+  onValueSettledRef.current = onValueSettled;
+
+  const notifyValueSettled = useCallback((settledValue: string) => onValueSettledRef.current?.(settledValue), []);
 
   const cancelProgrammaticScroll = useCallback(() => {
     programmaticTargetRef.current = null;
@@ -261,6 +269,7 @@ function SwipeableTabs({
       indicatorRef,
       listHeight,
       listRef,
+      notifyValueSettled,
       scrollerRef,
       setActiveFromScroll,
       setCount,
@@ -276,6 +285,7 @@ function SwipeableTabs({
       headerHeight,
       idBase,
       listHeight,
+      notifyValueSettled,
       setActiveFromScroll,
       syncActivePanelHeader,
       syncScrollHeader,
@@ -402,8 +412,15 @@ function SwipeableTabsTrigger({ className, value, ...props }: SwipeableTabsTrigg
 }
 
 function SwipeableTabsViewport({ children, className, ...props }: SwipeableTabsViewportProps) {
-  const { cancelProgrammaticScroll, indicatorRef, scrollerRef, setActiveFromScroll, setCount, value } =
-    useSwipeableTabs();
+  const {
+    cancelProgrammaticScroll,
+    indicatorRef,
+    notifyValueSettled,
+    scrollerRef,
+    setActiveFromScroll,
+    setCount,
+    value,
+  } = useSwipeableTabs();
   const count = Children.count(children);
   const clickSuppressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const scrollSettleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -428,7 +445,8 @@ function SwipeableTabsViewport({ children, className, ...props }: SwipeableTabsV
 
     cancelProgrammaticScroll();
     if (nextValue !== valueRef.current) setActiveFromScroll(nextValue);
-  }, [cancelProgrammaticScroll, count, scrollerRef, setActiveFromScroll]);
+    notifyValueSettled(nextValue);
+  }, [cancelProgrammaticScroll, count, notifyValueSettled, scrollerRef, setActiveFromScroll]);
 
   const handleScroll = useCallback(() => {
     const scroller = scrollerRef.current;

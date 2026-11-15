@@ -1,10 +1,13 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useForYouFeedQuery } from "@/components/feed/for-you-feed-tab";
+import { RatingStarIcon } from "@/components/rating-star-icon";
 import { Button } from "@/components/ui/button";
 import { UserList, UserListSkeleton } from "@/components/user-list";
 import { useSetUserFollowMutation } from "@/hooks/use-user-follow-toggle";
 import { trackSocialActionCompleted } from "@/lib/analytics/posthog";
+import { feedQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { tryCatch } from "@/try-catch";
 import type { UserListUser } from "@/components/user-list";
 import type { FeedPage } from "@/server/services/feed-service";
@@ -17,8 +20,9 @@ interface FollowSuggestionsProps {
 
 export function FollowSuggestions({ viewerUserId }: FollowSuggestionsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
   const feedQuery = useForYouFeedQuery(viewerUserId);
-  const setUserFollowMutation = useSetUserFollowMutation();
+  const setUserFollowMutation = useSetUserFollowMutation({ deferFollowingFeedRefetch: true });
   const [followedUserIds, setFollowedUserIds] = useState<Set<string>>(() => new Set());
   const users = useMemo(
     () => getRecentReviewers(feedQuery.data?.pages ?? [], viewerUserId),
@@ -27,7 +31,7 @@ export function FollowSuggestions({ viewerUserId }: FollowSuggestionsProps) {
 
   const panelToFocusOnUnmountRef = useRef<HTMLElement | null>(null);
 
-  // A successful follow refills the Following feed and unmounts this list, dropping focus to <body>.
+  // A refetch while this tab is open (e.g. on window focus) can refill the feed and unmount this list, dropping focus to <body>.
   useEffect(
     () =>
       function focusPanelOnUnmount() {
@@ -71,6 +75,11 @@ export function FollowSuggestions({ viewerUserId }: FollowSuggestionsProps) {
     }
 
     trackSocialActionCompleted("follow");
+
+    // The viewer may have left the tab while the follow was in flight, after its settle refetch already ran.
+    if (container?.closest("[inert]")) {
+      queryClient.refetchQueries({ queryKey: feedQueryKeys.following(viewerUserId) }, { cancelRefetch: false });
+    }
   }
 
   return (
@@ -116,11 +125,32 @@ function getRecentReviewers(pages: FeedPage[], viewerUserId: string) {
       avatarUrl,
       displayName: displayUsername,
       id,
-      subtitle: `Reviewed ${review.album.title}`,
+      subtitle: <SuggestionSubtitle albumTitle={review.album.title} rating={review.rating} />,
       username,
     });
+
     if (reviewers.size === maxSuggestions) break;
   }
 
   return [...reviewers.values()];
+}
+
+interface SuggestionSubtitleProps {
+  albumTitle: string;
+  rating: number;
+}
+
+function SuggestionSubtitle({ albumTitle, rating }: SuggestionSubtitleProps) {
+  const displayRating = Number.isInteger(rating) ? rating.toString() : rating.toFixed(1);
+
+  return (
+    <>
+      <RatingStarIcon className="mr-1 size-3 align-[-1px]" fillPercentage={100} />
+      <span className="sr-only">Rated </span>
+      <span className="font-bold text-primary tabular-nums">{displayRating}</span>
+      <span className="sr-only"> out of 5 for</span>
+      <span aria-hidden="true"> · </span>
+      {albumTitle}
+    </>
+  );
 }
