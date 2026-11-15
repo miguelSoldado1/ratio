@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useForYouFeedQuery } from "@/components/feed/for-you-feed-tab";
@@ -5,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { UserList, UserListSkeleton } from "@/components/user-list";
 import { useSetUserFollowMutation } from "@/hooks/use-user-follow-toggle";
 import { trackSocialActionCompleted } from "@/lib/analytics/posthog";
+import { feedQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { tryCatch } from "@/try-catch";
 import type { UserListUser } from "@/components/user-list";
 import type { FeedPage } from "@/server/services/feed-service";
@@ -17,8 +19,9 @@ interface FollowSuggestionsProps {
 
 export function FollowSuggestions({ viewerUserId }: FollowSuggestionsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const queryClient = useQueryClient();
   const feedQuery = useForYouFeedQuery(viewerUserId);
-  const setUserFollowMutation = useSetUserFollowMutation();
+  const setUserFollowMutation = useSetUserFollowMutation({ deferFollowingFeedRefetch: true });
   const [followedUserIds, setFollowedUserIds] = useState<Set<string>>(() => new Set());
   const users = useMemo(
     () => getRecentReviewers(feedQuery.data?.pages ?? [], viewerUserId),
@@ -27,7 +30,7 @@ export function FollowSuggestions({ viewerUserId }: FollowSuggestionsProps) {
 
   const panelToFocusOnUnmountRef = useRef<HTMLElement | null>(null);
 
-  // A successful follow refills the Following feed and unmounts this list, dropping focus to <body>.
+  // A refetch while this tab is open (e.g. on window focus) can refill the feed and unmount this list, dropping focus to <body>.
   useEffect(
     () =>
       function focusPanelOnUnmount() {
@@ -71,6 +74,11 @@ export function FollowSuggestions({ viewerUserId }: FollowSuggestionsProps) {
     }
 
     trackSocialActionCompleted("follow");
+
+    // The viewer may have left the tab while the follow was in flight, after its settle refetch already ran.
+    if (container?.closest("[inert]")) {
+      queryClient.refetchQueries({ queryKey: feedQueryKeys.following(viewerUserId) }, { cancelRefetch: false });
+    }
   }
 
   return (

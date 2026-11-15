@@ -10,12 +10,7 @@ import { tryCatch } from "@/try-catch";
 import type { QueryKey } from "@tanstack/react-query";
 import type { UserProfile } from "@/server/services/review-service";
 
-interface UseUserFollowToggleParams {
-  enabled: boolean;
-  queryKey: QueryKey;
-}
-
-export function useSetUserFollowMutation() {
+export function useSetUserFollowMutation({ deferFollowingFeedRefetch = false } = {}) {
   const queryClient = useQueryClient();
   const viewerUserId = authClient.useSession().data?.user.id;
   const setUserFollowFn = useServerFn(setUserFollow);
@@ -23,9 +18,19 @@ export function useSetUserFollowMutation() {
   return useMutation({
     mutationFn: (input: Parameters<typeof setUserFollowFn>[0]) => setUserFollowFn(input),
     onSuccess: () => {
-      if (viewerUserId) return queryClient.invalidateQueries({ queryKey: feedQueryKeys.following(viewerUserId) });
+      if (!viewerUserId) return;
+
+      return queryClient.invalidateQueries({
+        queryKey: feedQueryKeys.following(viewerUserId),
+        refetchType: deferFollowingFeedRefetch ? "none" : "active",
+      });
     },
   });
+}
+
+interface UseUserFollowToggleParams {
+  enabled: boolean;
+  queryKey: QueryKey;
 }
 
 export function useUserFollowToggle({ enabled, queryKey }: UseUserFollowToggleParams) {

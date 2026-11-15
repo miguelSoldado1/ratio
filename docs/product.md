@@ -228,7 +228,7 @@ Set `min_votes` to something like 5. Tune `global_mean` from actual data over ti
 | List by banned or incomplete author | Return not found to public and non-admin viewers. Admins may inspect a banned author's list, but lists by authors without a username remain hidden |
 | Duplicate review attempt | Enforced at DB level via unique constraint on `(userId, albumId)`; block duplicate creates; delete may come later, no edit/update flow planned |
 | Low vote count rating display | Bayesian average until threshold is met, show raw score + count after |
-| Empty Following feed (new user) | Show a quiet empty state directly beneath the tab bar; the For You tab remains fully usable |
+| Empty Following feed (new user) | Show a quiet empty state directly beneath the tab bar; the For You tab remains fully usable. Following someone from its suggestions keeps the list in place and refreshes the feed once the viewer leaves the tab |
 | Spotify recent-listening unavailable | Omit the shelf unless reauthorization is actionable; the feed loads independently and stays fully usable |
 | Spotify permission missing or token rejected | Show the inline reconnect card for a linked account; reauthorize in place without requiring another sign-in provider |
 | Spotify refresh token expired, revoked, or unavailable | Show the inline reconnect card when Better Auth cannot retrieve a valid token. A transient token-endpoint outage may cause an unnecessary reconnect prompt in v1; never revoke the Ratio session |
