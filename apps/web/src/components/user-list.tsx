@@ -8,7 +8,7 @@ export interface UserListUser {
   avatarUrl?: string;
   displayName: string;
   id: string;
-  subtitle?: string;
+  subtitle?: ReactNode;
   username: string;
 }
 

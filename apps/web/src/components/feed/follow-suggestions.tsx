@@ -2,6 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import { useForYouFeedQuery } from "@/components/feed/for-you-feed-tab";
+import { RatingStarIcon } from "@/components/rating-star-icon";
 import { Button } from "@/components/ui/button";
 import { UserList, UserListSkeleton } from "@/components/user-list";
 import { useSetUserFollowMutation } from "@/hooks/use-user-follow-toggle";
@@ -124,11 +125,32 @@ function getRecentReviewers(pages: FeedPage[], viewerUserId: string) {
       avatarUrl,
       displayName: displayUsername,
       id,
-      subtitle: `Reviewed ${review.album.title}`,
+      subtitle: <SuggestionSubtitle albumTitle={review.album.title} rating={review.rating} />,
       username,
     });
+
     if (reviewers.size === maxSuggestions) break;
   }
 
   return [...reviewers.values()];
+}
+
+interface SuggestionSubtitleProps {
+  albumTitle: string;
+  rating: number;
+}
+
+function SuggestionSubtitle({ albumTitle, rating }: SuggestionSubtitleProps) {
+  const displayRating = Number.isInteger(rating) ? rating.toString() : rating.toFixed(1);
+
+  return (
+    <>
+      <RatingStarIcon className="mr-1 size-3 align-[-1px]" fillPercentage={100} />
+      <span className="sr-only">Rated </span>
+      <span className="font-bold text-primary tabular-nums">{displayRating}</span>
+      <span className="sr-only"> out of 5 for</span>
+      <span aria-hidden="true"> · </span>
+      {albumTitle}
+    </>
+  );
 }
