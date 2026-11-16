@@ -5,6 +5,7 @@ const NAV_LINKS = [
   { label: "Overview", to: "/" },
   { label: "Users", to: "/users" },
   { label: "Reviews", to: "/reviews" },
+  { label: "Lists", to: "/lists" },
 ] as const;
 
 export function AdminBrand() {
