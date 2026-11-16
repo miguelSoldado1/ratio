@@ -29,12 +29,23 @@ const listItemCount = sql<number>`(
   select count(*) from ${listItems}
   where ${listItems.listId} = ${lists.id}
 )`.mapWith(Number);
-const listCoverUrl = sql<string | null>`(
-  select ${albums.coverUrl} from ${listItems}
-  inner join ${albums} on ${albums.id} = ${listItems.albumId}
-  where ${listItems.listId} = ${lists.id}
-  order by ${listItems.position}
-  limit 1
+// The public list shows the highest position first, so these are its first four covers.
+const listCoverAlbums = sql<AdminListCoverAlbum[]>`(
+  select coalesce(
+    json_agg(
+      json_build_object('id', first_items.album_id, 'coverUrl', first_items.cover_url)
+      order by first_items.item_position desc
+    ),
+    '[]'::json
+  )
+  from (
+    select ${listItems.albumId} as album_id, ${albums.coverUrl} as cover_url, ${listItems.position} as item_position
+    from ${listItems}
+    inner join ${albums} on ${albums.id} = ${listItems.albumId}
+    where ${listItems.listId} = ${lists.id}
+    order by ${listItems.position} desc
+    limit 4
+  ) as first_items
 )`;
 
 // Types
@@ -56,8 +67,13 @@ export interface AdminListStats {
   totalLists: number;
 }
 
-export interface AdminListRow {
+export interface AdminListCoverAlbum {
   coverUrl: string | null;
+  id: string;
+}
+
+export interface AdminListRow {
+  coverAlbums: AdminListCoverAlbum[];
   createdAt: Date;
   description: string | null;
   id: string;
@@ -90,7 +106,7 @@ export async function getTableListsService(data: GetTableListsInput, context: Ad
   });
   const baseQuery = context.db
     .select({
-      coverUrl: listCoverUrl,
+      coverAlbums: listCoverAlbums,
       createdAt: lists.createdAt,
       description: lists.description,
       id: lists.id,
