@@ -20,6 +20,7 @@ import { Route as ListListIdRouteImport } from './routes/list/$listId'
 import { Route as ApiUploadRouteImport } from './routes/api/upload'
 import { Route as AlbumAlbumIdRouteImport } from './routes/album/$albumId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
+import { Route as ApiOgListListIdRouteImport } from './routes/api/og/list/$listId'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -76,6 +77,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiOgListListIdRoute = ApiOgListListIdRouteImport.update({
+  id: '/api/og/list/$listId',
+  path: '/api/og/list/$listId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -89,6 +95,7 @@ export interface FileRoutesByFullPath {
   '/review/$reviewId': typeof ReviewReviewIdRoute
   '/user/$username': typeof UserUsernameRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/og/list/$listId': typeof ApiOgListListIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -102,6 +109,7 @@ export interface FileRoutesByTo {
   '/review/$reviewId': typeof ReviewReviewIdRoute
   '/user/$username': typeof UserUsernameRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/og/list/$listId': typeof ApiOgListListIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -116,6 +124,7 @@ export interface FileRoutesById {
   '/review/$reviewId': typeof ReviewReviewIdRoute
   '/user/$username': typeof UserUsernameRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/og/list/$listId': typeof ApiOgListListIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -131,6 +140,7 @@ export interface FileRouteTypes {
     | '/review/$reviewId'
     | '/user/$username'
     | '/api/auth/$'
+    | '/api/og/list/$listId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -144,6 +154,7 @@ export interface FileRouteTypes {
     | '/review/$reviewId'
     | '/user/$username'
     | '/api/auth/$'
+    | '/api/og/list/$listId'
   id:
     | '__root__'
     | '/'
@@ -157,6 +168,7 @@ export interface FileRouteTypes {
     | '/review/$reviewId'
     | '/user/$username'
     | '/api/auth/$'
+    | '/api/og/list/$listId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -171,6 +183,7 @@ export interface RootRouteChildren {
   ReviewReviewIdRoute: typeof ReviewReviewIdRoute
   UserUsernameRoute: typeof UserUsernameRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiOgListListIdRoute: typeof ApiOgListListIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -252,6 +265,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/og/list/$listId': {
+      id: '/api/og/list/$listId'
+      path: '/api/og/list/$listId'
+      fullPath: '/api/og/list/$listId'
+      preLoaderRoute: typeof ApiOgListListIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -267,6 +287,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReviewReviewIdRoute: ReviewReviewIdRoute,
   UserUsernameRoute: UserUsernameRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiOgListListIdRoute: ApiOgListListIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

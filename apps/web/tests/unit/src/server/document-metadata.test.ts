@@ -16,6 +16,8 @@ vi.mock("@/server/services/spotify-service", () => ({
   getAlbumPersistenceMetadata: mocks.getAlbumPersistenceMetadata,
 }));
 
+const listShareImagePathPattern = /^\/api\/og\/list\/43e2f9c6-2355-4216-8f27-c607cb54d956\?v=[0-9a-f]{12}$/;
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -184,6 +186,34 @@ describe("document metadata resolution", () => {
         url: "https://ratiomusic.live/album/album-2",
       },
       position: 2,
+    });
+  });
+
+  it("points lists with four covers at the large mosaic share image", async () => {
+    const listRow = {
+      authorDisplayUsername: "Miguel",
+      authorName: "Account Name",
+      description: null,
+      isRanked: false,
+      title: "Albums that describe me",
+    };
+    mocks.getDb.mockResolvedValue(
+      createDbWithRows(
+        ["a", "b", "c", "d", "e"].map((id) => ({
+          ...listRow,
+          album: { artistNames: ["Artist"], coverUrl: `${id}.jpg`, id, title: id },
+        }))
+      )
+    );
+
+    const metadata = await resolveDocumentMetadata(
+      { kind: "list", listId: "43e2f9c6-2355-4216-8f27-c607cb54d956" },
+      new Request("https://ratiomusic.live/list/43e2f9c6-2355-4216-8f27-c607cb54d956")
+    );
+
+    expect(metadata).toMatchObject({
+      image: expect.stringMatching(listShareImagePathPattern),
+      imageAlt: "Album covers from Albums that describe me",
     });
   });
 
