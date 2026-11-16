@@ -15,6 +15,11 @@ Public list rows use a quiet Spotify icon per album. The icon links directly to 
 item-level attribution and the applicable Spotify destination without changing the row's primary Ratio navigation.
 The "More from [artist]" shelf uses the same Spotify icon links beside each release year. Its heading has no icon.
 
+The list share image is the one place Ratio builds a new image out of Spotify artwork. It arranges four unmodified
+covers into a mosaic for link previews and is never shown in the app. Inside the app, mosaics are always the browser
+laying out the original cover URLs. This sits outside what Spotify's terms clearly allow, which the developer
+accepted because list previews are the main way Ratio gets shared.
+
 ## Spotify Login and Linking
 
 Spotify is registered as a full social provider in Better Auth for sign-in. Every new Spotify sign-in and link additionally requests the `user-read-recently-played` scope, which powers the private recent-listening shelf on the homepage.

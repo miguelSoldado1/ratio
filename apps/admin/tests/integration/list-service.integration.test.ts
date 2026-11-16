@@ -71,19 +71,36 @@ describe("getTableListsService", () => {
     expect(descriptionPage.data.map((item) => item.id)).toEqual([list.id]);
   });
 
-  it("returns the album count and the first album cover by position", async () => {
+  it("returns the album count and the first four covers, highest position first like the public list", async () => {
     const owner = await createUser({ id: "cover_owner", name: "Cover Owner", username: "cover_owner" });
     const list = await createList(owner.id, { title: "Covers" });
-    await createAlbum("second_album", "https://example.com/second.jpg");
-    await createAlbum("first_album", "https://example.com/first.jpg");
-    await testDb.insert(listItems).values([
-      { albumId: "second_album", listId: list.id, position: 1 },
-      { albumId: "first_album", listId: list.id, position: 0 },
-    ]);
+    for (const position of [0, 1, 2, 3, 4]) {
+      await createAlbum(`album_${position}`, position === 2 ? null : `https://example.com/${position}.jpg`);
+    }
+    await testDb
+      .insert(listItems)
+      .values([0, 1, 2, 3, 4].map((position) => ({ albumId: `album_${position}`, listId: list.id, position })));
 
     const page = await getTableListsService({ filters: {}, limit: 10, page: 1, sorting: [] }, { db: testDb });
 
-    expect(page.data[0]).toMatchObject({ coverUrl: "https://example.com/first.jpg", itemCount: 2 });
+    expect(page.data[0]).toMatchObject({
+      coverAlbums: [
+        { coverUrl: "https://example.com/4.jpg", id: "album_4" },
+        { coverUrl: "https://example.com/3.jpg", id: "album_3" },
+        { coverUrl: null, id: "album_2" },
+        { coverUrl: "https://example.com/1.jpg", id: "album_1" },
+      ],
+      itemCount: 5,
+    });
+  });
+
+  it("returns no covers for an empty list", async () => {
+    const owner = await createUser({ id: "empty_owner", name: "Empty Owner", username: "empty_owner" });
+    await createList(owner.id, { title: "Empty" });
+
+    const page = await getTableListsService({ filters: {}, limit: 10, page: 1, sorting: [] }, { db: testDb });
+
+    expect(page.data[0]).toMatchObject({ coverAlbums: [], itemCount: 0 });
   });
 });
 

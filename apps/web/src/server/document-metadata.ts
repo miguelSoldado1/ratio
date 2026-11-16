@@ -9,6 +9,7 @@ import {
   createReviewPageTitle,
 } from "@/lib/page-titles";
 import { getCanonicalUrl, siteName } from "@/lib/seo";
+import { getListShareImagePath, getListShareMosaicCovers } from "./list-share-image";
 import { enforceCloudflareRateLimitForRequest, spotifyCatalogRateLimit } from "./rate-limit";
 import { getAlbumPersistenceMetadata } from "./services/spotify-service";
 import { spotifyIdSchema } from "./spotify";
@@ -178,11 +179,20 @@ async function resolveListDocumentMetadata(listId: string) {
   const [topAlbum] = listAlbums;
   const albumLabel = listAlbums.length === 1 ? "album" : "albums";
   const summary = `${listAlbums.length} ${albumLabel} by ${authorDisplayName} on ${siteName}.`;
+  const mosaicCovers = getListShareMosaicCovers(listAlbums);
+  const shareImage = mosaicCovers
+    ? {
+        image: await getListShareImagePath(listId, mosaicCovers),
+        imageAlt: `Album covers from ${listRow.title}`,
+      }
+    : {
+        image: topAlbum?.coverUrl ?? null,
+        imageAlt: topAlbum?.coverUrl ? `${topAlbum.title} album cover` : `${siteName} album list`,
+      };
 
   return {
+    ...shareImage,
     description: listRow.description ? `${listRow.description} ${summary}` : `A list of ${summary}`,
-    image: topAlbum?.coverUrl ?? null,
-    imageAlt: topAlbum?.coverUrl ? `${topAlbum.title} album cover` : `${siteName} album list`,
     jsonLd: {
       "@context": "https://schema.org",
       "@type": "ItemList",

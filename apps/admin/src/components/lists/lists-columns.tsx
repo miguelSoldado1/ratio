@@ -1,5 +1,6 @@
 import { ExternalLinkIcon } from "lucide-react";
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header";
+import { ListCover } from "@/components/lists/list-cover";
 import { Badge } from "@/components/ui/badge";
 import { UserAvatar } from "@/components/user-avatar";
 import { formatCompactNumber, formatDate } from "@/lib/format";
@@ -67,11 +68,7 @@ export const listsColumns: ColumnDef<AdminListRow>[] = [
           rel="noreferrer"
           target="_blank"
         >
-          {list.coverUrl ? (
-            <img alt="" className="size-9 rounded object-cover" height={36} src={list.coverUrl} width={36} />
-          ) : (
-            <div aria-hidden className="size-9 shrink-0 rounded bg-muted" />
-          )}
+          <ListCover albums={list.coverAlbums} className="size-9 rounded" size={36} />
           <div className="min-w-0">
             <div className="flex max-w-56 items-center gap-1.5 truncate font-medium">
               <span className="truncate">{list.title}</span>

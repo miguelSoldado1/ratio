@@ -102,9 +102,18 @@ Album pages include `MusicAlbum` JSON-LD. The local album query also calculates 
 rounded to match the album page. Albums without ratings, including Spotify-only albums, omit `aggregateRating`.
 
 List pages include `ItemList` JSON-LD with each album as a `MusicAlbum`, in display order. Numbered lists are marked
-ascending and the rest unordered. The share image is the first album's cover. Using the page's 2×2 mosaic would mean
-rendering a new image per list, and that doesn't fit in the free Workers CPU limit. Lists by banned authors, or by
-authors without a username, get no metadata, the same as the list page itself.
+ascending and the rest unordered. Lists by banned authors, or by authors without a username, get no metadata, the same
+as the list page itself.
+
+When the first four albums all have covers, the share image is a 1200×1200 2×2 mosaic served from
+`/api/og/list/:listId?v=<hash of the four cover URLs>`. It's square because every page uses the `summary` card, and
+X, Discord, and iMessage show those as square thumbnails. Decoding and encoding images in the Worker would blow the
+10 ms CPU limit, so the route asks Cloudflare Image Transformations to do it. The first cover is scaled to the canvas
+size as a base, and the four covers are drawn over it as 600×600 tiles with `draw`. Nothing is stored in R2 or KV.
+The result goes in the per-datacenter Cache API for 7 days. The `v` hash covers the four cover URLs and a layout
+version, so it changes whenever the covers or the image layout do. If the transformation fails, for example once the free 5,000 unique
+transformations a month run out, the route redirects to the first cover without caching it. Lists with fewer than four
+covers keep the first cover. Transformations must be enabled for the zone in the Cloudflare dashboard.
 
 ## Sitemap
 
