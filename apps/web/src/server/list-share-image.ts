@@ -2,14 +2,13 @@ import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { albums, listItems, lists, user } from "@/lib/db/schema";
 
-const LIST_SHARE_IMAGE_WIDTH = 1200;
-const LIST_SHARE_IMAGE_HEIGHT = 630;
-
+// Square, so the grid fills small summary-card thumbnails; 600px tiles never upscale Spotify's 640px covers.
+const imageSize = 1200;
 const mosaicCoverCount = 4;
-const tileSize = LIST_SHARE_IMAGE_HEIGHT / 2;
-const mosaicLeft = (LIST_SHARE_IMAGE_WIDTH - LIST_SHARE_IMAGE_HEIGHT) / 2;
-const backgroundColor = "#0a0a0a";
+const tileSize = imageSize / 2;
 const versionLength = 12;
+// Bump when the image layout changes so cached copies of the old layout stop being served.
+const layoutVersion = "square-1200";
 
 export function getListShareMosaicCovers(albumRows: { coverUrl: string | null }[]) {
   const covers = albumRows.slice(0, mosaicCoverCount).flatMap((album) => (album.coverUrl ? [album.coverUrl] : []));
@@ -39,23 +38,22 @@ export async function createListShareImageResponse(request: Request, listId: str
 async function renderMosaic(covers: string[]) {
   const draw = covers.map((url, index) => ({
     height: tileSize,
-    left: mosaicLeft + (index % 2) * tileSize,
+    left: (index % 2) * tileSize,
     top: Math.floor(index / 2) * tileSize,
     url,
     width: tileSize,
   }));
 
   try {
-    // The first cover is padded onto the canvas only as a base; the four tiles cover it completely.
+    // The first cover is only the base canvas; the four tiles cover it completely.
     const image = await fetch(covers[0], {
       cf: {
         image: {
-          background: backgroundColor,
           draw,
-          fit: "pad",
+          fit: "cover",
           format: "jpeg",
-          height: LIST_SHARE_IMAGE_HEIGHT,
-          width: LIST_SHARE_IMAGE_WIDTH,
+          height: imageSize,
+          width: imageSize,
         },
       },
     } as RequestInit);
@@ -93,7 +91,7 @@ async function getVisibleListMosaicCovers(listId: string) {
 }
 
 async function getListShareImageVersion(covers: string[]) {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(covers.join("\n")));
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode([layoutVersion, ...covers].join("\n")));
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0"))
     .join("")
     .slice(0, versionLength);

@@ -60,7 +60,7 @@ describe("list share image response", () => {
     expect(response.status).toBe(404);
   });
 
-  it("composes the four covers into a padded 1200x630 canvas and caches it", async () => {
+  it("composes the four covers into a square 1200x1200 grid and caches it", async () => {
     mockCoverRows(covers);
     const fetchMock = vi
       .fn()
@@ -77,12 +77,12 @@ describe("list share image response", () => {
     expect(response.headers.get("cache-control")).toBe("public, max-age=604800");
     expect(edgeCache.put).toHaveBeenCalledOnce();
     const [, init] = fetchMock.mock.calls[0];
-    expect(init.cf.image).toMatchObject({ fit: "pad", height: 630, width: 1200 });
+    expect(init.cf.image).toMatchObject({ fit: "cover", height: 1200, width: 1200 });
     expect(init.cf.image.draw).toEqual([
-      { height: 315, left: 285, top: 0, url: covers[0], width: 315 },
-      { height: 315, left: 600, top: 0, url: covers[1], width: 315 },
-      { height: 315, left: 285, top: 315, url: covers[2], width: 315 },
-      { height: 315, left: 600, top: 315, url: covers[3], width: 315 },
+      { height: 600, left: 0, top: 0, url: covers[0], width: 600 },
+      { height: 600, left: 600, top: 0, url: covers[1], width: 600 },
+      { height: 600, left: 0, top: 600, url: covers[2], width: 600 },
+      { height: 600, left: 600, top: 600, url: covers[3], width: 600 },
     ]);
   });
 
