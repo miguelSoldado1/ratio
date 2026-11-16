@@ -38,10 +38,6 @@ vi.mock("@/server/rate-limit", () => ({
   })),
 }));
 
-vi.mock("@/server/spotify-recent-rotation-cache", () => ({
-  clearSpotifyRecentRotationCacheForDeletedAccount: vi.fn(),
-}));
-
 beforeEach(() => {
   vi.clearAllMocks();
 });

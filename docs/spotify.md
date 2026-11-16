@@ -71,7 +71,7 @@ Pipeline in `apps/web/src/server/services/spotify-recent-rotation-service.ts`:
 
 ```text
 Validate Spotify account, scope, and token (before any cached data is returned)
-→ read per-user KV cache (spotify:recent-rotation:v2:<ratio-user-id>, 30m TTL)
+→ read the per-user edge cache (spotify:recent-rotation:v2:<ratio-user-id>, 30m TTL)
 → on miss: GET /me/player/recently-played?limit=50 (one request, album metadata included)
 → keep album_type === "album", drop local/malformed tracks
 → dedupe by normalized title, artists, release year, and track count, keeping the newest played_at
@@ -85,7 +85,12 @@ Rules:
 - Explicit, clean, and edited editions use the same advisory-marker deduplication rule as album search.
 - Authorization failures are never cached as empty successful results; an empty album list is a valid successful result.
 - Spotify `429` responses are respected without a retry loop. Better Auth refreshes once; Ratio does not add a retry around token retrieval.
-- The client query uses a 30-minute `staleTime` matching the KV TTL. Known, accepted tradeoff: the two layers can compound to roughly 1-hour-old data in the worst case. No manual refresh in v1.
+- The cache is the per-datacenter Cache API, not KV. Each active Spotify-linked user would otherwise write to KV every
+  30 minutes, and a user almost always stays on the same datacenter, so a global copy buys nothing. Removing a Spotify
+  account doesn't clear the cache. The account and token check runs before any cached data is returned, so a leftover
+  entry is never served and just expires. If the user links a different Spotify account within 30 minutes, they
+  can briefly see the previous account's rotation.
+- The client query uses a 30-minute `staleTime` matching the cache TTL. Known, accepted tradeoff: the two layers can compound to roughly 1-hour-old data in the worst case. No manual refresh in v1.
 - The review feed loads independently; the shelf failing never breaks the feed.
 
 ## Client Credentials Token
@@ -140,7 +145,12 @@ Search is the most token-expensive endpoint.
 
 - Debounce on the client: 300-500ms
 - Filter Spotify search results to albums only
-- Cache common or repeated queries server-side with a short TTL
+- Cache common or repeated queries server-side with a short TTL. Search results go in the per-datacenter Cache API
+  for 10 minutes. They used to go in KV, but search creates more distinct keys than anything else, so it would use up
+  the free 1,000 writes/day first, and once that's gone every later search that day goes straight to Spotify. Album
+  and artist caches stay in KV. They live for days, and one global copy saves more Spotify calls than a copy per
+  datacenter. Each search logs `spotify_edge_cache` with `cache: "search"` and whether it hit, so the hit rate is
+  visible in Worker logs.
 - Deduplicate in-flight requests
 - Catalog requests intentionally omit Spotify's `market` parameter. Ratio prioritizes broad, deterministic album
   discovery over matching local playback availability, and one global result set lets anonymous and authenticated

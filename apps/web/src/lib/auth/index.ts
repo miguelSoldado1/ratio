@@ -10,7 +10,6 @@ import { isUsernameAllowed } from "@/lib/users/username-policy.server";
 import { normalizeUsername } from "@/lib/users/username-policy.shared";
 import { deleteAvatarObject } from "@/server/avatar-storage";
 import { createBetterAuthRateLimitStorage } from "@/server/rate-limit";
-import { clearSpotifyRecentRotationCacheForDeletedAccount } from "@/server/spotify-recent-rotation-cache";
 import { getDb } from "../db";
 import { limitDisplayUsername, trimDisplayUsername } from "./profile-identity";
 import { getAllowedDisplayUsername, isDisplayUsernameAllowed } from "./profile-identity.server";
@@ -75,11 +74,6 @@ export function createAuth(db: Db) {
       },
     },
     databaseHooks: {
-      account: {
-        delete: {
-          after: clearSpotifyRecentRotationCacheForDeletedAccount,
-        },
-      },
       user: {
         update: {
           before: (data, context) => {

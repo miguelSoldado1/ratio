@@ -7,6 +7,7 @@ import {
   logSpotifyInvalidCache,
   SpotifyTokenError,
 } from "../spotify-observability";
+import type { SpotifyCacheStorage } from "../spotify-cache";
 
 // Spotify API types
 
@@ -174,6 +175,7 @@ export async function searchAlbumsService({ query }: SearchAlbumsInput) {
     return await getSpotifyCacheValueOrFetch({
       cacheKey,
       schema: spotifyAlbumSearchResultsSchema,
+      storage: "edge",
       ttlSeconds: SPOTIFY_SEARCH_CACHE_TTL_SECONDS,
       fetcher: fetchAlbumsFromSpotify,
     });
@@ -205,6 +207,7 @@ export async function getAlbumDetailsService({ albumId }: AlbumDetailsInput) {
   return await getSpotifyCacheValueOrFetch({
     cacheKey,
     schema: spotifyAlbumDetailsResultSchema,
+    storage: "kv",
     ttlSeconds: SPOTIFY_ALBUM_DETAILS_CACHE_TTL_SECONDS,
     fetcher: fetchAlbumDetailsFromSpotify,
   });
@@ -222,7 +225,8 @@ export async function getAlbumPersistenceMetadata(albumId: string): Promise<Spot
 
   const cachedAlbumDetails = await getParsedSpotifyCacheValue(
     getSpotifyAlbumDetailsCacheKey(albumId),
-    spotifyAlbumDetailsResultSchema
+    spotifyAlbumDetailsResultSchema,
+    "kv"
   );
 
   if (cachedAlbumDetails) {
@@ -232,6 +236,7 @@ export async function getAlbumPersistenceMetadata(albumId: string): Promise<Spot
   return await getSpotifyCacheValueOrFetch({
     cacheKey,
     schema: spotifyAlbumPersistenceMetadataSchema,
+    storage: "kv",
     ttlSeconds: SPOTIFY_ALBUM_PERSISTENCE_CACHE_TTL_SECONDS,
     fetcher: fetchAlbumPersistenceMetadataFromSpotify,
   });
@@ -261,6 +266,7 @@ export async function getArtistAlbumsService({ albumId, artistId }: ArtistAlbums
       getSpotifyCacheValueOrFetch({
         cacheKey: getSpotifyCatalogCacheKey(SPOTIFY_ARTIST_ALBUMS_CACHE_KEY_PREFIX, artistId),
         schema: artistAlbumsSchema,
+        storage: "kv",
         ttlSeconds: SPOTIFY_ARTIST_ALBUMS_CACHE_TTL_SECONDS,
         fetcher: fetchArtistAlbumsFromSpotify,
       }),
@@ -293,6 +299,7 @@ interface GetSpotifyCacheValueOrFetchOptions<T> {
   cacheKey: string;
   fetcher: () => Promise<T>;
   schema: z.ZodType<T>;
+  storage: SpotifyCacheStorage;
   ttlSeconds: number;
 }
 
@@ -300,24 +307,32 @@ export async function getSpotifyCacheValueOrFetch<T>({
   cacheKey,
   fetcher,
   schema,
+  storage,
   ttlSeconds,
 }: GetSpotifyCacheValueOrFetchOptions<T>) {
-  const cachedValue = await getParsedSpotifyCacheValue(cacheKey, schema);
-  if (cachedValue) return cachedValue;
+  const cachedValue = await getParsedSpotifyCacheValue(cacheKey, schema, storage);
+  if (cachedValue) {
+    logSpotifyCacheResult(cacheKey, storage, true);
+    return cachedValue;
+  }
 
   return await dedupeInFlightSpotifyRequest(cacheKey, async () => {
-    const cachedValueAfterWait = await getParsedSpotifyCacheValue(cacheKey, schema);
-    if (cachedValueAfterWait) return cachedValueAfterWait;
+    const cachedValueAfterWait = await getParsedSpotifyCacheValue(cacheKey, schema, storage);
+    if (cachedValueAfterWait) {
+      logSpotifyCacheResult(cacheKey, storage, true);
+      return cachedValueAfterWait;
+    }
 
+    logSpotifyCacheResult(cacheKey, storage, false);
     const value = await fetcher();
-    await setSpotifyCacheJson(cacheKey, value, ttlSeconds);
+    await setSpotifyCacheJson({ key: cacheKey, storage, ttlSeconds, value });
 
     return value;
   });
 }
 
-async function getParsedSpotifyCacheValue<T>(cacheKey: string, schema: z.ZodType<T>) {
-  const cachedValue = await getSpotifyCacheJson(cacheKey);
+async function getParsedSpotifyCacheValue<T>(cacheKey: string, schema: z.ZodType<T>, storage: SpotifyCacheStorage) {
+  const cachedValue = await getSpotifyCacheJson(cacheKey, storage);
   if (cachedValue === null) return null;
 
   const parsedCachedValue = schema.safeParse(cachedValue);
@@ -325,6 +340,12 @@ async function getParsedSpotifyCacheValue<T>(cacheKey: string, schema: z.ZodType
 
   logSpotifyInvalidCache("parse_response", parsedCachedValue.error);
   return null;
+}
+
+// Only edge entries are logged: their per-datacenter hit rate is the one worth watching.
+function logSpotifyCacheResult(cacheKey: string, storage: SpotifyCacheStorage, hit: boolean) {
+  if (storage !== "edge") return;
+  console.info("spotify_edge_cache", { cache: cacheKey.split(":")[1], hit });
 }
 
 async function dedupeInFlightSpotifyRequest<T>(cacheKey: string, fetcher: () => Promise<T>) {

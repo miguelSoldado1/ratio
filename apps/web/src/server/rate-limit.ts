@@ -215,14 +215,19 @@ async function enforceFixedWindowRateLimit({
     throw new RateLimitError(Math.max(1, Math.ceil((resetAt - now) / 1000)));
   }
 
-  await cache.put(
-    key,
-    JSON.stringify({
-      count: currentCount + 1,
-      resetAt,
-    } satisfies FixedWindowRateLimitRecord),
-    { expirationTtl: rule.windowSeconds + 60 }
-  );
+  // Fails open like the read path: a full KV write quota must not block content creation.
+  try {
+    await cache.put(
+      key,
+      JSON.stringify({
+        count: currentCount + 1,
+        resetAt,
+      } satisfies FixedWindowRateLimitRecord),
+      { expirationTtl: rule.windowSeconds + 60 }
+    );
+  } catch (error) {
+    console.warn("Failed to write fixed-window rate limit state", error);
+  }
 }
 
 async function getFixedWindowRateLimitRecord(cache: KVNamespace, key: string) {

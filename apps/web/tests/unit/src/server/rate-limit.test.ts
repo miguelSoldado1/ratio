@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const workersEnv = vi.hoisted(() => ({ env: {} as Record<string, unknown> }));
+
+vi.mock("cloudflare:workers", () => workersEnv);
+
 function createRequest() {
   return new Request("https://ratio.test/_serverFn/createReview", {
     headers: { "cf-connecting-ip": "203.0.113.7" },
@@ -31,6 +35,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  workersEnv.env = {};
 });
 
 describe("rate limit binding availability", () => {
@@ -96,5 +101,19 @@ describe("rate limit binding availability", () => {
     await expect(
       rateLimit.enforceFixedWindowRateLimitForRequest(createRequest(), rateLimit.reviewCreateHourlyRateLimit)
     ).resolves.toBeUndefined();
+  });
+});
+
+describe("fixed-window KV writes", () => {
+  it("still allows content creation when KV rejects the write, e.g. after the daily write quota", async () => {
+    const rateLimit = await importRateLimit();
+    stubWorkersRuntime();
+    const put = vi.fn().mockRejectedValue(new Error("KV put() limit exceeded for the day."));
+    workersEnv.env = { CACHE: { get: vi.fn().mockResolvedValue(null), put } };
+
+    await expect(
+      rateLimit.enforceFixedWindowRateLimitForRequest(createRequest(), rateLimit.reviewCreateHourlyRateLimit)
+    ).resolves.toBeUndefined();
+    expect(put).toHaveBeenCalledOnce();
   });
 });

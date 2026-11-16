@@ -59,6 +59,12 @@ describe("searchAlbumsService", () => {
       },
     ]);
     expect(spotifyApi.searchAlbums).toHaveBeenCalledWith("first album", { limit: 10 });
+    expect(mockSetSpotifyCacheJson).toHaveBeenCalledWith({
+      key: expect.any(String),
+      storage: "edge",
+      ttlSeconds: 600,
+      value: expect.any(Array),
+    });
   });
 
   it("uses valid cached search results without calling Spotify", async () => {
