@@ -18,7 +18,6 @@ vi.mock("@/server/spotify", () => ({
 }));
 
 vi.mock("@/server/spotify-cache", () => ({
-  deleteSpotifyCacheJson: vi.fn(),
   getSpotifyCacheJson: vi.fn(),
   setSpotifyCacheJson: vi.fn(),
 }));
@@ -78,7 +77,7 @@ describe("getMyRecentRotationService", () => {
     );
     expect(mockSetSpotifyCacheJson).toHaveBeenCalledWith({
       key: "spotify:recent-rotation:v2:user_1",
-      storage: "kv",
+      storage: "edge",
       ttlSeconds: 1800,
       value: expect.objectContaining({ albums: [expect.objectContaining({ id: "album_1" })] }),
     });

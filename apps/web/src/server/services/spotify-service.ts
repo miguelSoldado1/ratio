@@ -312,18 +312,18 @@ export async function getSpotifyCacheValueOrFetch<T>({
 }: GetSpotifyCacheValueOrFetchOptions<T>) {
   const cachedValue = await getParsedSpotifyCacheValue(cacheKey, schema, storage);
   if (cachedValue) {
-    logSpotifyCacheResult(storage, true);
+    logSpotifyCacheResult(cacheKey, storage, true);
     return cachedValue;
   }
 
   return await dedupeInFlightSpotifyRequest(cacheKey, async () => {
     const cachedValueAfterWait = await getParsedSpotifyCacheValue(cacheKey, schema, storage);
     if (cachedValueAfterWait) {
-      logSpotifyCacheResult(storage, true);
+      logSpotifyCacheResult(cacheKey, storage, true);
       return cachedValueAfterWait;
     }
 
-    logSpotifyCacheResult(storage, false);
+    logSpotifyCacheResult(cacheKey, storage, false);
     const value = await fetcher();
     await setSpotifyCacheJson({ key: cacheKey, storage, ttlSeconds, value });
 
@@ -343,9 +343,9 @@ async function getParsedSpotifyCacheValue<T>(cacheKey: string, schema: z.ZodType
 }
 
 // Only edge entries are logged: their per-datacenter hit rate is the one worth watching.
-function logSpotifyCacheResult(storage: SpotifyCacheStorage, hit: boolean) {
+function logSpotifyCacheResult(cacheKey: string, storage: SpotifyCacheStorage, hit: boolean) {
   if (storage !== "edge") return;
-  console.info("spotify_edge_cache", { hit });
+  console.info("spotify_edge_cache", { cache: cacheKey.split(":")[1], hit });
 }
 
 async function dedupeInFlightSpotifyRequest<T>(cacheKey: string, fetcher: () => Promise<T>) {

@@ -1,7 +1,6 @@
 import z from "zod";
 import { createSpotifyApi } from "../spotify";
 import { getSpotifyErrorStatus, logSpotifyApiError } from "../spotify-observability";
-import { getSpotifyRecentRotationCacheKey } from "../spotify-recent-rotation-cache";
 import {
   getSpotifyUserAccessToken,
   SpotifyAuthorizationRequiredError,
@@ -48,6 +47,7 @@ const RECENT_ROTATION_ALBUM_LIMIT = 6;
 const RECENTLY_PLAYED_TRACKS_LIMIT = 50;
 const ALBUM_TYPE = "album";
 
+const SPOTIFY_RECENT_ROTATION_CACHE_KEY_PREFIX = "spotify:recent-rotation:v2";
 const SPOTIFY_RECENT_ROTATION_CACHE_TTL_SECONDS = 30 * 60; // 30 minutes
 
 // Cache schemas
@@ -84,8 +84,8 @@ export async function getMyRecentRotationService({ db, user }: AuthenticatedCont
 
   try {
     const rotation = await getSpotifyCacheValueOrFetch({
-      cacheKey: getSpotifyRecentRotationCacheKey(user.id),
-      storage: "kv",
+      cacheKey: `${SPOTIFY_RECENT_ROTATION_CACHE_KEY_PREFIX}:${user.id}`,
+      storage: "edge",
       ttlSeconds: SPOTIFY_RECENT_ROTATION_CACHE_TTL_SECONDS,
       schema: recentRotationResponseSchema,
       fetcher: fetchRecentRotationFromSpotify,

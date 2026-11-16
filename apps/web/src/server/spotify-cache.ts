@@ -43,17 +43,6 @@ export async function setSpotifyCacheJson({ key, storage, ttlSeconds, value }: S
   }
 }
 
-export async function deleteSpotifyCacheJson(key: string) {
-  const spotifyCache = await getSpotifyCache();
-  if (!spotifyCache) return;
-
-  try {
-    await spotifyCache.delete(key);
-  } catch (error) {
-    logSpotifyCacheError("delete_response", error);
-  }
-}
-
 export async function getSpotifyCache() {
   const cloudflareWorkers = await getCloudflareWorkersModule();
   return cloudflareWorkers?.env.CACHE ?? null;
