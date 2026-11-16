@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ListsStatsCards } from "@/components/lists/lists-stats-cards";
+import { ListsStats } from "@/components/lists/lists-stats";
 import { ListsTable } from "@/components/lists/lists-table";
 
 export const Route = createFileRoute("/_authenticated/lists")({
@@ -15,7 +15,7 @@ function ListsPage() {
           Browse and moderate album lists. Deleting a list also removes its album entries and cannot be undone.
         </p>
       </div>
-      <ListsStatsCards />
+      <ListsStats />
       <ListsTable />
     </main>
   );
