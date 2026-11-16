@@ -140,7 +140,11 @@ Search is the most token-expensive endpoint.
 
 - Debounce on the client: 300-500ms
 - Filter Spotify search results to albums only
-- Cache common or repeated queries server-side with a short TTL
+- Cache common or repeated queries server-side with a short TTL. Search results go in the per-datacenter Cache API
+  for 10 minutes. They used to go in KV, but search creates more distinct keys than anything else, so it would use up
+  the free 1,000 writes/day first, and once that's gone every later search that day goes straight to Spotify. Album
+  and artist caches stay in KV. They live for days, and one global copy saves more Spotify calls than a copy per
+  datacenter. Each search logs `spotify_edge_cache` with whether it hit, so the hit rate is visible in Worker logs.
 - Deduplicate in-flight requests
 - Catalog requests intentionally omit Spotify's `market` parameter. Ratio prioritizes broad, deterministic album
   discovery over matching local playback availability, and one global result set lets anonymous and authenticated

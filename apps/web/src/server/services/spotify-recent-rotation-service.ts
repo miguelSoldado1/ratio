@@ -85,6 +85,7 @@ export async function getMyRecentRotationService({ db, user }: AuthenticatedCont
   try {
     const rotation = await getSpotifyCacheValueOrFetch({
       cacheKey: getSpotifyRecentRotationCacheKey(user.id),
+      storage: "kv",
       ttlSeconds: SPOTIFY_RECENT_ROTATION_CACHE_TTL_SECONDS,
       schema: recentRotationResponseSchema,
       fetcher: fetchRecentRotationFromSpotify,

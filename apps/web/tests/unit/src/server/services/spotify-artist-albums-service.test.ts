@@ -17,7 +17,7 @@ beforeEach(() => {
     values.set(`spotify:album-persistence:global-v1:${id}`, createAlbumMetadata({ id, title: id }));
   }
   vi.mocked(getSpotifyCacheJson).mockImplementation((key) => Promise.resolve(values.get(key) ?? null));
-  vi.mocked(setSpotifyCacheJson).mockImplementation((key, value) => {
+  vi.mocked(setSpotifyCacheJson).mockImplementation(({ key, value }) => {
     values.set(key, value);
     return Promise.resolve();
   });
@@ -50,7 +50,12 @@ describe("getArtistAlbumsService", () => {
       expect.objectContaining({ id: "other" }),
     ]);
     expect(getArtistAlbums).toHaveBeenCalledExactlyOnceWith("artist_1", { include_groups: "album", limit: 10 });
-    expect(setSpotifyCacheJson).toHaveBeenCalledWith(cacheKey, expect.any(Array), 604_800);
+    expect(setSpotifyCacheJson).toHaveBeenCalledWith({
+      key: cacheKey,
+      storage: "kv",
+      ttlSeconds: 604_800,
+      value: expect.any(Array),
+    });
   });
 
   it("serves later album pages for the same artist from the shared cache", async () => {

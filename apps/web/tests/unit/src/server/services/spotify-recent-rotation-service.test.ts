@@ -76,11 +76,12 @@ describe("getMyRecentRotationService", () => {
     expect(response).toEqual(
       expect.objectContaining({ albums: [expect.objectContaining({ id: "album_1" })], status: "ready" })
     );
-    expect(mockSetSpotifyCacheJson).toHaveBeenCalledWith(
-      "spotify:recent-rotation:v2:user_1",
-      expect.objectContaining({ albums: [expect.objectContaining({ id: "album_1" })] }),
-      1800
-    );
+    expect(mockSetSpotifyCacheJson).toHaveBeenCalledWith({
+      key: "spotify:recent-rotation:v2:user_1",
+      storage: "kv",
+      ttlSeconds: 1800,
+      value: expect.objectContaining({ albums: [expect.objectContaining({ id: "album_1" })] }),
+    });
   });
 
   it.each([
