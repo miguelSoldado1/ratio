@@ -10,7 +10,7 @@ import {
 import { and, asc, desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import * as schema from "@/lib/db/schema";
 import { albums, listItems, lists, user } from "@/lib/db/schema";
 import {
@@ -33,6 +33,7 @@ const mockState = vi.hoisted(() => ({
 }));
 const mockGetAlbumPersistenceMetadata = vi.hoisted(() => vi.fn());
 const mockDeleteObject = vi.hoisted(() => vi.fn<() => Promise<void>>());
+const mockFetch = vi.hoisted(() => vi.fn());
 
 vi.mock("@/env", () => ({
   env: {
@@ -40,7 +41,9 @@ vi.mock("@/env", () => ({
     CLOUDFLARE_ACCOUNT_ID: "account-id",
     CLOUDFLARE_R2_BUCKET_NAME: "bucket",
     CLOUDFLARE_R2_PUBLIC_URL: "https://assets.example.com",
+    CLOUDFLARE_CACHE_PURGE_API_TOKEN: "purge-token",
     CLOUDFLARE_SECRET_ACCESS_KEY: "secret",
+    CLOUDFLARE_ZONE_ID: "zone-id",
   },
 }));
 
@@ -91,10 +94,16 @@ beforeEach(async () => {
   mockGetAlbumPersistenceMetadata.mockReset();
   mockDeleteObject.mockReset();
   mockDeleteObject.mockResolvedValue(undefined);
+  mockFetch.mockReset().mockResolvedValue(new Response(null, { status: 200 }));
+  vi.stubGlobal("fetch", mockFetch);
   mockGetAlbumPersistenceMetadata.mockImplementation(() => {
     throw new Error("Spotify should not be called for an existing test album");
   });
   await cleanTestDatabase();
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 afterAll(async () => {
@@ -304,6 +313,10 @@ describe("list cover mutations", () => {
     await deleteListService({ listId: list.id }, context);
 
     expect(mockDeleteObject).toHaveBeenCalledWith(expect.anything(), { bucket: "bucket", key });
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://api.cloudflare.com/client/v4/zones/zone-id/purge_cache",
+      expect.objectContaining({ body: JSON.stringify({ files: [`https://assets.example.com/${key}`] }) })
+    );
   });
 });
 

@@ -8,7 +8,7 @@ import { and, eq, isNotNull } from "drizzle-orm";
 import { env } from "@/env";
 import { isUsernameAllowed } from "@/lib/users/username-policy.server";
 import { normalizeUsername } from "@/lib/users/username-policy.shared";
-import { deleteImageObject } from "@/server/image-storage";
+import { deleteImageObjects } from "@/server/image-storage";
 import { createBetterAuthRateLimitStorage } from "@/server/rate-limit";
 import { getDb } from "../db";
 import { limitDisplayUsername, trimDisplayUsername } from "./profile-identity";
@@ -72,7 +72,7 @@ export function createAuth(db: Db) {
             (objectKey): objectKey is string => Boolean(objectKey)
           );
 
-          const results = await Promise.allSettled(objectKeys.map((objectKey) => deleteImageObject(objectKey)));
+          const results = await deleteImageObjects(objectKeys);
           for (const result of results) {
             if (result.status === "rejected") {
               console.warn("Failed to delete image object during account deletion", result.reason);

@@ -46,10 +46,13 @@ A run reads at most five listing pages per prefix to stay inside the free plan's
 first key, so past about 5,000 live images in a prefix, later orphans are never reached; at that size the run needs to
 save its cursor between weeks. Development has no crons, so nothing cleans the dev bucket.
 
-> **Open compliance gap.** Cloudflare's edge cache can keep serving a deleted image at its old URL, because images go
-> out as `public, max-age=31536000, immutable` and deleting from R2 doesn't purge the cache. The fix is to purge the URL
-> through Cloudflare's purge-by-URL API whenever an image is deleted, the weekly cleanup included. Don't rely on any
-> deletion for erasure requests until that's in.
+Images go out as `public, max-age=31536000, immutable`, so Cloudflare's edge cache would keep serving a deleted one at
+its old URL. Every delete purges that URL through the purge-by-URL API, with `CLOUDFLARE_ZONE_ID` and a
+`CLOUDFLARE_CACHE_PURGE_API_TOKEN` that can only purge cache. That covers replaced and removed photos and covers,
+deleted lists and accounts (one request per 100 images), and the weekly cleanup, which deletes and purges at most 100
+orphans per listing page, or 500 per prefix a week. A rate-limited purge waits out `Retry-After` and tries once more. If
+it still fails, it's logged as `image_cache_purge_failed` with the keys and the delete goes ahead, so someone has to
+purge those URLs by hand. Nothing can reach copies already sitting in viewers' browsers.
 
 Future admin scope may include bounded dashboard metrics, reviews, and reports. Under the free-hosting constraint, prefer bounded indexed queries, no polling, and no new infrastructure by default.
 

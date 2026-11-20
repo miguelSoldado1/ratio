@@ -1,7 +1,17 @@
 import { cleanTestDatabase, closeTestDatabase, migrateTestDatabase, testDb } from "@test/db";
 import { createTestList, createTestUser } from "@test/fixtures";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { deleteOrphanedImages } from "@/server/services/image-cleanup-service";
+
+vi.mock("@/env", () => ({
+  env: {
+    CLOUDFLARE_CACHE_PURGE_API_TOKEN: "purge-token",
+    CLOUDFLARE_R2_PUBLIC_URL: "https://assets.example.com",
+    CLOUDFLARE_ZONE_ID: "zone-id",
+  },
+}));
+
+const mockFetch = vi.fn<(url: string, init: RequestInit) => Promise<Response>>();
 
 const now = new Date("2026-11-20T12:00:00.000Z");
 const twoDaysAgo = new Date("2026-11-18T12:00:00.000Z");
@@ -12,7 +22,13 @@ beforeAll(async () => {
 });
 
 beforeEach(async () => {
+  mockFetch.mockReset().mockResolvedValue(new Response(null, { status: 200 }));
+  vi.stubGlobal("fetch", mockFetch);
   await cleanTestDatabase();
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 afterAll(async () => {
@@ -38,6 +54,10 @@ describe("deleteOrphanedImages", () => {
     const result = await deleteOrphanedImages({ bucket: bucket.binding, db: testDb, now });
 
     expect(result).toEqual({ deletedCount: 2 });
+    expect(purgedUrls()).toEqual([
+      ["https://assets.example.com/avatars/deleted-user/old.png"],
+      ["https://assets.example.com/list-covers/deleted-list/old.png"],
+    ]);
     expect(bucket.keys()).toEqual([
       "avatars/u1/just-uploaded.png",
       "avatars/u1/live.png",
@@ -86,4 +106,8 @@ function createFakeBucket(objects: Record<string, Date>, pageSize: number) {
   };
 
   return { binding: binding as unknown as R2Bucket, keys: () => [...stored.keys()].sort() };
+}
+
+function purgedUrls() {
+  return mockFetch.mock.calls.map(([, init]) => JSON.parse(String(init.body)).files);
 }

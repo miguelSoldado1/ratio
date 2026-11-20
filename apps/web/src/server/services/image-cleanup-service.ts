@@ -1,5 +1,6 @@
 import { inArray } from "drizzle-orm";
 import { lists, user } from "@/lib/db/schema";
+import { imageCachePurgeLimit, purgeImageCache } from "../image-storage";
 import type { Db } from "@/lib/db";
 
 export const imageCleanupCron = "0 5 * * 1";
@@ -54,10 +55,14 @@ export async function deleteOrphanedImages({ bucket, db, now }: DeleteOrphanedIm
 
       if (candidateKeys.length > 0) {
         const referencedKeys = new Set(await getReferencedKeys(db, candidateKeys));
-        const orphanKeys = candidateKeys.filter((objectKey) => !referencedKeys.has(objectKey));
+        // One purge request per page keeps a run within the free plan's subrequest limit.
+        const orphanKeys = candidateKeys
+          .filter((objectKey) => !referencedKeys.has(objectKey))
+          .slice(0, imageCachePurgeLimit);
 
         if (orphanKeys.length > 0) {
           await bucket.delete(orphanKeys);
+          await purgeImageCache(orphanKeys);
           deletedCount += orphanKeys.length;
         }
       }

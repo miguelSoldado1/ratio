@@ -139,7 +139,8 @@ Both apps are configured for Cloudflare Workers through the Cloudflare Vite plug
 4. Both apps reuse the existing environment-specific Hyperdrive configs backed by Supabase's direct Postgres connection on port `5432`. Do not use the transaction pooler on port `6543` and do not create a separate admin database.
 5. Regenerate Worker types with `pnpm wrangler types`.
 6. Keep `DATABASE_URL` in `.env` for local development, Drizzle Kit, migrations, and seed scripts. Worker runtime DB access uses the `HYPERDRIVE` binding instead.
-7. Set production secrets with `pnpm wrangler secret put BETTER_AUTH_SECRET`, and repeat for each OAuth secret.
+7. Set production secrets with `pnpm wrangler secret put BETTER_AUTH_SECRET`, and repeat for each OAuth secret, the R2
+   access keys, and `CLOUDFLARE_CACHE_PURGE_API_TOKEN`.
 8. Set non-secret production values, such as `BETTER_AUTH_URL`, as Wrangler vars or secrets.
 9. Run `pnpm run build` to validate the Worker bundle.
 10. Deploy with `pnpm run deploy`.
