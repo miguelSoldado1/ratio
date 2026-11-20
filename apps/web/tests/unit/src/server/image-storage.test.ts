@@ -6,10 +6,11 @@ import {
   purgeImageCache,
 } from "@/server/image-storage";
 
-const mockDeleteObject = vi.hoisted(() => vi.fn());
+const mockDeleteObjects = vi.hoisted(() => vi.fn());
 
 vi.mock("@better-upload/server/helpers", () => ({
-  deleteObject: mockDeleteObject,
+  deleteObject: vi.fn(),
+  deleteObjects: mockDeleteObjects,
 }));
 
 vi.mock("@better-upload/server/clients", () => ({
@@ -115,19 +116,21 @@ describe("purgeImageCache", () => {
 describe("deleteImageObjects", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
-    mockDeleteObject.mockReset();
+    mockDeleteObjects.mockReset();
   });
 
-  it("purges every deleted image in one request and skips images that failed to delete", async () => {
+  it("deletes in one request, purges what was deleted, and returns what wasn't", async () => {
     const mockFetch = vi.fn().mockResolvedValue(new Response(null, { status: 200 }));
     vi.stubGlobal("fetch", mockFetch);
-    mockDeleteObject.mockImplementation((_client, { key }: { key: string }) =>
-      key.includes("broken") ? Promise.reject(new Error("R2 down")) : Promise.resolve()
-    );
+    mockDeleteObjects.mockResolvedValue({
+      deleted: [{ key: "avatars/u/a.png" }, { key: "list-covers/l/c.png" }],
+      errors: [{ code: "InternalError", key: "list-covers/l/broken.png", message: "R2 down" }],
+    });
 
-    const results = await deleteImageObjects(["avatars/u/a.png", "list-covers/l/broken.png", "list-covers/l/c.png"]);
+    const result = await deleteImageObjects(["avatars/u/a.png", "list-covers/l/broken.png", "list-covers/l/c.png"]);
 
-    expect(results.map((result) => result.status)).toEqual(["fulfilled", "rejected", "fulfilled"]);
+    expect(result).toEqual({ failedKeys: ["list-covers/l/broken.png"] });
+    expect(mockDeleteObjects).toHaveBeenCalledTimes(1);
     expect(mockFetch).toHaveBeenCalledTimes(1);
     expect(JSON.parse(String(mockFetch.mock.calls[0][1].body))).toEqual({
       files: ["https://assets.example.com/avatars/u/a.png", "https://assets.example.com/list-covers/l/c.png"],

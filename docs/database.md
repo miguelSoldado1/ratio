@@ -41,8 +41,10 @@ is IPv6-only and GitHub runners can't reach it. drizzle-kit hides connection err
 "applying migrations..." almost always means a bad URL.
 
 Cloudflare deploys on the same push and nothing orders the two, so new code can go live a few seconds before its
-migration lands. That's fine for additive changes. For anything that drops or renames something the running code
-uses, merge the migration first and the code after.
+migration lands. That's fine when the new code doesn't read the new column or table yet. When it does, those reads
+fail until the migration lands, usually under a minute. To avoid that window, land the migration on the branch in its
+own push before the code that reads it. For anything that drops or renames something the running code uses, merge
+the migration first and the code after.
 
 ## Better Auth Schema Changes
 

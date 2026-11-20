@@ -1,5 +1,5 @@
 import { cloudflare } from "@better-upload/server/clients";
-import { deleteObject } from "@better-upload/server/helpers";
+import { deleteObject, deleteObjects } from "@better-upload/server/helpers";
 import { env } from "@/env";
 import { getImageUploadFileExtension } from "@/lib/image-upload";
 
@@ -9,6 +9,7 @@ const imageObjectNamePattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}
 const trailingSlashesPattern = /\/+$/;
 
 export const imageCachePurgeLimit = 100;
+const imageBatchDeleteLimit = 1000;
 const maxPurgeRetryDelaySeconds = 5;
 
 export function createR2Client() {
@@ -46,16 +47,25 @@ export async function deleteImageObject(objectKey: string) {
   await purgeImageCache([objectKey]);
 }
 
-// One purge per batch keeps deleting a whole account within the Worker's subrequest limit.
+// Batched deletes and purges keep deleting a whole account within the Worker's subrequest limit.
 export async function deleteImageObjects(objectKeys: string[]) {
-  const results = await Promise.allSettled(objectKeys.map(deleteImageObjectFromBucket));
-  const deletedKeys = objectKeys.filter((_, index) => results[index].status === "fulfilled");
+  const failedKeys: string[] = [];
 
-  for (let start = 0; start < deletedKeys.length; start += imageCachePurgeLimit) {
-    await purgeImageCache(deletedKeys.slice(start, start + imageCachePurgeLimit));
+  for (let start = 0; start < objectKeys.length; start += imageBatchDeleteLimit) {
+    const { deleted, errors } = await deleteObjects(createR2Client(), {
+      bucket: env.CLOUDFLARE_R2_BUCKET_NAME,
+      objects: objectKeys.slice(start, start + imageBatchDeleteLimit).map((key) => ({ key })),
+      quiet: false,
+    });
+    const deletedKeys = deleted.map((object) => object.key);
+    failedKeys.push(...errors.map((error) => error.key));
+
+    for (let purgeStart = 0; purgeStart < deletedKeys.length; purgeStart += imageCachePurgeLimit) {
+      await purgeImageCache(deletedKeys.slice(purgeStart, purgeStart + imageCachePurgeLimit));
+    }
   }
 
-  return results;
+  return { failedKeys };
 }
 
 // Images are served as immutable for a year, so a deleted one stays in Cloudflare's edge cache until purged.

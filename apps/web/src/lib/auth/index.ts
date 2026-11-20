@@ -10,6 +10,7 @@ import { isUsernameAllowed } from "@/lib/users/username-policy.server";
 import { normalizeUsername } from "@/lib/users/username-policy.shared";
 import { deleteImageObjects } from "@/server/image-storage";
 import { createBetterAuthRateLimitStorage } from "@/server/rate-limit";
+import { tryCatch } from "@/try-catch";
 import { getDb } from "../db";
 import { limitDisplayUsername, trimDisplayUsername } from "./profile-identity";
 import { getAllowedDisplayUsername, isDisplayUsernameAllowed } from "./profile-identity.server";
@@ -72,11 +73,12 @@ export function createAuth(db: Db) {
             (objectKey): objectKey is string => Boolean(objectKey)
           );
 
-          const results = await deleteImageObjects(objectKeys);
-          for (const result of results) {
-            if (result.status === "rejected") {
-              console.warn("Failed to delete image object during account deletion", result.reason);
-            }
+          if (objectKeys.length === 0) return;
+
+          // The weekly orphan cleanup retries anything left behind, so a storage failure mustn't block the deletion.
+          const { data, error } = await tryCatch(deleteImageObjects(objectKeys));
+          if (error || data.failedKeys.length > 0) {
+            console.warn("Failed to delete image objects during account deletion", error ?? data.failedKeys);
           }
         },
         enabled: true,
