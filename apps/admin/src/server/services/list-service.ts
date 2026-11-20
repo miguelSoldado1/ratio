@@ -1,11 +1,14 @@
 import { albums, listItems, lists, user } from "@ratio/database/schema";
 import { and, asc, count, desc, eq, gte, ilike, lt, or, sql } from "drizzle-orm";
+import { env } from "@/env";
 import { toFiniteNumber } from "@/lib/format";
 import { buildQueryParams, buildSortingClause } from "../table-query";
 import type { getDb } from "@/lib/db";
 import type { TableQueryConfig, TableQueryInput, TableQueryResult } from "../table-query";
 
 // Constants
+
+const trailingSlashesPattern = /\/+$/;
 
 const sortColumns = {
   createdAt: lists.createdAt,
@@ -74,6 +77,7 @@ export interface AdminListCoverAlbum {
 
 export interface AdminListRow {
   coverAlbums: AdminListCoverAlbum[];
+  coverUrl: string | null;
   createdAt: Date;
   description: string | null;
   id: string;
@@ -107,6 +111,7 @@ export async function getTableListsService(data: GetTableListsInput, context: Ad
   const baseQuery = context.db
     .select({
       coverAlbums: listCoverAlbums,
+      coverObjectKey: lists.coverObjectKey,
       createdAt: lists.createdAt,
       description: lists.description,
       id: lists.id,
@@ -134,7 +139,7 @@ export async function getTableListsService(data: GetTableListsInput, context: Ad
   ]);
 
   return {
-    data: rows,
+    data: rows.map(({ coverObjectKey, ...row }) => ({ ...row, coverUrl: getListCoverUrl(coverObjectKey) })),
     pageCount: Math.ceil(totalCount[0].count / queryParams.limit),
   };
 }
@@ -212,4 +217,10 @@ export async function deleteListService(listId: string, context: AdminListContex
   }
 
   return deletedList;
+}
+
+function getListCoverUrl(coverObjectKey: string | null) {
+  if (!coverObjectKey) return null;
+
+  return `${env.CLOUDFLARE_R2_PUBLIC_URL.replace(trailingSlashesPattern, "")}/${coverObjectKey}`;
 }

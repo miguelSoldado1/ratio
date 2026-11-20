@@ -68,7 +68,7 @@ export const listsColumns: ColumnDef<AdminListRow>[] = [
           rel="noreferrer"
           target="_blank"
         >
-          <ListCover albums={list.coverAlbums} className="size-9 rounded" size={36} />
+          <ListCover albums={list.coverAlbums} className="size-9 rounded" coverUrl={list.coverUrl} size={36} />
           <div className="min-w-0">
             <div className="flex max-w-56 items-center gap-1.5 truncate font-medium">
               <span className="truncate">{list.title}</span>
