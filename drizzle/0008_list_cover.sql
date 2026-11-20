@@ -1,0 +1,1 @@
+ALTER TABLE "list" ADD COLUMN "cover_object_key" text;

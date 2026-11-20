@@ -43,6 +43,7 @@ export const lists = pgTable(
     title: text("title").notNull(),
     description: text("description"),
     isRanked: boolean("is_ranked").default(false).notNull(),
+    coverObjectKey: text("cover_object_key"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at")
       .defaultNow()

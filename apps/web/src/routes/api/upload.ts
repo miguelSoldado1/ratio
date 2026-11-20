@@ -1,10 +1,13 @@
 import { handleRequest, RejectUpload, route } from "@better-upload/server";
 import { createFileRoute } from "@tanstack/react-router";
+import { and, eq } from "drizzle-orm";
+import z from "zod";
 import { env } from "@/env";
 import { createAuth } from "@/lib/auth";
 import { getDb } from "@/lib/db";
+import { lists } from "@/lib/db/schema";
 import { imageUploadFileTypes, imageUploadMaxFileSize } from "@/lib/image-upload";
-import { createAvatarObjectKey, createR2Client } from "@/server/image-storage";
+import { createAvatarObjectKey, createListCoverObjectKey, createR2Client } from "@/server/image-storage";
 import {
   createRateLimitResponse,
   enforceCloudflareRateLimitForRequest,
@@ -33,6 +36,33 @@ const uploadRouter: Router = {
             cacheControl: immutableCacheControl,
             key: createAvatarObjectKey({ fileType: file.type, userId }),
             metadata: { userId },
+          },
+        };
+      },
+    }),
+    listCover: route({
+      clientMetadataSchema: z.object({ listId: z.uuid() }),
+      fileTypes: [...imageUploadFileTypes],
+      maxFileSize: imageUploadMaxFileSize,
+      onBeforeUpload: async ({ clientMetadata, file, req }) => {
+        const { db, userId } = await authorizeUpload(req, "Sign in to upload a list cover.");
+
+        const [ownedList] = await db
+          .select({ id: lists.id })
+          .from(lists)
+          .where(and(eq(lists.id, clientMetadata.listId), eq(lists.userId, userId)))
+          .limit(1);
+
+        if (!ownedList) {
+          throw new RejectUpload("List not found.");
+        }
+
+        return {
+          metadata: { listId: ownedList.id, userId },
+          objectInfo: {
+            cacheControl: immutableCacheControl,
+            key: createListCoverObjectKey({ fileType: file.type, listId: ownedList.id }),
+            metadata: { listId: ownedList.id, userId },
           },
         };
       },

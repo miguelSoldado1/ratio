@@ -36,7 +36,13 @@ The admin cookie uses its own `ratio-admin` prefix, does not enable cross-subdom
 host-only. The public and admin hosts do not share browser sessions even though Better Auth uses the same database
 schema and relevant secret/provider configuration.
 
-Admin user deletion intentionally does not give the admin Worker R2 bindings or S3-compatible avatar credentials. Better Auth and the database cascades remove the account data, while a custom avatar may remain orphaned in R2. Self-service account deletion in the public app still removes its avatar. If admin-deletion orphans become material, prefer a bounded reconciliation script run with the public app's existing storage credentials instead of duplicating R2 secrets across admin environments.
+Admin user deletion intentionally does not give the admin Worker R2 bindings or S3-compatible avatar credentials. Better Auth and the database cascades remove the account data. Self-service account deletion in the public app also removes the user's avatar and list covers from R2.
+
+> **Open compliance gap.** Deleting a user or a list from the admin Worker leaves the uploaded images behind. Avatars
+> under `avatars/{userId}/` and list covers under `list-covers/{listId}/` stay publicly reachable in R2, so personal
+> data outlives the account. Close this before admin deletion is used for erasure requests. The fix we want is a
+> bounded reconciliation job, run with the public app's existing storage credentials, that deletes any object no
+> `user.avatar_object_key` or `list.cover_object_key` points to. That keeps R2 secrets out of the admin environments.
 
 Future admin scope may include bounded dashboard metrics, reviews, and reports. Under the free-hosting constraint, prefer bounded indexed queries, no polling, and no new infrastructure by default.
 
@@ -105,7 +111,8 @@ List pages include `ItemList` JSON-LD with each album as a `MusicAlbum`, in disp
 ascending and the rest unordered. Lists by banned authors, or by authors without a username, get no metadata, the same
 as the list page itself.
 
-When the first four albums all have covers, the share image is a 1200×1200 2×2 mosaic served from
+A list with an uploaded cover shares that image as is, so it never spends a transformation. Otherwise, when the first
+four albums all have covers, the share image is a 1200×1200 2×2 mosaic served from
 `/api/og/list/:listId?v=<hash of the four cover URLs>`. It's square because every page uses the `summary` card, and
 X, Discord, and iMessage show those as square thumbnails. Decoding and encoding images in the Worker would blow the
 10 ms CPU limit, so the route asks Cloudflare Image Transformations to do it. The first cover is scaled to the canvas

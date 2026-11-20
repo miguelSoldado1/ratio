@@ -4,7 +4,7 @@ import * as schema from "@ratio/database/schema";
 import { APIError, betterAuth } from "better-auth";
 import { admin, username } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
-import { eq } from "drizzle-orm";
+import { and, eq, isNotNull } from "drizzle-orm";
 import { env } from "@/env";
 import { isUsernameAllowed } from "@/lib/users/username-policy.server";
 import { normalizeUsername } from "@/lib/users/username-policy.shared";
@@ -56,18 +56,27 @@ export function createAuth(db: Db) {
       },
       deleteUser: {
         beforeDelete: async (deletedUser) => {
-          const [currentUser] = await db
-            .select({ avatarObjectKey: schema.user.avatarObjectKey })
-            .from(schema.user)
-            .where(eq(schema.user.id, deletedUser.id))
-            .limit(1);
+          const [[currentUser], listCovers] = await Promise.all([
+            db
+              .select({ avatarObjectKey: schema.user.avatarObjectKey })
+              .from(schema.user)
+              .where(eq(schema.user.id, deletedUser.id))
+              .limit(1),
+            db
+              .select({ coverObjectKey: schema.lists.coverObjectKey })
+              .from(schema.lists)
+              .where(and(eq(schema.lists.userId, deletedUser.id), isNotNull(schema.lists.coverObjectKey))),
+          ]);
 
-          if (!currentUser?.avatarObjectKey) return;
+          const objectKeys = [currentUser?.avatarObjectKey, ...listCovers.map((list) => list.coverObjectKey)].filter(
+            (objectKey): objectKey is string => Boolean(objectKey)
+          );
 
-          try {
-            await deleteImageObject(currentUser.avatarObjectKey);
-          } catch (error) {
-            console.warn("Failed to delete avatar object during account deletion", error);
+          const results = await Promise.allSettled(objectKeys.map((objectKey) => deleteImageObject(objectKey)));
+          for (const result of results) {
+            if (result.status === "rejected") {
+              console.warn("Failed to delete image object during account deletion", result.reason);
+            }
           }
         },
         enabled: true,

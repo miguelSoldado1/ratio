@@ -2,6 +2,8 @@ import { and, count, desc, eq, isNotNull, max, min, sql } from "drizzle-orm";
 import z from "zod";
 import { getDb } from "@/lib/db";
 import { albums, listItems, lists, reviews, user } from "@/lib/db/schema";
+import { tryCatch } from "@/try-catch";
+import { deleteImageObjectSafely, getImagePublicUrl, isListCoverObjectKey } from "../image-storage";
 import { decodeCursor, encodeCursor, getCreatedAtIdCursorFilter, getOptionalCurrentUser } from "../server-utils";
 import { ensureAlbumExistsForWrite, getMissingAlbumMetadataForWrite } from "./album-service";
 import type { Db } from "@/lib/db";
@@ -57,6 +59,7 @@ export interface ListDetails {
   author: ListAuthor;
   canEdit: boolean;
   coverAlbums: ListCoverAlbum[];
+  coverUrl?: string;
   description?: string;
   id: string;
   isRanked: boolean;
@@ -67,6 +70,7 @@ export interface ListDetails {
 export interface ListSummary {
   author: ListAuthor;
   coverAlbums: ListCoverAlbum[];
+  coverUrl?: string;
   description?: string;
   id: string;
   itemCount: number;
@@ -109,6 +113,16 @@ export interface ListDetailsInput {
 export type CreateListInput = ListDetailsInput;
 export type UpdateListInput = ListDetailsInput & ListIdInput;
 
+export interface SetListCoverInput extends ListIdInput {
+  objectKey: string;
+}
+
+export interface ListCoverMutationResult {
+  cleanupFailed: boolean;
+  coverUrl: string | undefined;
+  updatedAt: Date;
+}
+
 export interface ListItemInput extends ListIdInput {
   albumId: string;
 }
@@ -134,6 +148,7 @@ export async function getListService(data: ListIdInput) {
         username: user.username,
       },
       list: {
+        coverObjectKey: lists.coverObjectKey,
         description: lists.description,
         id: lists.id,
         isRanked: lists.isRanked,
@@ -173,6 +188,7 @@ export async function getListService(data: ListIdInput) {
     coverAlbums: itemRows
       .slice(0, listCoverAlbumLimit)
       .map(({ coverUrl, id }) => ({ coverUrl: coverUrl ?? undefined, id })),
+    coverUrl: getListCoverUrl(listRow.list.coverObjectKey),
     description: listRow.list.description ?? undefined,
     id: listRow.list.id,
     isRanked: listRow.list.isRanked,
@@ -227,6 +243,7 @@ export async function getUserListsService(data: UserListsInput) {
       },
       coverAlbums: itemSummary.coverAlbums,
       list: {
+        coverObjectKey: lists.coverObjectKey,
         createdAt: lists.createdAt,
         description: lists.description,
         id: lists.id,
@@ -250,6 +267,7 @@ export async function getUserListsService(data: UserListsInput) {
     lists: pageRows.map((row) => ({
       author: mapListAuthor(row.author),
       coverAlbums: row.coverAlbums,
+      coverUrl: getListCoverUrl(row.list.coverObjectKey),
       description: row.list.description ?? undefined,
       id: row.list.id,
       itemCount: row.itemCount,
@@ -365,13 +383,92 @@ export async function deleteListService(data: ListIdInput, context: Authenticate
   const [deletedList] = await context.db
     .delete(lists)
     .where(and(eq(lists.id, data.listId), ownershipFilter))
-    .returning({ id: lists.id });
+    .returning({ coverObjectKey: lists.coverObjectKey, id: lists.id });
 
   if (!deletedList) {
     throw new Error("List not found");
   }
 
-  return deletedList;
+  if (deletedList.coverObjectKey) await deleteImageObjectSafely(deletedList.coverObjectKey);
+
+  return { id: deletedList.id };
+}
+
+export async function setListCoverService(data: SetListCoverInput, context: AuthenticatedContext) {
+  if (!isListCoverObjectKey(data.objectKey, data.listId)) {
+    throw new Error("Cover image not found");
+  }
+
+  const [currentList] = await context.db
+    .select({ coverObjectKey: lists.coverObjectKey })
+    .from(lists)
+    .where(and(eq(lists.id, data.listId), eq(lists.userId, context.user.id)))
+    .limit(1);
+
+  // No cleanup here: the key may be another owner's live cover.
+  if (!currentList) {
+    throw new Error("List not found");
+  }
+
+  const { data: updatedList, error } = await tryCatch(
+    context.db
+      .update(lists)
+      .set({ coverObjectKey: data.objectKey, updatedAt: new Date() })
+      .where(and(eq(lists.id, data.listId), eq(lists.userId, context.user.id)))
+      .returning({ updatedAt: lists.updatedAt })
+  );
+
+  if (error || !updatedList[0]) {
+    await deleteImageObjectSafely(data.objectKey);
+    throw error ?? new Error("List not found");
+  }
+
+  const cleanupFailed =
+    currentList.coverObjectKey && currentList.coverObjectKey !== data.objectKey
+      ? !(await deleteImageObjectSafely(currentList.coverObjectKey))
+      : false;
+
+  return {
+    cleanupFailed,
+    coverUrl: getImagePublicUrl(data.objectKey),
+    updatedAt: updatedList[0].updatedAt,
+  } satisfies ListCoverMutationResult;
+}
+
+export async function removeListCoverService(data: ListIdInput, context: AuthenticatedContext) {
+  const [currentList] = await context.db
+    .select({ coverObjectKey: lists.coverObjectKey, updatedAt: lists.updatedAt })
+    .from(lists)
+    .where(and(eq(lists.id, data.listId), eq(lists.userId, context.user.id)))
+    .limit(1);
+
+  if (!currentList) {
+    throw new Error("List not found");
+  }
+
+  if (!currentList.coverObjectKey) {
+    return {
+      cleanupFailed: false,
+      coverUrl: undefined,
+      updatedAt: currentList.updatedAt,
+    } satisfies ListCoverMutationResult;
+  }
+
+  const [updatedList] = await context.db
+    .update(lists)
+    .set({ coverObjectKey: null, updatedAt: new Date() })
+    .where(and(eq(lists.id, data.listId), eq(lists.userId, context.user.id)))
+    .returning({ updatedAt: lists.updatedAt });
+
+  if (!updatedList) {
+    throw new Error("List not found");
+  }
+
+  return {
+    cleanupFailed: !(await deleteImageObjectSafely(currentList.coverObjectKey)),
+    coverUrl: undefined,
+    updatedAt: updatedList.updatedAt,
+  } satisfies ListCoverMutationResult;
 }
 
 export async function addListItemService(data: ListItemInput, context: AuthenticatedContext) {
@@ -631,6 +728,10 @@ async function touchList(listId: string, transaction: DbTransaction) {
   }
 
   return updatedList.updatedAt;
+}
+
+function getListCoverUrl(coverObjectKey: null | string) {
+  return coverObjectKey ? getImagePublicUrl(coverObjectKey) : undefined;
 }
 
 function getListAuthorVisibilityFilter(isAdmin: boolean) {

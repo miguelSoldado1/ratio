@@ -4,6 +4,7 @@ import { env } from "@/env";
 import { getImageUploadFileExtension } from "@/lib/image-upload";
 
 const avatarObjectPrefix = "avatars";
+const listCoverObjectPrefix = "list-covers";
 const imageObjectNamePattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(?:avif|jpg|png|webp)$/i;
 const trailingSlashesPattern = /\/+$/;
 
@@ -19,8 +20,16 @@ export function createAvatarObjectKey({ fileType, userId }: { fileType: string; 
   return `${avatarObjectPrefix}/${userId}/${createImageObjectName(fileType)}`;
 }
 
+export function createListCoverObjectKey({ fileType, listId }: { fileType: string; listId: string }) {
+  return `${listCoverObjectPrefix}/${listId}/${createImageObjectName(fileType)}`;
+}
+
 export function isUserAvatarObjectKey(objectKey: string, userId: string) {
   return isImageObjectKeyIn(objectKey, `${avatarObjectPrefix}/${userId}/`);
+}
+
+export function isListCoverObjectKey(objectKey: string, listId: string) {
+  return isImageObjectKeyIn(objectKey, `${listCoverObjectPrefix}/${listId}/`);
 }
 
 export function getImagePublicUrl(objectKey: string) {
