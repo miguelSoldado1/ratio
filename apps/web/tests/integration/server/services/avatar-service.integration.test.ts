@@ -3,7 +3,7 @@ import { createAuthenticatedContext, createTestUser } from "@test/fixtures";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { user } from "@/lib/db/schema";
-import { getAvatarPublicUrl, isUserAvatarObjectKey } from "@/server/avatar-storage";
+import { getImagePublicUrl, isUserAvatarObjectKey } from "@/server/image-storage";
 import { removeMyAvatarService, setMyAvatarService } from "@/server/services/avatar-service";
 
 vi.mock("@/env", () => ({
@@ -51,7 +51,7 @@ describe("avatar storage helpers", () => {
   });
 
   it("trims trailing slashes from public URL base", () => {
-    expect(getAvatarPublicUrl("avatars/user_123/avatar.webp")).toBe(
+    expect(getImagePublicUrl("avatars/user_123/avatar.webp")).toBe(
       "https://assets.example.com/avatars/user_123/avatar.webp"
     );
   });

@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { user } from "@/lib/db/schema";
-import { deleteAvatarObject, getAvatarPublicUrl, isUserAvatarObjectKey } from "../avatar-storage";
+import { deleteImageObjectSafely, getImagePublicUrl, isUserAvatarObjectKey } from "../image-storage";
 import type { AuthenticatedContext } from "../auth-middleware";
 
 // Types
@@ -29,11 +29,11 @@ export async function setMyAvatarService(data: SetAvatarInput, context: Authenti
     .limit(1);
 
   if (!currentUser) {
-    await deleteAvatarObjectSafely(data.objectKey);
+    await deleteImageObjectSafely(data.objectKey);
     throw new Error("User not found");
   }
 
-  const avatarUrl = getAvatarPublicUrl(data.objectKey);
+  const avatarUrl = getImagePublicUrl(data.objectKey);
 
   try {
     await context.db
@@ -41,13 +41,13 @@ export async function setMyAvatarService(data: SetAvatarInput, context: Authenti
       .set({ avatarObjectKey: data.objectKey, image: avatarUrl })
       .where(eq(user.id, context.user.id));
   } catch (error) {
-    await deleteAvatarObjectSafely(data.objectKey);
+    await deleteImageObjectSafely(data.objectKey);
     throw error;
   }
 
   const cleanupFailed =
     currentUser.avatarObjectKey && currentUser.avatarObjectKey !== data.objectKey
-      ? !(await deleteAvatarObjectSafely(currentUser.avatarObjectKey))
+      ? !(await deleteImageObjectSafely(currentUser.avatarObjectKey))
       : false;
 
   return {
@@ -71,19 +71,8 @@ export async function removeMyAvatarService(context: AuthenticatedContext) {
   await context.db.update(user).set({ avatarObjectKey: null, image: null }).where(eq(user.id, context.user.id));
 
   const cleanupFailed = currentUser.avatarObjectKey
-    ? !(await deleteAvatarObjectSafely(currentUser.avatarObjectKey))
+    ? !(await deleteImageObjectSafely(currentUser.avatarObjectKey))
     : false;
 
   return { avatarObjectKey: undefined, avatarUrl: undefined, cleanupFailed } satisfies AvatarMutationResult;
-}
-
-// Helpers
-
-async function deleteAvatarObjectSafely(objectKey: string) {
-  try {
-    await deleteAvatarObject(objectKey);
-    return true;
-  } catch {
-    return false;
-  }
 }

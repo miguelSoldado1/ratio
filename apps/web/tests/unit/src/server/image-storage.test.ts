@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { isUserAvatarObjectKey } from "@/server/avatar-storage";
+import { isUserAvatarObjectKey } from "@/server/image-storage";
 
 vi.mock("@/env", () => ({
   env: {

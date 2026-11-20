@@ -27,8 +27,8 @@ vi.mock("@/env", () => ({
   },
 }));
 
-vi.mock("@/server/avatar-storage", () => ({
-  deleteAvatarObject: vi.fn(),
+vi.mock("@/server/image-storage", () => ({
+  deleteImageObject: vi.fn(),
 }));
 
 vi.mock("@/server/rate-limit", () => ({

@@ -8,7 +8,7 @@ import { eq } from "drizzle-orm";
 import { env } from "@/env";
 import { isUsernameAllowed } from "@/lib/users/username-policy.server";
 import { normalizeUsername } from "@/lib/users/username-policy.shared";
-import { deleteAvatarObject } from "@/server/avatar-storage";
+import { deleteImageObject } from "@/server/image-storage";
 import { createBetterAuthRateLimitStorage } from "@/server/rate-limit";
 import { getDb } from "../db";
 import { limitDisplayUsername, trimDisplayUsername } from "./profile-identity";
@@ -65,7 +65,7 @@ export function createAuth(db: Db) {
           if (!currentUser?.avatarObjectKey) return;
 
           try {
-            await deleteAvatarObject(currentUser.avatarObjectKey);
+            await deleteImageObject(currentUser.avatarObjectKey);
           } catch (error) {
             console.warn("Failed to delete avatar object during account deletion", error);
           }
