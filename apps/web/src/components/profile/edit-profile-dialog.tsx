@@ -2,7 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { Pencil } from "lucide-react";
 import { useEffect, useState } from "react";
-import { ProfilePhotoEditor } from "@/components/profile/profile-photo-editor";
+import { ProfilePhotoPicker } from "@/components/profile/profile-photo-picker";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { useProfilePhoto } from "@/hooks/use-profile-photo";
 import { authClient } from "@/lib/auth/auth-client";
 import {
   displayUsernameMaxLength,
@@ -48,35 +49,32 @@ interface ProfileFormErrors {
 }
 
 interface EditProfileDialogProps {
-  avatarObjectKey?: string;
   avatarUrl?: string;
   className?: string;
   displayName: string;
   username: string;
 }
 
-export function EditProfileDialog({
-  avatarObjectKey,
-  avatarUrl,
-  className,
-  displayName,
-  username,
-}: EditProfileDialogProps) {
+export function EditProfileDialog({ avatarUrl, className, displayName, username }: EditProfileDialogProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const session = authClient.useSession();
+  const profilePhoto = useProfilePhoto();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ displayUsername: displayName, username });
   const [isSaving, setIsSaving] = useState(false);
-  const [isPhotoBusy, setIsPhotoBusy] = useState(false);
   const [errors, setErrors] = useState<ProfileFormErrors>({});
+  const [photoFile, setPhotoFile] = useState<File | undefined>(undefined);
+  const [removePhoto, setRemovePhoto] = useState(false);
 
-  const isFormDisabled = isSaving || isPhotoBusy;
   const isUsernameChanged = form.username.trim().toLowerCase() !== username.toLowerCase();
 
   useEffect(() => {
     if (!open) return;
     setForm({ displayUsername: displayName, username });
     setErrors({});
+    setPhotoFile(undefined);
+    setRemovePhoto(false);
   }, [displayName, open, username]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -85,49 +83,68 @@ export function EditProfileDialog({
     const nextDisplayUsername = form.displayUsername.trim();
     const nextUsername = normalizeUsername(form.username);
 
-    const nextErrors: ProfileFormErrors = {};
-
-    if (!isUsernameFormatValid(nextUsername)) {
-      nextErrors.username = usernameUnavailableMessage;
-    }
-
-    if (!nextDisplayUsername) {
-      nextErrors.displayUsername = "Display username is required.";
-    } else if (getDisplayUsernameLength(nextDisplayUsername) > displayUsernameMaxLength) {
-      nextErrors.displayUsername = `Use ${displayUsernameMaxLength} characters or fewer.`;
-    }
-
-    if (nextErrors.displayUsername || nextErrors.username) {
+    const nextErrors = getProfileFormErrors({ displayUsername: nextDisplayUsername, username: nextUsername });
+    if (nextErrors) {
       return setErrors(nextErrors);
     }
 
-    const normalizedNextUsername = nextUsername;
     const currentUsername = username.toLowerCase();
-    const hasChanges = nextDisplayUsername !== displayName || normalizedNextUsername !== currentUsername;
-    if (!hasChanges) {
+    const hasDetailsChanges = nextDisplayUsername !== displayName || nextUsername !== currentUsername;
+    const hasPhotoChange = Boolean(photoFile) || (removePhoto && Boolean(avatarUrl));
+    if (!(hasDetailsChanges || hasPhotoChange)) {
       return setOpen(false);
     }
 
     setIsSaving(true);
-    const { error } = await authClient.updateUser({ displayUsername: nextDisplayUsername, username: nextUsername });
+    // The photo saves first and is then cleared, so if the details fail, Save retries only the details.
+    const isPhotoSaved = !hasPhotoChange || (await savePhotoChange());
+    const isSaved =
+      isPhotoSaved &&
+      (!hasDetailsChanges || (await saveDetails({ displayUsername: nextDisplayUsername, username: nextUsername })));
     setIsSaving(false);
 
+    if (!isSaved) return;
+
+    setOpen(false);
+
+    if (nextUsername !== currentUsername) {
+      navigate({ params: { username: nextUsername }, to: "/user/$username" });
+    }
+  }
+
+  async function savePhotoChange() {
+    const avatarResult = photoFile ? await profilePhoto.uploadPhoto(photoFile) : await profilePhoto.removePhoto();
+    if (!avatarResult) return false;
+
+    setPhotoFile(undefined);
+    setRemovePhoto(false);
+    updateProfileAvatarCache({
+      avatarObjectKey: avatarResult.avatarObjectKey,
+      avatarUrl: avatarResult.avatarUrl,
+      queryClient,
+      username,
+    });
+    await session.refetch().catch(() => undefined);
+
+    return true;
+  }
+
+  async function saveDetails(details: { displayUsername: string; username: string }) {
+    const { error } = await authClient.updateUser(details);
+
     if (error) {
-      return setErrors(getProfileUpdateErrors(error));
+      setErrors(getProfileUpdateErrors(error));
+      return false;
     }
 
     updateProfileCache({
-      displayName: nextDisplayUsername,
-      nextUsername: normalizedNextUsername,
+      displayName: details.displayUsername,
+      nextUsername: details.username,
       previousUsername: username,
       queryClient,
     });
 
-    setOpen(false);
-
-    if (normalizedNextUsername !== currentUsername) {
-      navigate({ params: { username: normalizedNextUsername }, to: "/user/$username" });
-    }
+    return true;
   }
 
   return (
@@ -152,13 +169,20 @@ export function EditProfileDialog({
           <DialogDescription>Update the identity people see on your reviews.</DialogDescription>
         </DialogHeader>
         <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
-          <ProfilePhotoEditor
-            avatarObjectKey={avatarObjectKey}
-            avatarUrl={avatarUrl}
+          <ProfilePhotoPicker
+            avatarUrl={removePhoto ? undefined : avatarUrl}
             disabled={isSaving}
             displayName={displayName}
-            onBusyChange={setIsPhotoBusy}
-            username={username}
+            file={photoFile}
+            onFileSelect={(file) => {
+              setPhotoFile(file);
+              setRemovePhoto(false);
+            }}
+            onRemove={() => {
+              setPhotoFile(undefined);
+              setRemovePhoto(true);
+            }}
+            statusLabel={profilePhoto.statusLabel}
           />
           <FieldGroup className="gap-5">
             <Field data-invalid={Boolean(errors.displayUsername)}>
@@ -171,7 +195,7 @@ export function EditProfileDialog({
                 }
                 aria-invalid={Boolean(errors.displayUsername)}
                 autoComplete="name"
-                disabled={isFormDisabled}
+                disabled={isSaving}
                 id={fieldIds.displayUsername}
                 maxLength={displayUsernameMaxLength}
                 onChange={(event) => {
@@ -194,7 +218,7 @@ export function EditProfileDialog({
                 }
                 aria-invalid={Boolean(errors.username)}
                 autoComplete="username"
-                disabled={isFormDisabled}
+                disabled={isSaving}
                 id={fieldIds.username}
                 onChange={(event) => {
                   setForm((current) => ({ ...current, username: event.target.value }));
@@ -212,10 +236,10 @@ export function EditProfileDialog({
             <FieldError id={fieldIds.formError}>{errors.form}</FieldError>
           </FieldGroup>
           <DialogFooter className="pt-1">
-            <Button disabled={isFormDisabled} onClick={() => setOpen(false)} type="button" variant="outline">
+            <Button disabled={isSaving} onClick={() => setOpen(false)} type="button" variant="outline">
               Cancel
             </Button>
-            <Button aria-busy={isSaving || undefined} disabled={isFormDisabled} type="submit">
+            <Button aria-busy={isSaving || undefined} disabled={isSaving} type="submit">
               Save changes
             </Button>
           </DialogFooter>
@@ -223,6 +247,22 @@ export function EditProfileDialog({
       </DialogContent>
     </Dialog>
   );
+}
+
+function getProfileFormErrors({ displayUsername, username }: { displayUsername: string; username: string }) {
+  const errors: ProfileFormErrors = {};
+
+  if (!isUsernameFormatValid(username)) {
+    errors.username = usernameUnavailableMessage;
+  }
+
+  if (!displayUsername) {
+    errors.displayUsername = "Display username is required.";
+  } else if (getDisplayUsernameLength(displayUsername) > displayUsernameMaxLength) {
+    errors.displayUsername = `Use ${displayUsernameMaxLength} characters or fewer.`;
+  }
+
+  return errors.displayUsername || errors.username ? errors : null;
 }
 
 function getProfileUpdateErrors(error: unknown): ProfileFormErrors {
@@ -311,4 +351,24 @@ function updateProfileCache({
   }
 
   queryClient.setQueriesData<UserProfile>({ queryKey: userQueryKeys.profile(previousUsername) }, nextData);
+}
+
+interface UpdateProfileAvatarCacheParams {
+  avatarObjectKey: string | undefined;
+  avatarUrl: string | undefined;
+  queryClient: ReturnType<typeof useQueryClient>;
+  username: string;
+}
+
+function updateProfileAvatarCache({
+  avatarObjectKey,
+  avatarUrl,
+  queryClient,
+  username,
+}: UpdateProfileAvatarCacheParams) {
+  queryClient.setQueriesData<UserProfile>({ queryKey: userQueryKeys.profile(username) }, (current) => {
+    if (!current) return current;
+
+    return { ...current, user: { ...current.user, avatarObjectKey, avatarUrl } };
+  });
 }

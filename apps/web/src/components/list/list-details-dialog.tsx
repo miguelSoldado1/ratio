@@ -12,10 +12,9 @@ import { Field, FieldContent, FieldDescription, FieldError, FieldGroup, FieldLab
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { ListCoverEditor } from "./list-cover-editor";
 import { ListCoverPicker } from "./list-cover-picker";
-import type { ComponentProps, FormEvent } from "react";
-import type { ListDetailsInput } from "@/server/services/list-service";
+import type { FormEvent } from "react";
+import type { ListDetails, ListDetailsInput } from "@/server/services/list-service";
 
 const listTitleMaxLength = 100;
 const listDescriptionMaxLength = 200;
@@ -48,15 +47,15 @@ interface ListDetailsInitialValues {
   title: string;
 }
 
-type ListDetailsCover = Omit<ComponentProps<typeof ListCoverEditor>, "disabled" | "onBusyChange">;
-
 export interface ListDetailsSubmission {
   coverFile: File | undefined;
   details: ListDetailsInput;
+  removeCover: boolean;
 }
 
 interface ListDetailsDialogProps {
-  cover?: ListDetailsCover;
+  coverStatusLabel: string | undefined;
+  currentCover?: Pick<ListDetails, "coverAlbums" | "coverUrl">;
   initialValues?: ListDetailsInitialValues;
   isSubmitting?: boolean;
   onOpenChange: (open: boolean) => void;
@@ -66,7 +65,8 @@ interface ListDetailsDialogProps {
 }
 
 export function ListDetailsDialog({
-  cover,
+  coverStatusLabel,
+  currentCover,
   initialValues,
   isSubmitting = false,
   onOpenChange,
@@ -78,8 +78,8 @@ export function ListDetailsDialog({
   const [description, setDescription] = useState(initialValues?.description ?? "");
   const [isRanked, setIsRanked] = useState(initialValues?.isRanked ?? false);
   const [titleError, setTitleError] = useState<string | undefined>(undefined);
-  const [isCoverBusy, setIsCoverBusy] = useState(false);
   const [coverFile, setCoverFile] = useState<File | undefined>(undefined);
+  const [removeCover, setRemoveCover] = useState(false);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
 
   const copy = listDetailsCopy[variant];
@@ -91,8 +91,16 @@ export function ListDetailsDialog({
     setDescription(initialValues?.description ?? "");
     setIsRanked(initialValues?.isRanked ?? false);
     setTitleError(undefined);
-    setCoverFile(undefined);
   }, [initialValues?.description, initialValues?.isRanked, initialValues?.title, open]);
+
+  // Separate from the field reset: saving the details can update initialValues while the dialog stays open to
+  // retry a failed cover, and that shouldn't drop the picked file.
+  useEffect(() => {
+    if (!open) return;
+
+    setCoverFile(undefined);
+    setRemoveCover(false);
+  }, [open]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -115,7 +123,18 @@ export function ListDetailsDialog({
         isRanked,
         title: trimmedTitle,
       },
+      removeCover,
     });
+  }
+
+  function handleCoverSelect(file: File) {
+    setCoverFile(file);
+    setRemoveCover(false);
+  }
+
+  function handleCoverRemove() {
+    setCoverFile(undefined);
+    setRemoveCover(true);
   }
 
   function shakeDescription() {
@@ -134,11 +153,15 @@ export function ListDetailsDialog({
           <DialogDescription>{copy.description}</DialogDescription>
         </DialogHeader>
         <form className="flex flex-col gap-5" noValidate onSubmit={handleSubmit}>
-          {cover ? (
-            <ListCoverEditor {...cover} disabled={isSubmitting} onBusyChange={setIsCoverBusy} />
-          ) : (
-            <ListCoverPicker disabled={isSubmitting} file={coverFile} onFileChange={setCoverFile} />
-          )}
+          <ListCoverPicker
+            albums={currentCover?.coverAlbums ?? []}
+            coverUrl={removeCover ? undefined : currentCover?.coverUrl}
+            disabled={isSubmitting}
+            file={coverFile}
+            onFileSelect={handleCoverSelect}
+            onRemove={handleCoverRemove}
+            statusLabel={coverStatusLabel}
+          />
           <FieldGroup className="gap-5">
             <Field data-invalid={Boolean(titleError)}>
               <FieldLabel htmlFor={fieldIds.title}>Title</FieldLabel>
@@ -196,7 +219,7 @@ export function ListDetailsDialog({
             <Button disabled={isSubmitting} onClick={() => onOpenChange(false)} type="button" variant="outline">
               Cancel
             </Button>
-            <Button disabled={isSubmitting || isCoverBusy} type="submit">
+            <Button disabled={isSubmitting} type="submit">
               {copy.submitLabel}
             </Button>
           </DialogFooter>

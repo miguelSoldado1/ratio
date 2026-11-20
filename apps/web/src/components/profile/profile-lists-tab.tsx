@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { InlineError } from "@/components/inline-error";
 import { ListDetailsDialog } from "@/components/list/list-details-dialog";
 import { ProfileListsSection, ProfileListsSectionSkeleton } from "@/components/list/profile-lists-section";
-import { useListCoverUpload } from "@/hooks/use-list-cover-upload";
+import { useListCover } from "@/hooks/use-list-cover";
 import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
 import { listQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { createList, getUserLists } from "@/server/functions/list-functions";
@@ -31,7 +31,7 @@ export function ProfileListsTab({ active, profileUser, viewerUserId }: ProfileLi
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [detailsOpen, setDetailsOpen] = useState(false);
-  const coverUpload = useListCoverUpload();
+  const listCover = useListCover();
 
   const listsQueryKey = listQueryKeys.byUser(profileUser.id, viewerUserId);
 
@@ -67,7 +67,7 @@ export function ProfileListsTab({ active, profileUser, viewerUserId }: ProfileLi
       });
     }
 
-    const coverResult = coverFile ? await coverUpload.uploadCover(createdList.id, coverFile) : null;
+    const coverResult = coverFile ? await listCover.uploadCover(createdList.id, coverFile) : null;
 
     const createdSummary: ListSummary = {
       author: {
@@ -133,7 +133,8 @@ export function ProfileListsTab({ active, profileUser, viewerUserId }: ProfileLi
       />
       {profileUser.canEdit ? (
         <ListDetailsDialog
-          isSubmitting={createListMutation.isPending || coverUpload.isPending}
+          coverStatusLabel={listCover.statusLabel}
+          isSubmitting={createListMutation.isPending || listCover.isPending}
           onOpenChange={setDetailsOpen}
           onSubmit={handleCreateList}
           open={detailsOpen}

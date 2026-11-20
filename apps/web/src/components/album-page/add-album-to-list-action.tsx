@@ -8,7 +8,7 @@ import { AuthDialog } from "@/components/auth/auth-dialog";
 import { AlbumListPickerDialog } from "@/components/list/album-list-picker-dialog";
 import { ListDetailsDialog } from "@/components/list/list-details-dialog";
 import { Button } from "@/components/ui/button";
-import { useListCoverUpload } from "@/hooks/use-list-cover-upload";
+import { useListCover } from "@/hooks/use-list-cover";
 import { authClient } from "@/lib/auth/auth-client";
 import { listQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { addListItem, createList, getMyListsForAlbum } from "@/server/functions/list-functions";
@@ -34,7 +34,7 @@ export function AddAlbumToListAction({ albumId, albumTitle }: AddAlbumToListActi
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const session = authClient.useSession();
-  const coverUpload = useListCoverUpload();
+  const listCover = useListCover();
 
   const viewerUserId = session.data?.user.id;
   const pickerQueryKey = listQueryKeys.forAlbum(albumId, viewerUserId ?? "");
@@ -110,7 +110,7 @@ export function AddAlbumToListAction({ albumId, albumTitle }: AddAlbumToListActi
 
     const [{ error }] = await Promise.all([
       tryCatch(addListItemMutation.mutateAsync({ data: { albumId, listId: createdList.id } })),
-      coverFile ? coverUpload.uploadCover(createdList.id, coverFile) : null,
+      coverFile ? listCover.uploadCover(createdList.id, coverFile) : null,
     ]);
 
     setCreateDialogOpen(false);
@@ -179,7 +179,8 @@ export function AddAlbumToListAction({ albumId, albumTitle }: AddAlbumToListActi
             pendingListIds={pendingListIds}
           />
           <ListDetailsDialog
-            isSubmitting={createListMutation.isPending || addListItemMutation.isPending || coverUpload.isPending}
+            coverStatusLabel={listCover.statusLabel}
+            isSubmitting={createListMutation.isPending || addListItemMutation.isPending || listCover.isPending}
             onOpenChange={setCreateDialogOpen}
             onSubmit={handleCreateListSubmit}
             open={createDialogOpen}

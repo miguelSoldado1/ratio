@@ -1,38 +1,42 @@
 import { ImagePlus } from "lucide-react";
-import { useEffect, useState } from "react";
 import { ImageUploadField } from "@/components/image-upload-field";
+import { useObjectUrl } from "@/hooks/use-object-url";
 import { imageUploadHint } from "@/lib/image-upload";
 import { ListCoverMosaic } from "./list-cover-mosaic";
+import type { ListCoverAlbum } from "@/server/services/list-service";
 
 interface ListCoverPickerProps {
+  albums: ListCoverAlbum[];
+  coverUrl: string | undefined;
   disabled: boolean;
   file: File | undefined;
-  onFileChange: (file: File | undefined) => void;
+  onFileSelect: (file: File) => void;
+  onRemove: () => void;
+  statusLabel: string | undefined;
 }
 
-// The list doesn't exist yet, so the file waits here and uploads once the list is created.
-export function ListCoverPicker({ disabled, file, onFileChange }: ListCoverPickerProps) {
-  const [previewUrl, setPreviewUrl] = useState<string | undefined>(undefined);
-
-  useEffect(() => {
-    if (!file) return setPreviewUrl(undefined);
-
-    const objectUrl = URL.createObjectURL(file);
-    setPreviewUrl(objectUrl);
-
-    return () => URL.revokeObjectURL(objectUrl);
-  }, [file]);
+// Picking or removing only changes the preview; the dialog's caller saves the cover on submit.
+export function ListCoverPicker({
+  albums,
+  coverUrl,
+  disabled,
+  file,
+  onFileSelect,
+  onRemove,
+  statusLabel,
+}: ListCoverPickerProps) {
+  const previewUrl = useObjectUrl(file);
 
   return (
     <ImageUploadField
       disabled={disabled}
-      hasImage={Boolean(file)}
+      hasImage={Boolean(file || coverUrl)}
       label="Cover"
-      onFileSelect={onFileChange}
-      onRemove={() => onFileChange(undefined)}
-      preview={<ListCoverMosaic albums={[]} className="size-16" coverUrl={previewUrl} size={128} />}
+      onFileSelect={onFileSelect}
+      onRemove={onRemove}
+      preview={<ListCoverMosaic albums={albums} className="size-16" coverUrl={previewUrl ?? coverUrl} size={128} />}
       removeLabel="Remove cover"
-      statusLabel={imageUploadHint}
+      statusLabel={statusLabel ?? imageUploadHint}
       uploadIcon={<ImagePlus />}
       uploadLabel="Upload cover"
     />

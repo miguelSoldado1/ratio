@@ -11,6 +11,7 @@ import { ListDetailsDialog } from "@/components/list/list-details-dialog";
 import { ListPage, ListPageSkeleton } from "@/components/list/list-page";
 import { NotFoundPage } from "@/components/not-found-page";
 import { PageContainer, PageContainerContent } from "@/components/page-container";
+import { useListCover } from "@/hooks/use-list-cover";
 import { authClient } from "@/lib/auth/auth-client";
 import {
   createDocumentRouteHead,
@@ -103,6 +104,8 @@ function ListRouteContent({ listId, sessionPending, viewerUserId }: ListRouteCon
     queryKey: listQueryKey,
   });
 
+  const listCover = useListCover();
+
   const updateListFn = useServerFn(updateList);
   const updateListMutation = useMutation({ mutationFn: updateListFn });
 
@@ -142,7 +145,7 @@ function ListRouteContent({ listId, sessionPending, viewerUserId }: ListRouteCon
     ]);
   }
 
-  async function handleDetailsSubmit({ details }: ListDetailsSubmission) {
+  async function handleDetailsSubmit({ coverFile, details, removeCover }: ListDetailsSubmission) {
     if (!list) return;
 
     const { data, error } = await tryCatch(updateListMutation.mutateAsync({ data: { ...details, listId } }));
@@ -163,13 +166,26 @@ function ListRouteContent({ listId, sessionPending, viewerUserId }: ListRouteCon
         : currentList
     );
 
-    setDetailsOpen(false);
+    // Details save first: re-sending them is harmless, so if the cover fails the dialog stays open and Save retries.
+    const isCoverSaved = await saveCoverChange({ coverFile, removeCover });
+    if (isCoverSaved) setDetailsOpen(false);
+
     await invalidateListMetadata(list.author.id);
   }
 
-  async function handleCoverChange(result: ListCoverMutationResult) {
-    if (!list) return;
+  async function saveCoverChange({ coverFile, removeCover }: Pick<ListDetailsSubmission, "coverFile" | "removeCover">) {
+    if (!(coverFile || (removeCover && list?.coverUrl))) return true;
 
+    const coverResult = coverFile
+      ? await listCover.uploadCover(listId, coverFile)
+      : await listCover.removeCover(listId);
+    if (!coverResult) return false;
+
+    applyCoverResult(coverResult);
+    return true;
+  }
+
+  function applyCoverResult(result: ListCoverMutationResult) {
     queryClient.setQueryData<ListDetails | null>(listQueryKey, (currentList) =>
       currentList
         ? {
@@ -179,8 +195,6 @@ function ListRouteContent({ listId, sessionPending, viewerUserId }: ListRouteCon
           }
         : currentList
     );
-
-    await invalidateListMetadata(list.author.id);
   }
 
   async function handleDelete() {
@@ -406,9 +420,10 @@ function ListRouteContent({ listId, sessionPending, viewerUserId }: ListRouteCon
             remainingSlots={remainingSlots}
           />
           <ListDetailsDialog
-            cover={{ list, onCoverChange: handleCoverChange }}
+            coverStatusLabel={listCover.statusLabel}
+            currentCover={list}
             initialValues={{ description: list.description ?? "", isRanked: list.isRanked, title: list.title }}
-            isSubmitting={updateListMutation.isPending}
+            isSubmitting={updateListMutation.isPending || listCover.isPending}
             onOpenChange={setDetailsOpen}
             onSubmit={handleDetailsSubmit}
             open={detailsOpen}
