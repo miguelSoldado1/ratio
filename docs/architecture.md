@@ -38,11 +38,18 @@ schema and relevant secret/provider configuration.
 
 Admin user deletion intentionally does not give the admin Worker R2 bindings or S3-compatible avatar credentials. Better Auth and the database cascades remove the account data. Self-service account deletion in the public app also removes the user's avatar and list covers from R2.
 
-> **Open compliance gap.** Deleting a user or a list from the admin Worker leaves the uploaded images behind. Avatars
-> under `avatars/{userId}/` and list covers under `list-covers/{listId}/` stay publicly reachable in R2, so personal
-> data outlives the account. Close this before admin deletion is used for erasure requests. The fix we want is a
-> bounded reconciliation job, run with the public app's existing storage credentials, that deletes any object no
-> `user.avatar_object_key` or `list.cover_object_key` points to. That keeps R2 secrets out of the admin environments.
+Deleting a user or a list from the admin Worker leaves its uploaded images in R2, and so does an upload whose save
+fails. The public Worker cleans these up every Monday at 05:00 UTC (`0 5 * * 1`). `deleteOrphanedImages` lists
+`avatars/` and `list-covers/` through the `IMAGES` R2 binding and deletes any object older than a day that no
+`user.avatar_object_key` or `list.cover_object_key` points to. The day gives an upload time to be saved by its dialog.
+A run reads at most five listing pages per prefix to stay inside the free plan's CPU limit. Every run starts from the
+first key, so past about 5,000 live images in a prefix, later orphans are never reached; at that size the run needs to
+save its cursor between weeks. Development has no crons, so nothing cleans the dev bucket.
+
+> **Open compliance gap.** Cloudflare's edge cache can keep serving a deleted image at its old URL, because images go
+> out as `public, max-age=31536000, immutable` and deleting from R2 doesn't purge the cache. The fix is to purge the URL
+> through Cloudflare's purge-by-URL API whenever an image is deleted, the weekly cleanup included. Don't rely on any
+> deletion for erasure requests until that's in.
 
 Future admin scope may include bounded dashboard metrics, reviews, and reports. Under the free-hosting constraint, prefer bounded indexed queries, no polling, and no new infrastructure by default.
 

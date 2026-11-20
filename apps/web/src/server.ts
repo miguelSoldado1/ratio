@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db";
 import { decorateDocumentResponse } from "@/server/document-head";
 import { matchDocumentMetadataRoute, resolveDocumentMetadata } from "@/server/document-metadata";
 import { isRateLimitError } from "@/server/rate-limit";
+import { deleteOrphanedImages, imageCleanupCron } from "@/server/services/image-cleanup-service";
 import { pruneExpiredNotifications } from "@/server/services/notification-service";
 import { refreshSitemapCache } from "@/server/services/sitemap-service";
 import type { DocumentMetadataRoute } from "@/server/document-metadata";
@@ -28,11 +29,20 @@ const serverEntry = createServerEntry({
 
 export default {
   ...serverEntry,
-  scheduled(_controller: ScheduledController, env: Env, context: ExecutionContext) {
+  scheduled(controller: ScheduledController, env: Env, context: ExecutionContext) {
+    if (controller.cron === imageCleanupCron) {
+      return context.waitUntil(cleanUpOrphanedImages(env.IMAGES));
+    }
+
     context.waitUntil(refreshSitemapCache(env.CACHE));
     context.waitUntil(getDb().then(pruneExpiredNotifications));
   },
 };
+
+async function cleanUpOrphanedImages(bucket: R2Bucket) {
+  const { deletedCount } = await deleteOrphanedImages({ bucket, db: await getDb(), now: new Date() });
+  console.info("orphaned_images_deleted", { deletedCount });
+}
 
 async function resolveMetadataSafely(route: DocumentMetadataRoute, request: Request) {
   try {

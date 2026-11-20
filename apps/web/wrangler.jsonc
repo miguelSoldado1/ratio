@@ -18,8 +18,14 @@
       "id": "0ac8aedf7d20434c89dfd625bab620c1"
     }
   ],
+  "r2_buckets": [
+    {
+      "binding": "IMAGES",
+      "bucket_name": "ratio-images"
+    }
+  ],
   "triggers": {
-    "crons": ["0 4 */2 * *"]
+    "crons": ["0 4 */2 * *", "0 5 * * 1"]
   },
   "ratelimits": [
     {
@@ -92,6 +98,12 @@
         {
           "binding": "CACHE",
           "id": "d10b116f10364595a1619b6b2e625354"
+        }
+      ],
+      "r2_buckets": [
+        {
+          "binding": "IMAGES",
+          "bucket_name": "ratio-images-dev"
         }
       ],
       "ratelimits": [
