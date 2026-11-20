@@ -14,7 +14,6 @@ interface ProfilePhotoPickerProps {
   statusLabel: string | undefined;
 }
 
-// Picking or removing only changes the preview; the edit profile dialog saves the photo on submit.
 export function ProfilePhotoPicker({
   avatarUrl,
   disabled,

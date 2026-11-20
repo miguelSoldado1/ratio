@@ -8,8 +8,7 @@ interface ListCoverProps {
   size: number;
 }
 
-// Same rule as the public app's ListCoverMosaic: an uploaded cover wins, then a 2x2 grid from four
-// albums, otherwise the first cover.
+// Same rule as the public app's ListCoverMosaic: uploaded cover, else a 2x2 grid of four albums, else the first.
 export function ListCover({ albums, className, coverUrl, size }: ListCoverProps) {
   const isMosaic = !coverUrl && albums.length >= 4;
   const tiles = getCoverTiles(albums, coverUrl, isMosaic);

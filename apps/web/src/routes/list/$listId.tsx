@@ -166,7 +166,7 @@ function ListRouteContent({ listId, sessionPending, viewerUserId }: ListRouteCon
         : currentList
     );
 
-    // Details save first: re-sending them is harmless, so if the cover fails the dialog stays open and Save retries.
+    // Details first: re-sending them is harmless, so a failed cover can simply be retried.
     const isCoverSaved = await saveCoverChange({ coverFile, removeCover });
     if (isCoverSaved) setDetailsOpen(false);
 

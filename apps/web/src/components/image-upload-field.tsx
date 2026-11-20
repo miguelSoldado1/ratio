@@ -38,7 +38,6 @@ export function ImageUploadField({
 
     if (!file) return;
 
-    // The upload route enforces this too; checking first keeps a bad pick from starting any work.
     if (!isAcceptedImageUpload(file)) {
       return toast.error("Couldn't use that image", { description: imageUploadHint });
     }

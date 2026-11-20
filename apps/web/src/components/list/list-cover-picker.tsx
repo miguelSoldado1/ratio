@@ -15,7 +15,6 @@ interface ListCoverPickerProps {
   statusLabel: string | undefined;
 }
 
-// Picking or removing only changes the preview; the dialog's caller saves the cover on submit.
 export function ListCoverPicker({
   albums,
   coverUrl,

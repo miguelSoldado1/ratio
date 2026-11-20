@@ -93,8 +93,7 @@ export function ListDetailsDialog({
     setTitleError(undefined);
   }, [initialValues?.description, initialValues?.isRanked, initialValues?.title, open]);
 
-  // Separate from the field reset: saving the details can update initialValues while the dialog stays open to
-  // retry a failed cover, and that shouldn't drop the picked file.
+  // Apart from the field reset, so a details save that updates initialValues doesn't drop a picked cover.
   useEffect(() => {
     if (!open) return;
 

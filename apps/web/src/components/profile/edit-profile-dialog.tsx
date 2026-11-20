@@ -96,7 +96,7 @@ export function EditProfileDialog({ avatarUrl, className, displayName, username 
     }
 
     setIsSaving(true);
-    // The photo saves first and is then cleared, so if the details fail, Save retries only the details.
+    // Photo first: it's cleared once saved, so a retry after a failed name doesn't upload it again.
     const isPhotoSaved = !hasPhotoChange || (await savePhotoChange());
     const isSaved =
       isPhotoSaved &&
