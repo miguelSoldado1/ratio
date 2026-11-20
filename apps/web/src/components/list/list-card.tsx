@@ -34,7 +34,7 @@ export function ListCard({ list }: ListCardProps) {
         params={{ listId: list.id }}
         to="/list/$listId"
       >
-        <ListCoverMosaic albums={list.coverAlbums} className="size-14" size={112} />
+        <ListCoverMosaic albums={list.coverAlbums} className="size-14" coverUrl={list.coverUrl} size={112} />
         <span className="min-w-0 flex-1">
           <span className="block truncate font-semibold text-foreground text-sm leading-snug">{list.title}</span>
           <span className="mt-0.5 block truncate text-muted-foreground text-xs">

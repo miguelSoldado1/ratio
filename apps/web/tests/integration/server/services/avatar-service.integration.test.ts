@@ -1,9 +1,9 @@
 import { cleanTestDatabase, closeTestDatabase, migrateTestDatabase, testDb } from "@test/db";
 import { createAuthenticatedContext, createTestUser } from "@test/fixtures";
 import { eq } from "drizzle-orm";
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { user } from "@/lib/db/schema";
-import { getAvatarPublicUrl, isUserAvatarObjectKey } from "@/server/avatar-storage";
+import { getImagePublicUrl, isUserAvatarObjectKey } from "@/server/image-storage";
 import { removeMyAvatarService, setMyAvatarService } from "@/server/services/avatar-service";
 
 vi.mock("@/env", () => ({
@@ -12,7 +12,9 @@ vi.mock("@/env", () => ({
     CLOUDFLARE_ACCOUNT_ID: "account-id",
     CLOUDFLARE_R2_BUCKET_NAME: "bucket",
     CLOUDFLARE_R2_PUBLIC_URL: "https://assets.example.com///",
+    CLOUDFLARE_CACHE_PURGE_API_TOKEN: "purge-token",
     CLOUDFLARE_SECRET_ACCESS_KEY: "secret",
+    CLOUDFLARE_ZONE_ID: "zone-id",
   },
 }));
 
@@ -33,7 +35,12 @@ beforeAll(async () => {
 beforeEach(async () => {
   mockDeleteAvatarObject.mockReset();
   mockDeleteAvatarObject.mockResolvedValue(undefined);
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 200 })));
   await cleanTestDatabase();
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 afterAll(async () => {
@@ -51,7 +58,7 @@ describe("avatar storage helpers", () => {
   });
 
   it("trims trailing slashes from public URL base", () => {
-    expect(getAvatarPublicUrl("avatars/user_123/avatar.webp")).toBe(
+    expect(getImagePublicUrl("avatars/user_123/avatar.webp")).toBe(
       "https://assets.example.com/avatars/user_123/avatar.webp"
     );
   });

@@ -4,13 +4,14 @@ import type { AdminListCoverAlbum } from "@/server/services/list-service";
 interface ListCoverProps {
   albums: AdminListCoverAlbum[];
   className: string;
+  coverUrl: string | null;
   size: number;
 }
 
-// Same rule as the public app's ListCoverMosaic: a 2x2 grid from four albums, otherwise the first cover.
-export function ListCover({ albums, className, size }: ListCoverProps) {
-  const isMosaic = albums.length >= 4;
-  const tiles = isMosaic ? albums.slice(0, 4) : albums.slice(0, 1);
+// Same rule as the public app's ListCoverMosaic: uploaded cover, else a 2x2 grid of four albums, else the first.
+export function ListCover({ albums, className, coverUrl, size }: ListCoverProps) {
+  const isMosaic = !coverUrl && albums.length >= 4;
+  const tiles = getCoverTiles(albums, coverUrl, isMosaic);
   const tileSize = isMosaic ? Math.round(size / 2) : size;
 
   return (
@@ -34,4 +35,10 @@ export function ListCover({ albums, className, size }: ListCoverProps) {
       )}
     </div>
   );
+}
+
+function getCoverTiles(albums: AdminListCoverAlbum[], coverUrl: string | null, isMosaic: boolean) {
+  if (coverUrl) return [{ coverUrl, id: coverUrl }];
+
+  return isMosaic ? albums.slice(0, 4) : albums.slice(0, 1);
 }

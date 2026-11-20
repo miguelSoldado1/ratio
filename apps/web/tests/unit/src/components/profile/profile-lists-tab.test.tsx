@@ -9,13 +9,25 @@ import type { UserProfile } from "@/server/services/review-service";
 const mockCreateList = vi.hoisted(() => vi.fn());
 const mockGetUserLists = vi.hoisted(() => vi.fn());
 const mockNavigate = vi.hoisted(() => vi.fn());
+const mockSetListCover = vi.hoisted(() => vi.fn());
+const mockUploadCover = vi.hoisted(() => vi.fn());
 const serverFns = vi.hoisted(() => ({
   createList: {},
   getUserLists: {},
+  removeListCover: {},
+  setListCover: {},
 }));
 
 vi.mock("@tanstack/react-start", () => ({
-  useServerFn: (serverFn: object) => (serverFn === serverFns.createList ? mockCreateList : mockGetUserLists),
+  useServerFn: (serverFn: object) => {
+    if (serverFn === serverFns.createList) return mockCreateList;
+    if (serverFn === serverFns.setListCover) return mockSetListCover;
+    return mockGetUserLists;
+  },
+}));
+
+vi.mock("@better-upload/client", () => ({
+  useUploadFile: () => ({ isPending: false, progress: 0, uploadAsync: mockUploadCover }),
 }));
 
 vi.mock("@tanstack/react-router", () => ({
@@ -52,6 +64,12 @@ beforeEach(() => {
   });
   mockGetUserLists.mockReset().mockResolvedValue({ lists: [], nextCursor: null });
   mockNavigate.mockReset().mockResolvedValue(undefined);
+  mockUploadCover.mockReset().mockResolvedValue({ file: { objectInfo: { key: "list-covers/new/cover.png" } } });
+  mockSetListCover.mockReset().mockResolvedValue({
+    cleanupFailed: false,
+    coverUrl: "https://assets.example.com/list-covers/new/cover.png",
+    updatedAt: new Date("2026-07-01T00:00:00.000Z"),
+  });
 });
 
 afterEach(() => {
@@ -77,6 +95,28 @@ describe("ProfileListsTab", () => {
 
     await waitFor(() => expect(mockCreateList).toHaveBeenCalled());
     await waitFor(() => expect(queryClient.getQueryState(albumPickerKey)?.isInvalidated).toBe(true));
+  });
+
+  it("uploads a picked cover once the new list exists", async () => {
+    renderWithQueryClient(<ProfileListsTab active profileUser={profileUser} viewerUserId={profileUser.id} />);
+    const cover = new File(["cover"], "cover.png", { type: "image/png" });
+
+    fireEvent.click(await screen.findByRole("button", { name: "New list" }));
+    fireEvent.change(await screen.findByLabelText("Title"), { target: { value: "Covered" } });
+    fireEvent.change(screen.getByLabelText("Cover"), { target: { files: [cover] } });
+    expect(mockUploadCover).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: "Create list" }));
+
+    const listId = "00000000-0000-4000-8000-000000000001";
+    await waitFor(() => expect(mockUploadCover).toHaveBeenCalledWith(cover, { metadata: { listId } }));
+    await waitFor(() =>
+      expect(mockSetListCover).toHaveBeenCalledWith(
+        { data: { listId, objectKey: "list-covers/new/cover.png" } },
+        expect.anything()
+      )
+    );
+    await waitFor(() => expect(mockNavigate).toHaveBeenCalled());
   });
 
   it("does not mount creation controls for a non-owner", async () => {

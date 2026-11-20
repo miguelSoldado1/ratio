@@ -7,6 +7,7 @@ export const env = createEnv({
     ADMIN_BETTER_AUTH_URL: z.url().optional(),
     BETTER_AUTH_SECRET: z.string().min(1),
     BETTER_AUTH_URL: z.url(),
+    CLOUDFLARE_R2_PUBLIC_URL: z.url(),
     DISCORD_CLIENT_ID: z.string().min(1),
     DISCORD_CLIENT_SECRET: z.string().min(1),
     GOOGLE_CLIENT_ID: z.string().min(1),

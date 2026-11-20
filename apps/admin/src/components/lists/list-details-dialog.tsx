@@ -47,7 +47,7 @@ export function ListDetailsDialog({ list, open, onOpenChange }: ListDetailsDialo
           </div>
 
           <div className="flex min-w-0 items-center gap-3">
-            <ListCover albums={list.coverAlbums} className="size-16 rounded-md" size={64} />
+            <ListCover albums={list.coverAlbums} className="size-16 rounded-md" coverUrl={list.coverUrl} size={64} />
             <div className="min-w-0 flex-1">
               <a
                 className="group inline-flex max-w-full items-center gap-1.5 rounded-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"

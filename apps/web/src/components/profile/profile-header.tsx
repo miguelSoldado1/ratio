@@ -43,7 +43,6 @@ export function ProfileHeader({ className, onAuthRequired, profile, stats, viewe
             {profile.banned ? <Badge variant="secondary">Banned</Badge> : null}
             {profile.canEdit ? (
               <EditProfileDialog
-                avatarObjectKey={profile.avatarObjectKey}
                 avatarUrl={profile.avatarUrl}
                 displayName={profile.displayName}
                 username={profile.username}
