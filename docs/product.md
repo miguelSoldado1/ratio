@@ -75,9 +75,11 @@ deferred until the product needs those dedicated surfaces.
   author's rating for that album, if they gave one, with up to two lines of their review text underneath, linked to the
   review. Albums the author hasn't rated get a plain row, with no placeholder. On desktop the title, description, and
   actions sit under the cover, so the albums get the whole right column. People viewing someone else's list see a
-  labeled share button. New additions go to the bottom and can then be repositioned. Lists are unnumbered by default. An
-  owner can turn on numbering in the list details, and each row then shows its position in the order they set. Owners
-  create them from their profile and add, reorder, remove, rename, or delete content inline on the public list page
+  labeled share button. Owners can upload a cover image when they create a list, or later from Edit details. The cover
+  replaces the album mosaic everywhere the list shows up, share image included, and removing it brings the mosaic back.
+  Like profile photos, it's shown square with no cropping. New additions go to the bottom and can then be repositioned.
+  Lists are unnumbered by default. An owner can turn on numbering in the list details, and each row then shows its
+  position in the order they set. Owners create them from their profile and add, reorder, remove, rename, or delete content inline on the public list page
 - Album pages with community score and reviews
 - Search albums via Spotify API and users by username/display username from the global search dialog
 - Link/unlink sign-in methods in settings

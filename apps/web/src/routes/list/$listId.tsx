@@ -30,7 +30,8 @@ import {
 } from "@/server/functions/list-functions";
 import { tryCatch } from "@/try-catch";
 import type { AlbumResult } from "@/components/global-search/types";
-import type { ListDetails, ListDetailsInput } from "@/server/services/list-service";
+import type { ListDetailsSubmission } from "@/components/list/list-details-dialog";
+import type { ListCoverMutationResult, ListDetails } from "@/server/services/list-service";
 
 const maxListItems = 100;
 
@@ -141,10 +142,10 @@ function ListRouteContent({ listId, sessionPending, viewerUserId }: ListRouteCon
     ]);
   }
 
-  async function handleDetailsSubmit(values: ListDetailsInput) {
+  async function handleDetailsSubmit({ details }: ListDetailsSubmission) {
     if (!list) return;
 
-    const { data, error } = await tryCatch(updateListMutation.mutateAsync({ data: { ...values, listId } }));
+    const { data, error } = await tryCatch(updateListMutation.mutateAsync({ data: { ...details, listId } }));
 
     if (error) {
       return toast.error("Couldn't update list", { description: getErrorMessage(error) });
@@ -163,6 +164,22 @@ function ListRouteContent({ listId, sessionPending, viewerUserId }: ListRouteCon
     );
 
     setDetailsOpen(false);
+    await invalidateListMetadata(list.author.id);
+  }
+
+  async function handleCoverChange(result: ListCoverMutationResult) {
+    if (!list) return;
+
+    queryClient.setQueryData<ListDetails | null>(listQueryKey, (currentList) =>
+      currentList
+        ? {
+            ...currentList,
+            coverUrl: result.coverUrl,
+            updatedAt: result.updatedAt,
+          }
+        : currentList
+    );
+
     await invalidateListMetadata(list.author.id);
   }
 
@@ -389,6 +406,7 @@ function ListRouteContent({ listId, sessionPending, viewerUserId }: ListRouteCon
             remainingSlots={remainingSlots}
           />
           <ListDetailsDialog
+            cover={{ list, onCoverChange: handleCoverChange }}
             initialValues={{ description: list.description ?? "", isRanked: list.isRanked, title: list.title }}
             isSubmitting={updateListMutation.isPending}
             onOpenChange={setDetailsOpen}

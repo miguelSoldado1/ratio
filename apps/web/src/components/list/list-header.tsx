@@ -43,7 +43,7 @@ export function ListHeader({
       <div className="flex flex-col items-center gap-4 sm:grid sm:grid-cols-[144px_1fr] sm:items-end lg:block">
         {/* Cover is shown inline only below the two-column breakpoint; on lg+ it lives in the sticky aside. */}
         <div className="lg:hidden">
-          <ListCoverMosaic albums={list.coverAlbums} className="w-44 sm:w-full" size={352} />
+          <ListCoverMosaic albums={list.coverAlbums} className="w-44 sm:w-full" coverUrl={list.coverUrl} size={352} />
         </div>
         <div className="min-w-0 sm:self-end lg:self-auto">
           <h1 className="wrap-break-word max-w-4xl font-semibold text-2xl leading-tight tracking-normal sm:text-3xl lg:text-4xl">

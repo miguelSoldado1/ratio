@@ -12,7 +12,9 @@ import { Field, FieldContent, FieldDescription, FieldError, FieldGroup, FieldLab
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import type { FormEvent } from "react";
+import { ListCoverEditor } from "./list-cover-editor";
+import { ListCoverPicker } from "./list-cover-picker";
+import type { ComponentProps, FormEvent } from "react";
 import type { ListDetailsInput } from "@/server/services/list-service";
 
 const listTitleMaxLength = 100;
@@ -46,16 +48,25 @@ interface ListDetailsInitialValues {
   title: string;
 }
 
+type ListDetailsCover = Omit<ComponentProps<typeof ListCoverEditor>, "disabled" | "onBusyChange">;
+
+export interface ListDetailsSubmission {
+  coverFile: File | undefined;
+  details: ListDetailsInput;
+}
+
 interface ListDetailsDialogProps {
+  cover?: ListDetailsCover;
   initialValues?: ListDetailsInitialValues;
   isSubmitting?: boolean;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (values: ListDetailsInput) => void;
+  onSubmit: (submission: ListDetailsSubmission) => void;
   open: boolean;
   variant: "create" | "edit";
 }
 
 export function ListDetailsDialog({
+  cover,
   initialValues,
   isSubmitting = false,
   onOpenChange,
@@ -67,6 +78,8 @@ export function ListDetailsDialog({
   const [description, setDescription] = useState(initialValues?.description ?? "");
   const [isRanked, setIsRanked] = useState(initialValues?.isRanked ?? false);
   const [titleError, setTitleError] = useState<string | undefined>(undefined);
+  const [isCoverBusy, setIsCoverBusy] = useState(false);
+  const [coverFile, setCoverFile] = useState<File | undefined>(undefined);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
 
   const copy = listDetailsCopy[variant];
@@ -78,6 +91,7 @@ export function ListDetailsDialog({
     setDescription(initialValues?.description ?? "");
     setIsRanked(initialValues?.isRanked ?? false);
     setTitleError(undefined);
+    setCoverFile(undefined);
   }, [initialValues?.description, initialValues?.isRanked, initialValues?.title, open]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -95,9 +109,12 @@ export function ListDetailsDialog({
 
     setTitleError(undefined);
     onSubmit({
-      description: trimmedDescription || null,
-      isRanked,
-      title: trimmedTitle,
+      coverFile,
+      details: {
+        description: trimmedDescription || null,
+        isRanked,
+        title: trimmedTitle,
+      },
     });
   }
 
@@ -116,7 +133,12 @@ export function ListDetailsDialog({
           <DialogTitle>{copy.title}</DialogTitle>
           <DialogDescription>{copy.description}</DialogDescription>
         </DialogHeader>
-        <form noValidate onSubmit={handleSubmit}>
+        <form className="flex flex-col gap-5" noValidate onSubmit={handleSubmit}>
+          {cover ? (
+            <ListCoverEditor {...cover} disabled={isSubmitting} onBusyChange={setIsCoverBusy} />
+          ) : (
+            <ListCoverPicker disabled={isSubmitting} file={coverFile} onFileChange={setCoverFile} />
+          )}
           <FieldGroup className="gap-5">
             <Field data-invalid={Boolean(titleError)}>
               <FieldLabel htmlFor={fieldIds.title}>Title</FieldLabel>
@@ -170,11 +192,11 @@ export function ListDetailsDialog({
               />
             </Field>
           </FieldGroup>
-          <DialogFooter className="mt-6">
+          <DialogFooter className="pt-1">
             <Button disabled={isSubmitting} onClick={() => onOpenChange(false)} type="button" variant="outline">
               Cancel
             </Button>
-            <Button disabled={isSubmitting} type="submit">
+            <Button disabled={isSubmitting || isCoverBusy} type="submit">
               {copy.submitLabel}
             </Button>
           </DialogFooter>
