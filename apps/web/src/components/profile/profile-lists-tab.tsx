@@ -6,12 +6,14 @@ import { toast } from "sonner";
 import { InlineError } from "@/components/inline-error";
 import { ListDetailsDialog } from "@/components/list/list-details-dialog";
 import { ProfileListsSection, ProfileListsSectionSkeleton } from "@/components/list/profile-lists-section";
+import { useListCover } from "@/hooks/use-list-cover";
 import { useLoadMoreOnIntersect } from "@/hooks/use-load-more-on-intersect";
 import { listQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { createList, getUserLists } from "@/server/functions/list-functions";
 import { tryCatch } from "@/try-catch";
 import type { InfiniteData } from "@tanstack/react-query";
-import type { ListDetailsInput, ListSummary } from "@/server/services/list-service";
+import type { ListDetailsSubmission } from "@/components/list/list-details-dialog";
+import type { ListSummary } from "@/server/services/list-service";
 import type { UserProfile } from "@/server/services/review-service";
 
 interface ProfileListsTabProps {
@@ -29,6 +31,8 @@ export function ProfileListsTab({ active, profileUser, viewerUserId }: ProfileLi
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const listCover = useListCover();
+
   const listsQueryKey = listQueryKeys.byUser(profileUser.id, viewerUserId);
 
   const getUserListsFn = useServerFn(getUserLists);
@@ -52,16 +56,18 @@ export function ProfileListsTab({ active, profileUser, viewerUserId }: ProfileLi
     onLoadMore: fetchNextPage,
   });
 
-  async function handleCreateList(values: ListDetailsInput) {
+  async function handleCreateList({ coverFile, details }: ListDetailsSubmission) {
     if (!profileUser.canEdit) return;
 
-    const { data: createdList, error } = await tryCatch(createListMutation.mutateAsync({ data: values }));
+    const { data: createdList, error } = await tryCatch(createListMutation.mutateAsync({ data: details }));
 
     if (error) {
       return toast.error("Couldn't create list", {
         description: error instanceof Error ? error.message : "Something went wrong. Try again.",
       });
     }
+
+    const coverResult = coverFile ? await listCover.uploadCover(createdList.id, coverFile) : null;
 
     const createdSummary: ListSummary = {
       author: {
@@ -71,10 +77,11 @@ export function ProfileListsTab({ active, profileUser, viewerUserId }: ProfileLi
         username: profileUser.username,
       },
       coverAlbums: [],
-      description: values.description ?? undefined,
+      coverUrl: coverResult?.coverUrl,
+      description: details.description ?? undefined,
       id: createdList.id,
       itemCount: 0,
-      title: values.title,
+      title: details.title,
       updatedAt: createdList.updatedAt,
     };
 
@@ -126,7 +133,8 @@ export function ProfileListsTab({ active, profileUser, viewerUserId }: ProfileLi
       />
       {profileUser.canEdit ? (
         <ListDetailsDialog
-          isSubmitting={createListMutation.isPending}
+          coverStatusLabel={listCover.statusLabel}
+          isSubmitting={createListMutation.isPending || listCover.isPending}
           onOpenChange={setDetailsOpen}
           onSubmit={handleCreateList}
           open={detailsOpen}

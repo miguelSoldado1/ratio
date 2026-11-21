@@ -49,6 +49,10 @@ const myListsForAlbumSchema = z.object({
   cursor: z.string().trim().min(1).max(2048).optional(),
 });
 
+const setListCoverSchema = listIdSchema.extend({
+  objectKey: z.string().trim().min(1).max(512),
+});
+
 const updateListSchema = listDetailsInputSchema.extend({
   listId: z.uuid(),
 });
@@ -91,6 +95,16 @@ export const deleteList = createServerFn({ method: "POST" })
   .middleware([authMiddleware, createCloudflareRateLimitMiddleware(userMutationRateLimit)])
   .validator(listIdSchema)
   .handler(({ context, data }) => listService.deleteListService(data, context));
+
+export const setListCover = createServerFn({ method: "POST" })
+  .middleware([authMiddleware, createCloudflareRateLimitMiddleware(userMutationRateLimit)])
+  .validator(setListCoverSchema)
+  .handler(({ context, data }) => listService.setListCoverService(data, context));
+
+export const removeListCover = createServerFn({ method: "POST" })
+  .middleware([authMiddleware, createCloudflareRateLimitMiddleware(userMutationRateLimit)])
+  .validator(listIdSchema)
+  .handler(({ context, data }) => listService.removeListCoverService(data, context));
 
 export const addListItem = createServerFn({ method: "POST" })
   .middleware([

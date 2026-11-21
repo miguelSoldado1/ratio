@@ -57,6 +57,13 @@
       "when": 1794087279126,
       "tag": "0007_list_is_ranked",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795199155453,
+      "tag": "0008_list_cover",
+      "breakpoints": true
     }
   ]
 }

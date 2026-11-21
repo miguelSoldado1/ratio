@@ -10,7 +10,7 @@ import {
 import { and, asc, desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import * as schema from "@/lib/db/schema";
 import { albums, listItems, lists, user } from "@/lib/db/schema";
 import {
@@ -20,8 +20,10 @@ import {
   getListService,
   getMyListsForAlbumService,
   getUserListsService,
+  removeListCoverService,
   removeListItemService,
   reorderListItemsService,
+  setListCoverService,
   updateListService,
 } from "@/server/services/list-service";
 
@@ -30,6 +32,28 @@ const mockState = vi.hoisted(() => ({
   db: undefined as unknown,
 }));
 const mockGetAlbumPersistenceMetadata = vi.hoisted(() => vi.fn());
+const mockDeleteObject = vi.hoisted(() => vi.fn<() => Promise<void>>());
+const mockFetch = vi.hoisted(() => vi.fn());
+
+vi.mock("@/env", () => ({
+  env: {
+    CLOUDFLARE_ACCESS_KEY_ID: "access-key",
+    CLOUDFLARE_ACCOUNT_ID: "account-id",
+    CLOUDFLARE_R2_BUCKET_NAME: "bucket",
+    CLOUDFLARE_R2_PUBLIC_URL: "https://assets.example.com",
+    CLOUDFLARE_CACHE_PURGE_API_TOKEN: "purge-token",
+    CLOUDFLARE_SECRET_ACCESS_KEY: "secret",
+    CLOUDFLARE_ZONE_ID: "zone-id",
+  },
+}));
+
+vi.mock("@better-upload/server/helpers", () => ({
+  deleteObject: mockDeleteObject,
+}));
+
+vi.mock("@better-upload/server/clients", () => ({
+  cloudflare: vi.fn(() => ({ client: "r2" })),
+}));
 
 vi.mock("@/lib/db", () => ({
   getDb: vi.fn(async () => mockState.db),
@@ -68,10 +92,18 @@ beforeAll(async () => {
 beforeEach(async () => {
   mockState.currentUser = undefined;
   mockGetAlbumPersistenceMetadata.mockReset();
+  mockDeleteObject.mockReset();
+  mockDeleteObject.mockResolvedValue(undefined);
+  mockFetch.mockReset().mockResolvedValue(new Response(null, { status: 200 }));
+  vi.stubGlobal("fetch", mockFetch);
   mockGetAlbumPersistenceMetadata.mockImplementation(() => {
     throw new Error("Spotify should not be called for an existing test album");
   });
   await cleanTestDatabase();
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 afterAll(async () => {
@@ -193,6 +225,98 @@ describe("list details mutations", () => {
 
     await expect(testDb.select().from(lists).where(eq(lists.id, list.id))).resolves.toEqual([]);
     await expect(testDb.select().from(listItems).where(eq(listItems.listId, list.id))).resolves.toEqual([]);
+  });
+});
+
+describe("list cover mutations", () => {
+  const coverObjectKey = (listId: string, name = "123e4567-e89b-12d3-a456-426614174000") =>
+    `list-covers/${listId}/${name}.jpg`;
+
+  it("sets a cover, replaces it, and deletes the previous object", async () => {
+    const owner = await createTestUser(testDb);
+    const list = await createTestList(testDb, { userId: owner.id });
+    const context = createAuthenticatedContext(testDb, owner);
+    const firstKey = coverObjectKey(list.id);
+    const secondKey = coverObjectKey(list.id, "223e4567-e89b-12d3-a456-426614174000");
+
+    await expect(setListCoverService({ listId: list.id, objectKey: firstKey }, context)).resolves.toMatchObject({
+      cleanupFailed: false,
+      coverUrl: `https://assets.example.com/${firstKey}`,
+    });
+    expect(mockDeleteObject).not.toHaveBeenCalled();
+
+    await setListCoverService({ listId: list.id, objectKey: secondKey }, context);
+    const [storedList] = await testDb.select().from(lists).where(eq(lists.id, list.id));
+
+    expect(storedList).toMatchObject({
+      coverObjectKey: secondKey,
+    });
+    expect(mockDeleteObject).toHaveBeenCalledWith(expect.anything(), { bucket: "bucket", key: firstKey });
+
+    mockState.currentUser = { id: owner.id, isAdmin: false };
+    await expect(getListService({ listId: list.id })).resolves.toMatchObject({
+      coverUrl: `https://assets.example.com/${secondKey}`,
+    });
+    await expect(getUserListsService({ userId: owner.id })).resolves.toMatchObject({
+      lists: [{ coverUrl: `https://assets.example.com/${secondKey}` }],
+    });
+  });
+
+  it("rejects keys for another list and covers on lists the user doesn't own", async () => {
+    const owner = await createTestUser(testDb);
+    const otherUser = await createTestUser(testDb);
+    const list = await createTestList(testDb, { userId: owner.id });
+    const otherList = await createTestList(testDb, { userId: otherUser.id });
+
+    await expect(
+      setListCoverService(
+        { listId: list.id, objectKey: coverObjectKey(otherList.id) },
+        createAuthenticatedContext(testDb, owner)
+      )
+    ).rejects.toThrow("Cover image not found");
+    await expect(
+      setListCoverService(
+        { listId: list.id, objectKey: coverObjectKey(list.id) },
+        createAuthenticatedContext(testDb, otherUser)
+      )
+    ).rejects.toThrow("List not found");
+    await expect(
+      removeListCoverService({ listId: list.id }, createAuthenticatedContext(testDb, otherUser))
+    ).rejects.toThrow("List not found");
+    expect(mockDeleteObject).not.toHaveBeenCalled();
+  });
+
+  it("removes the cover and its object", async () => {
+    const owner = await createTestUser(testDb);
+    const list = await createTestList(testDb, { userId: owner.id });
+    const context = createAuthenticatedContext(testDb, owner);
+    const key = coverObjectKey(list.id);
+    await setListCoverService({ listId: list.id, objectKey: key }, context);
+
+    await expect(removeListCoverService({ listId: list.id }, context)).resolves.toMatchObject({
+      cleanupFailed: false,
+      coverUrl: undefined,
+    });
+
+    const [storedList] = await testDb.select().from(lists).where(eq(lists.id, list.id));
+    expect(storedList).toMatchObject({ coverObjectKey: null });
+    expect(mockDeleteObject).toHaveBeenCalledWith(expect.anything(), { bucket: "bucket", key });
+  });
+
+  it("deletes the cover object along with the list", async () => {
+    const owner = await createTestUser(testDb);
+    const list = await createTestList(testDb, { userId: owner.id });
+    const context = createAuthenticatedContext(testDb, owner);
+    const key = coverObjectKey(list.id);
+    await setListCoverService({ listId: list.id, objectKey: key }, context);
+
+    await deleteListService({ listId: list.id }, context);
+
+    expect(mockDeleteObject).toHaveBeenCalledWith(expect.anything(), { bucket: "bucket", key });
+    expect(mockFetch).toHaveBeenCalledWith(
+      "https://api.cloudflare.com/client/v4/zones/zone-id/purge_cache",
+      expect.objectContaining({ body: JSON.stringify({ files: [`https://assets.example.com/${key}`] }) })
+    );
   });
 });
 

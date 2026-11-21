@@ -9,6 +9,7 @@ import {
   createReviewPageTitle,
 } from "@/lib/page-titles";
 import { getCanonicalUrl, siteName } from "@/lib/seo";
+import { getImagePublicUrl } from "./image-storage";
 import { getListShareImagePath, getListShareMosaicCovers } from "./list-share-image";
 import { enforceCloudflareRateLimitForRequest, spotifyCatalogRateLimit } from "./rate-limit";
 import { getAlbumPersistenceMetadata } from "./services/spotify-service";
@@ -158,6 +159,7 @@ async function resolveListDocumentMetadata(listId: string) {
       },
       authorDisplayUsername: user.displayUsername,
       authorName: user.name,
+      coverObjectKey: lists.coverObjectKey,
       description: lists.description,
       isRanked: lists.isRanked,
       title: lists.title,
@@ -176,19 +178,14 @@ async function resolveListDocumentMetadata(listId: string) {
   const path = `/list/${encodeURIComponent(listId)}`;
   const authorDisplayName = listRow.authorDisplayUsername ?? listRow.authorName;
   const listAlbums = rows.flatMap((row) => (row.album ? [row.album] : []));
-  const [topAlbum] = listAlbums;
   const albumLabel = listAlbums.length === 1 ? "album" : "albums";
   const summary = `${listAlbums.length} ${albumLabel} by ${authorDisplayName} on ${siteName}.`;
-  const mosaicCovers = getListShareMosaicCovers(listAlbums);
-  const shareImage = mosaicCovers
-    ? {
-        image: await getListShareImagePath(listId, mosaicCovers),
-        imageAlt: `Album covers from ${listRow.title}`,
-      }
-    : {
-        image: topAlbum?.coverUrl ?? null,
-        imageAlt: topAlbum?.coverUrl ? `${topAlbum.title} album cover` : `${siteName} album list`,
-      };
+  const shareImage = await getListShareImage({
+    coverObjectKey: listRow.coverObjectKey,
+    listAlbums,
+    listId,
+    title: listRow.title,
+  });
 
   return {
     ...shareImage,
@@ -290,4 +287,28 @@ function decodePathSegment(value: string | undefined) {
   } catch {
     return null;
   }
+}
+
+interface GetListShareImageParams {
+  coverObjectKey: null | string;
+  listAlbums: { coverUrl: null | string; title: string }[];
+  listId: string;
+  title: string;
+}
+
+async function getListShareImage({ coverObjectKey, listAlbums, listId, title }: GetListShareImageParams) {
+  if (coverObjectKey) {
+    return { image: getImagePublicUrl(coverObjectKey), imageAlt: `${title} cover` };
+  }
+
+  const mosaicCovers = getListShareMosaicCovers(listAlbums);
+  if (mosaicCovers) {
+    return { image: await getListShareImagePath(listId, mosaicCovers), imageAlt: `Album covers from ${title}` };
+  }
+
+  const [topAlbum] = listAlbums;
+  return {
+    image: topAlbum?.coverUrl ?? null,
+    imageAlt: topAlbum?.coverUrl ? `${topAlbum.title} album cover` : `${siteName} album list`,
+  };
 }

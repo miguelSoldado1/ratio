@@ -133,7 +133,12 @@ export function ListPage({
       {/* Pinned only when cover + header fit the window; a long title or description would otherwise leave
           the action buttons below the fold for as long as the albums scroll. */}
       <div className={cn("min-w-0 lg:self-start", canPinHeader && "lg:sticky lg:top-20")} ref={headerColumnRef}>
-        <ListCoverMosaic albums={list.coverAlbums} className="hidden w-full lg:grid" size={640} />
+        <ListCoverMosaic
+          albums={list.coverAlbums}
+          className="hidden w-full lg:grid"
+          coverUrl={list.coverUrl}
+          size={640}
+        />
         <ListHeader
           canAddAlbum={canAddAlbum}
           className="lg:mt-6"

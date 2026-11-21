@@ -13,6 +13,8 @@ const serverFns = vi.hoisted(() => ({
   addListItem: {},
   createList: {},
   getMyListsForAlbum: {},
+  removeListCover: {},
+  setListCover: {},
 }));
 const sessionState = vi.hoisted(() => ({
   data: {

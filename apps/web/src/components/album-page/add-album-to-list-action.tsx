@@ -8,12 +8,14 @@ import { AuthDialog } from "@/components/auth/auth-dialog";
 import { AlbumListPickerDialog } from "@/components/list/album-list-picker-dialog";
 import { ListDetailsDialog } from "@/components/list/list-details-dialog";
 import { Button } from "@/components/ui/button";
+import { useListCover } from "@/hooks/use-list-cover";
 import { authClient } from "@/lib/auth/auth-client";
 import { listQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { addListItem, createList, getMyListsForAlbum } from "@/server/functions/list-functions";
 import { tryCatch } from "@/try-catch";
 import type { InfiniteData, QueryClient } from "@tanstack/react-query";
-import type { ListDetailsInput, MyListForAlbum, MyListsForAlbumPage } from "@/server/services/list-service";
+import type { ListDetailsSubmission } from "@/components/list/list-details-dialog";
+import type { MyListForAlbum, MyListsForAlbumPage } from "@/server/services/list-service";
 
 const maxListItems = 100;
 
@@ -32,6 +34,7 @@ export function AddAlbumToListAction({ albumId, albumTitle }: AddAlbumToListActi
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const session = authClient.useSession();
+  const listCover = useListCover();
 
   const viewerUserId = session.data?.user.id;
   const pickerQueryKey = listQueryKeys.forAlbum(albumId, viewerUserId ?? "");
@@ -96,16 +99,19 @@ export function AddAlbumToListAction({ albumId, albumTitle }: AddAlbumToListActi
     setCreateDialogOpen(true);
   }
 
-  async function handleCreateListSubmit(values: ListDetailsInput) {
+  async function handleCreateListSubmit({ coverFile, details }: ListDetailsSubmission) {
     if (!viewerUserId) return;
 
-    const { data: createdList, error: createError } = await tryCatch(createListMutation.mutateAsync({ data: values }));
+    const { data: createdList, error: createError } = await tryCatch(createListMutation.mutateAsync({ data: details }));
 
     if (createError) {
       return toast.error("Couldn't create list", { description: getErrorMessage(createError) });
     }
 
-    const { error } = await tryCatch(addListItemMutation.mutateAsync({ data: { albumId, listId: createdList.id } }));
+    const [{ error }] = await Promise.all([
+      tryCatch(addListItemMutation.mutateAsync({ data: { albumId, listId: createdList.id } })),
+      coverFile ? listCover.uploadCover(createdList.id, coverFile) : null,
+    ]);
 
     setCreateDialogOpen(false);
     await Promise.all([
@@ -173,7 +179,8 @@ export function AddAlbumToListAction({ albumId, albumTitle }: AddAlbumToListActi
             pendingListIds={pendingListIds}
           />
           <ListDetailsDialog
-            isSubmitting={createListMutation.isPending || addListItemMutation.isPending}
+            coverStatusLabel={listCover.statusLabel}
+            isSubmitting={createListMutation.isPending || addListItemMutation.isPending || listCover.isPending}
             onOpenChange={setCreateDialogOpen}
             onSubmit={handleCreateListSubmit}
             open={createDialogOpen}

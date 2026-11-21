@@ -1,8 +1,12 @@
 import { albums, listItems, lists, user } from "@ratio/database/schema";
 import { eq } from "drizzle-orm";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { deleteListService, getListStatsService, getTableListsService } from "@/server/services/list-service";
 import { cleanTestDatabase, closeTestDatabase, migrateTestDatabase, testDb } from "./setup/db";
+
+vi.mock("@/env", () => ({
+  env: { CLOUDFLARE_R2_PUBLIC_URL: "https://assets.example.com/" },
+}));
 
 beforeAll(async () => {
   await migrateTestDatabase();
@@ -100,7 +104,17 @@ describe("getTableListsService", () => {
 
     const page = await getTableListsService({ filters: {}, limit: 10, page: 1, sorting: [] }, { db: testDb });
 
-    expect(page.data[0]).toMatchObject({ coverAlbums: [], itemCount: 0 });
+    expect(page.data[0]).toMatchObject({ coverAlbums: [], coverUrl: null, itemCount: 0 });
+  });
+
+  it("builds the uploaded cover URL from its object key", async () => {
+    const owner = await createUser({ id: "upload_owner", name: "Upload Owner", username: "upload_owner" });
+    await createList(owner.id, { coverObjectKey: "list-covers/abc/cover.jpg", title: "Uploaded" });
+
+    const page = await getTableListsService({ filters: {}, limit: 10, page: 1, sorting: [] }, { db: testDb });
+
+    expect(page.data[0]).toMatchObject({ coverUrl: "https://assets.example.com/list-covers/abc/cover.jpg" });
+    expect(page.data[0]).not.toHaveProperty("coverObjectKey");
   });
 });
 

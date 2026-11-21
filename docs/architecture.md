@@ -36,7 +36,23 @@ The admin cookie uses its own `ratio-admin` prefix, does not enable cross-subdom
 host-only. The public and admin hosts do not share browser sessions even though Better Auth uses the same database
 schema and relevant secret/provider configuration.
 
-Admin user deletion intentionally does not give the admin Worker R2 bindings or S3-compatible avatar credentials. Better Auth and the database cascades remove the account data, while a custom avatar may remain orphaned in R2. Self-service account deletion in the public app still removes its avatar. If admin-deletion orphans become material, prefer a bounded reconciliation script run with the public app's existing storage credentials instead of duplicating R2 secrets across admin environments.
+Admin user deletion intentionally does not give the admin Worker R2 bindings or S3-compatible avatar credentials. Better Auth and the database cascades remove the account data. Self-service account deletion in the public app also removes the user's avatar and list covers from R2.
+
+Deleting a user or a list from the admin Worker leaves its uploaded images in R2, and so does an upload whose save
+fails. The public Worker cleans these up every Monday at 05:00 UTC (`0 5 * * 1`). `deleteOrphanedImages` lists
+`avatars/` and `list-covers/` through the `IMAGES` R2 binding and deletes any object older than a day that no
+`user.avatar_object_key` or `list.cover_object_key` points to. The day gives an upload time to be saved by its dialog.
+A run reads at most five listing pages per prefix to stay inside the free plan's CPU limit. Every run starts from the
+first key, so past about 5,000 live images in a prefix, later orphans are never reached; at that size the run needs to
+save its cursor between weeks. Development has no crons, so nothing cleans the dev bucket.
+
+Images go out as `public, max-age=31536000, immutable`, so Cloudflare's edge cache would keep serving a deleted one at
+its old URL. Every delete purges that URL through the purge-by-URL API, with `CLOUDFLARE_ZONE_ID` and a
+`CLOUDFLARE_CACHE_PURGE_API_TOKEN` that can only purge cache. That covers replaced and removed photos and covers,
+deleted lists and accounts (one request per 100 images), and the weekly cleanup, which deletes and purges at most 100
+orphans per listing page, or 500 per prefix a week. A rate-limited purge waits out `Retry-After` and tries once more. If
+it still fails, it's logged as `image_cache_purge_failed` with the keys and the delete goes ahead, so someone has to
+purge those URLs by hand. Nothing can reach copies already sitting in viewers' browsers.
 
 Future admin scope may include bounded dashboard metrics, reviews, and reports. Under the free-hosting constraint, prefer bounded indexed queries, no polling, and no new infrastructure by default.
 
@@ -105,7 +121,8 @@ List pages include `ItemList` JSON-LD with each album as a `MusicAlbum`, in disp
 ascending and the rest unordered. Lists by banned authors, or by authors without a username, get no metadata, the same
 as the list page itself.
 
-When the first four albums all have covers, the share image is a 1200×1200 2×2 mosaic served from
+A list with an uploaded cover shares that image as is, so it never spends a transformation. Otherwise, when the first
+four albums all have covers, the share image is a 1200×1200 2×2 mosaic served from
 `/api/og/list/:listId?v=<hash of the four cover URLs>`. It's square because every page uses the `summary` card, and
 X, Discord, and iMessage show those as square thumbnails. Decoding and encoding images in the Worker would blow the
 10 ms CPU limit, so the route asks Cloudflare Image Transformations to do it. The first cover is scaled to the canvas

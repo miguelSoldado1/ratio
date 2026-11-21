@@ -17,6 +17,8 @@ export const env = createEnv({
     CLOUDFLARE_SECRET_ACCESS_KEY: z.string().min(1),
     CLOUDFLARE_R2_BUCKET_NAME: z.string().min(1),
     CLOUDFLARE_R2_PUBLIC_URL: z.url(),
+    CLOUDFLARE_ZONE_ID: z.string().min(1),
+    CLOUDFLARE_CACHE_PURGE_API_TOKEN: z.string().min(1),
   },
   clientPrefix: "VITE_",
   client: {},

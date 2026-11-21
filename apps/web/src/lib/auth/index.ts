@@ -4,12 +4,13 @@ import * as schema from "@ratio/database/schema";
 import { APIError, betterAuth } from "better-auth";
 import { admin, username } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
-import { eq } from "drizzle-orm";
+import { and, eq, isNotNull } from "drizzle-orm";
 import { env } from "@/env";
 import { isUsernameAllowed } from "@/lib/users/username-policy.server";
 import { normalizeUsername } from "@/lib/users/username-policy.shared";
-import { deleteAvatarObject } from "@/server/avatar-storage";
+import { deleteImageObjects } from "@/server/image-storage";
 import { createBetterAuthRateLimitStorage } from "@/server/rate-limit";
+import { tryCatch } from "@/try-catch";
 import { getDb } from "../db";
 import { limitDisplayUsername, trimDisplayUsername } from "./profile-identity";
 import { getAllowedDisplayUsername, isDisplayUsernameAllowed } from "./profile-identity.server";
@@ -56,18 +57,28 @@ export function createAuth(db: Db) {
       },
       deleteUser: {
         beforeDelete: async (deletedUser) => {
-          const [currentUser] = await db
-            .select({ avatarObjectKey: schema.user.avatarObjectKey })
-            .from(schema.user)
-            .where(eq(schema.user.id, deletedUser.id))
-            .limit(1);
+          const [[currentUser], listCovers] = await Promise.all([
+            db
+              .select({ avatarObjectKey: schema.user.avatarObjectKey })
+              .from(schema.user)
+              .where(eq(schema.user.id, deletedUser.id))
+              .limit(1),
+            db
+              .select({ coverObjectKey: schema.lists.coverObjectKey })
+              .from(schema.lists)
+              .where(and(eq(schema.lists.userId, deletedUser.id), isNotNull(schema.lists.coverObjectKey))),
+          ]);
 
-          if (!currentUser?.avatarObjectKey) return;
+          const objectKeys = [currentUser?.avatarObjectKey, ...listCovers.map((list) => list.coverObjectKey)].filter(
+            (objectKey): objectKey is string => Boolean(objectKey)
+          );
 
-          try {
-            await deleteAvatarObject(currentUser.avatarObjectKey);
-          } catch (error) {
-            console.warn("Failed to delete avatar object during account deletion", error);
+          if (objectKeys.length === 0) return;
+
+          // The weekly orphan cleanup retries anything left behind, so a storage failure mustn't block the deletion.
+          const { data, error } = await tryCatch(deleteImageObjects(objectKeys));
+          if (error || data.failedKeys.length > 0) {
+            console.warn("Failed to delete image objects during account deletion", error ?? data.failedKeys);
           }
         },
         enabled: true,

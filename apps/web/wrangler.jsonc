@@ -10,7 +10,8 @@
     "VITE_SITE_URL": "https://ratiomusic.live",
     "CLOUDFLARE_ACCOUNT_ID": "ce2122099880570dc3d6f5908544bb21",
     "CLOUDFLARE_R2_BUCKET_NAME": "ratio-images",
-    "CLOUDFLARE_R2_PUBLIC_URL": "https://assets.ratiomusic.live"
+    "CLOUDFLARE_R2_PUBLIC_URL": "https://assets.ratiomusic.live",
+    "CLOUDFLARE_ZONE_ID": "01117844a6118850e839b2ed5401f6d3"
   },
   "kv_namespaces": [
     {
@@ -18,8 +19,14 @@
       "id": "0ac8aedf7d20434c89dfd625bab620c1"
     }
   ],
+  "r2_buckets": [
+    {
+      "binding": "IMAGES",
+      "bucket_name": "ratio-images"
+    }
+  ],
   "triggers": {
-    "crons": ["0 4 */2 * *"]
+    "crons": ["0 4 */2 * *", "0 5 * * 1"]
   },
   "ratelimits": [
     {
@@ -86,12 +93,19 @@
         "VITE_SITE_URL": "https://dev.ratiomusic.live",
         "CLOUDFLARE_ACCOUNT_ID": "ce2122099880570dc3d6f5908544bb21",
         "CLOUDFLARE_R2_BUCKET_NAME": "ratio-images-dev",
-        "CLOUDFLARE_R2_PUBLIC_URL": "https://assets-dev.ratiomusic.live"
+        "CLOUDFLARE_R2_PUBLIC_URL": "https://assets-dev.ratiomusic.live",
+        "CLOUDFLARE_ZONE_ID": "01117844a6118850e839b2ed5401f6d3"
       },
       "kv_namespaces": [
         {
           "binding": "CACHE",
           "id": "d10b116f10364595a1619b6b2e625354"
+        }
+      ],
+      "r2_buckets": [
+        {
+          "binding": "IMAGES",
+          "bucket_name": "ratio-images-dev"
         }
       ],
       "ratelimits": [

@@ -13,6 +13,7 @@
   ],
   "vars": {
     "BETTER_AUTH_URL": "https://admin.ratiomusic.live",
+    "CLOUDFLARE_R2_PUBLIC_URL": "https://assets.ratiomusic.live",
     "VITE_SITE_URL": "https://ratiomusic.live"
   },
   "ratelimits": [
@@ -43,6 +44,7 @@
       ],
       "vars": {
         "BETTER_AUTH_URL": "https://admin-dev.ratiomusic.live",
+        "CLOUDFLARE_R2_PUBLIC_URL": "https://assets-dev.ratiomusic.live",
         "VITE_SITE_URL": "https://dev.ratiomusic.live"
       },
       "ratelimits": [

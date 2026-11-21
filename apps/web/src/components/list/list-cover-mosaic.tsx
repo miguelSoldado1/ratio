@@ -13,12 +13,13 @@ export function getLeadingCoverAlbums<T extends ListCoverAlbum>(albums: T[]) {
 interface ListCoverMosaicProps {
   albums: ListCoverAlbum[];
   className?: string;
+  coverUrl?: string;
   size: number;
 }
 
-export function ListCoverMosaic({ albums, className, size }: ListCoverMosaicProps) {
-  const isMosaic = albums.length >= mosaicMinAlbums;
-  const tiles = isMosaic ? albums.slice(0, mosaicMinAlbums) : albums.slice(0, 1);
+export function ListCoverMosaic({ albums, className, coverUrl, size }: ListCoverMosaicProps) {
+  const isMosaic = !coverUrl && albums.length >= mosaicMinAlbums;
+  const tiles = getCoverTiles(albums, coverUrl, isMosaic);
   const tileSize = isMosaic ? Math.round(size / 2) : size;
 
   return (
@@ -48,4 +49,10 @@ export function ListCoverMosaic({ albums, className, size }: ListCoverMosaicProp
       )}
     </span>
   );
+}
+
+function getCoverTiles(albums: ListCoverAlbum[], coverUrl: string | undefined, isMosaic: boolean) {
+  if (coverUrl) return [{ coverUrl, id: coverUrl }];
+
+  return isMosaic ? albums.slice(0, mosaicMinAlbums) : albums.slice(0, 1);
 }
