@@ -1,3 +1,4 @@
+import figtreeLatinFont from "@fontsource-variable/figtree/files/figtree-latin-wght-normal.woff2?url";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
@@ -24,7 +25,11 @@ export const Route = createRootRoute({
       },
       { title: defaultSeoTitle },
     ],
-    links: [{ rel: "stylesheet", href: appCss }, ...faviconLinks],
+    links: [
+      { rel: "preload", href: figtreeLatinFont, as: "font", type: "font/woff2", crossOrigin: "anonymous" },
+      { rel: "stylesheet", href: appCss },
+      ...faviconLinks,
+    ],
   }),
   notFoundComponent: NotFoundPage,
   component: RootComponent,
