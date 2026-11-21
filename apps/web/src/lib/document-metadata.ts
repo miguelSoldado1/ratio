@@ -48,7 +48,6 @@ export function getInitialDocumentMetadata(pathname?: string) {
     }
   ).__RATIO_DOCUMENT_METADATA__;
 
-  // The snapshot is valid only for the initial document path, including return navigation.
   return metadata &&
     normalizeDocumentPath(metadata.path) === normalizeDocumentPath(pathname ?? window.location.pathname)
     ? metadata

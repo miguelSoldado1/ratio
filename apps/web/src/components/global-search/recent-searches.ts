@@ -44,11 +44,7 @@ export function saveRecentSearch(query: string) {
 
   if (!storage) return nextSearches;
 
-  try {
-    storage.setItem(recentSearchesStorageKey, JSON.stringify(nextSearches));
-  } catch {
-    // Keep the in-memory result useful for the current render even if persistence fails.
-  }
+  attemptStorageWrite(() => storage.setItem(recentSearchesStorageKey, JSON.stringify(nextSearches)));
 
   return nextSearches;
 }
@@ -59,11 +55,7 @@ export function removeRecentSearch(normalizedQuery: string) {
 
   if (!storage) return nextSearches;
 
-  try {
-    storage.setItem(recentSearchesStorageKey, JSON.stringify(nextSearches));
-  } catch {
-    // Keep the in-memory result useful for the current render even if persistence fails.
-  }
+  attemptStorageWrite(() => storage.setItem(recentSearchesStorageKey, JSON.stringify(nextSearches)));
 
   return nextSearches;
 }
@@ -73,13 +65,18 @@ export function clearRecentSearches() {
 
   if (!storage) return [];
 
-  try {
-    storage.removeItem(recentSearchesStorageKey);
-  } catch {
-    // Keep the in-memory result useful for the current render even if persistence fails.
-  }
+  attemptStorageWrite(() => storage.removeItem(recentSearchesStorageKey));
 
   return [];
+}
+
+function attemptStorageWrite(write: () => void) {
+  try {
+    write();
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function parseRecentSearches(value: string | null) {

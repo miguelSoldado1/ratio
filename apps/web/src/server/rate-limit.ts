@@ -215,7 +215,6 @@ async function enforceFixedWindowRateLimit({
     throw new RateLimitError(Math.max(1, Math.ceil((resetAt - now) / 1000)));
   }
 
-  // Fails open like the read path: a full KV write quota must not block content creation.
   try {
     await cache.put(
       key,
@@ -317,8 +316,6 @@ function isCloudflareWorkersRuntime() {
   return typeof navigator !== "undefined" && navigator.userAgent === "Cloudflare-Workers";
 }
 
-// Missing bindings fail open, which is indistinguishable from a limit that never trips. Warn once per
-// isolate so a misconfigured binding surfaces in Worker logs instead of silently allowing everything.
 function warnMissingRateLimitBinding(bindingName: string) {
   if (!isCloudflareWorkersRuntime() || warnedMissingRateLimitBindings.has(bindingName)) return;
 

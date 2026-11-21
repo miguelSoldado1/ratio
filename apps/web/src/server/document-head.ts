@@ -29,7 +29,6 @@ export function decorateDocumentResponse(response: Response, metadata: DocumentM
   const markup = createDocumentHeadMarkup(metadata);
   const bootstrap = createDocumentMetadataBootstrap(metadata);
 
-  // Cloudflare provides a streaming rewriter; local Node development uses the buffered fallback below.
   const HtmlRewriter = Reflect.get(globalThis, "HTMLRewriter") as typeof HTMLRewriter | undefined;
 
   if (HtmlRewriter) {

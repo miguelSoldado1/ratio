@@ -2,8 +2,6 @@ import { AlbumArtwork } from "@/components/album-artwork";
 import { cn } from "@/lib/utils";
 import type { ListCoverAlbum } from "@/server/services/list-service";
 
-// Below four covers a mosaic would have to crop each one to a non-square slice, which
-// looks worse than simply showing the first cover whole.
 const mosaicMinAlbums = 4;
 
 export function getLeadingCoverAlbums<T extends ListCoverAlbum>(albums: T[]) {

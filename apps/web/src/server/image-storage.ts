@@ -47,7 +47,6 @@ export async function deleteImageObject(objectKey: string) {
   await purgeImageCache([objectKey]);
 }
 
-// Batched deletes and purges keep deleting a whole account within the Worker's subrequest limit.
 export async function deleteImageObjects(objectKeys: string[]) {
   const failedKeys: string[] = [];
 
@@ -68,12 +67,10 @@ export async function deleteImageObjects(objectKeys: string[]) {
   return { failedKeys };
 }
 
-// Images are served as immutable for a year, so a deleted one stays in Cloudflare's edge cache until purged.
 export async function purgeImageCache(objectKeys: string[]) {
   try {
     let response = await requestImageCachePurge(objectKeys);
 
-    // A lost purge leaves a deleted image public, so ride out one rate limit before giving up.
     if (response.status === 429) {
       await response.body?.cancel();
       await new Promise((resolve) => setTimeout(resolve, getRetryAfterMs(response)));

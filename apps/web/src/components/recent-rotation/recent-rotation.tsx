@@ -7,7 +7,7 @@ import { formatRelativeTime } from "@/lib/date-format";
 import { spotifyQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { getMyRecentRotation } from "@/server/functions/spotify-recent-rotation-functions";
 
-const RECENT_ROTATION_STALE_TIME_MS = 30 * 60 * 1000; // matches the server-side KV TTL
+const RECENT_ROTATION_STALE_TIME_MS = 30 * 60 * 1000;
 const className = "border-border border-b pt-5 pb-6";
 
 interface RecentRotationProps {

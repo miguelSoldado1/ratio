@@ -15,8 +15,6 @@ function stubWorkersRuntime() {
   vi.stubGlobal("navigator", { userAgent: "Cloudflare-Workers" });
 }
 
-// Each test imports its own module instance so the warn-once state starts empty, the way it does in a
-// fresh Worker isolate.
 async function importRateLimit() {
   vi.resetModules();
   return await import("@/server/rate-limit");

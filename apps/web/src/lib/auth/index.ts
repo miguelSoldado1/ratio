@@ -26,8 +26,6 @@ export function createAuth(db: Db) {
     session: {
       expiresIn: 60 * 60 * 24 * 30,
       updateAge: 60 * 60 * 24,
-      // Ratio is OAuth-only, so there is no password challenge that can refresh
-      // Better Auth's sensitive-action freshness window after it expires.
       freshAge: 0,
     },
     rateLimit: {
@@ -75,7 +73,6 @@ export function createAuth(db: Db) {
 
           if (objectKeys.length === 0) return;
 
-          // The weekly orphan cleanup retries anything left behind, so a storage failure mustn't block the deletion.
           const { data, error } = await tryCatch(deleteImageObjects(objectKeys));
           if (error || data.failedKeys.length > 0) {
             console.warn("Failed to delete image objects during account deletion", error ?? data.failedKeys);
@@ -146,7 +143,6 @@ export function createAuth(db: Db) {
         clientSecret: env.SPOTIFY_CLIENT_SECRET,
         scope: [SPOTIFY_RECENTLY_PLAYED_SCOPE],
         mapProfileToUser: async (profile) => {
-          // Spotify sends a null display_name even though Better Auth types it as a string.
           const displayName = profile.display_name?.trim() ?? "";
           const baseUsername = displayName.toLowerCase().replace(/\s+/g, "_") || `user_${profile.id.slice(-8)}`;
           const finalUsername = await generateUniqueUsername(db, baseUsername);

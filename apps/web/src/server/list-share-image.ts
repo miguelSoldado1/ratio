@@ -2,12 +2,10 @@ import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { albums, listItems, lists, user } from "@/lib/db/schema";
 
-// Square, so the grid fills small summary-card thumbnails; 600px tiles never upscale Spotify's 640px covers.
 const imageSize = 1200;
 const mosaicCoverCount = 4;
 const tileSize = imageSize / 2;
 const versionLength = 12;
-// Bump when the image layout changes so cached copies of the old layout stop being served.
 const layoutVersion = "square-1200";
 
 export function getListShareMosaicCovers(albumRows: { coverUrl: string | null }[]) {
@@ -20,7 +18,6 @@ export async function getListShareImagePath(listId: string, covers: string[]) {
 }
 
 export async function createListShareImageResponse(request: Request, listId: string) {
-  // `v` only busts crawler caches; any value gets the current covers.
   const edgeCache = getEdgeCache();
   const cachedResponse = await edgeCache?.match(request.url);
   if (cachedResponse) return cachedResponse;
@@ -45,7 +42,6 @@ async function renderMosaic(covers: string[]) {
   }));
 
   try {
-    // The first cover is only the base canvas; the four tiles cover it completely.
     const image = await fetch(covers[0], {
       cf: {
         image: {
@@ -59,7 +55,6 @@ async function renderMosaic(covers: string[]) {
     } as RequestInit);
 
     const contentType = image.headers.get("content-type");
-    // A missing cf-resized header means transformations are off and this is the untouched first cover.
     const cfResized = image.headers.get("cf-resized");
     if (!(image.ok && contentType?.startsWith("image/") && cfResized) || cfResized.includes("err=")) {
       console.warn("list_share_image_error", { cfResized, status: image.status });
@@ -97,7 +92,6 @@ async function getListShareImageVersion(covers: string[]) {
     .slice(0, versionLength);
 }
 
-// Absent outside the Workers runtime. The DOM lib's CacheStorage type lacks the Workers `default` cache.
 function getEdgeCache() {
   if (typeof caches === "undefined" || !("default" in caches)) return null;
   return (caches as unknown as { default: Cache }).default;

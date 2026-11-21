@@ -67,7 +67,6 @@ type SwipeableTabsProps = Omit<
 > & {
   defaultValue?: string;
   onValueChange?: (value: string) => void;
-  /** Called with the visible tab once the viewport comes to rest, after any slide has finished. */
   onValueSettled?: (value: string) => void;
   value?: string;
 };

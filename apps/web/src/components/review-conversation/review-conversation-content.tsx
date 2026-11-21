@@ -54,8 +54,6 @@ interface ReviewConversationContentProps {
   viewer: ReviewListViewer;
 }
 
-/** Full-width standalone review content using the same row anatomy, spacing,
- * and divider language as profile reviews. */
 export function ReviewConversationContent({
   composerUser,
   deletingReplyId,

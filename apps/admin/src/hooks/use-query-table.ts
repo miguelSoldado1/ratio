@@ -96,7 +96,6 @@ function buildQueryParams<T>(
   return { page, limit: perPage, sorting, filters } as DataTableQueryParams<T>;
 }
 
-// normalize tRPC or other custom option shapes to a UseQueryOptions object
 function normalizeQueryOptions<U>(opts: unknown): UseQueryOptions<U, unknown, U> {
   return opts as UseQueryOptions<U, unknown, U>;
 }
@@ -105,14 +104,12 @@ export function useQueryTable<
   TData,
   TQueryFnData extends { data: TData[]; pageCount: number } = { data: TData[]; pageCount: number },
 >({ columns, initialState, debounceMs = DEBOUNCE_MS, queryOptions }: UseQueryTableProps<TData, TQueryFnData>) {
-  // URL state: page & perPage
   const [page, setPage] = useQueryState(PAGE_KEY, parseAsInteger.withDefault(1).withOptions({ shallow: true }));
   const [perPage, setPerPage] = useQueryState(
     PER_PAGE_KEY,
     parseAsInteger.withDefault(initialState?.pagination?.pageSize ?? 10).withOptions({ shallow: true })
   );
 
-  // Sorting parser based on column IDs
   const columnIds = useMemo(() => computeColumnIds(columns), [columns]);
 
   const [, setUrlSorting] = useQueryState(

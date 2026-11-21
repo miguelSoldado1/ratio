@@ -54,14 +54,12 @@ describe("ReviewConversationContent", () => {
   it("renders the full review with the profile card's album row and actions", () => {
     renderContent();
 
-    // The review is fully expanded page content: no collapse affordance.
     expect(screen.getByText(longReview)).toBeTruthy();
     expect(screen.queryByRole("button", { name: showMorePattern })).toBeNull();
 
     expect(screen.getByRole("link", { name: authorNamePattern }).getAttribute("href")).toBe("/user/alice");
     expect(screen.getByRole("img", { name: "4.5 out of 5 stars" })).toBeTruthy();
 
-    // Likes · Reply · Share · Management action hierarchy.
     expect(screen.getByRole("button", { name: "Like review" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Reply to Alice's review" })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Share review" })).toBeTruthy();

@@ -22,25 +22,21 @@ const maxPerAuthor = 2;
 const maxRatingOnlyRatio = 0.15;
 const maxFeedSessionReviews = 500;
 
-// Source boosts decide how strongly candidate origin matters before item-level scoring.
-// Keep these small-ish, usually 0-10, so source can break ties without overpowering recency.
 const feedSourceRank = {
-  followed: 6, // Higher: followed-user activity survives global/trending competition more often.
-  recent: 0, // Baseline source. Raise only if the feed should feel more chronological/global.
-  recentLike: 4, // Higher: liked-again reviews resurface more aggressively.
+  followed: 6,
+  recent: 0,
+  recentLike: 4,
 } as const;
 
-// Score weights are product tuning knobs. Start with 0-20 changes; larger jumps usually
-// make one signal dominate the feed and should be backed by real usage data.
 const feedScoreWeights = {
-  body: 8, // Higher: written reviews beat rating-only activity more often. Typical range: 4-14.
-  followedAuthor: 18, // Higher: signed-in feeds become more social and less discovery-heavy. Typical range: 8-24.
-  like: 2, // Multiplies log(total likes). Higher favors established popular reviews. Typical range: 0.5-4.
-  ownAuthor: -12, // More negative keeps signed-in home from becoming the viewer's profile. Typical range: -20 to 0.
-  ratingOnly: -6, // More negative hides rating-only activity. Move toward 0 to show more ratings. Typical range: -12 to 0.
-  recentLike: 8, // Multiplies log(recent likes). Higher makes old reviews resurface from fresh activity. Typical range: 3-12.
-  recencyBase: 40, // Higher makes newly published reviews dominate. Typical range: 20-60.
-  recencyHalfLifeHours: 7 * 24, // Higher rewards new reviews for longer; lower makes the feed more immediate.
+  body: 8,
+  followedAuthor: 18,
+  like: 2,
+  ownAuthor: -12,
+  ratingOnly: -6,
+  recentLike: 8,
+  recencyBase: 40,
+  recencyHalfLifeHours: 7 * 24,
 } as const;
 
 // Schemas

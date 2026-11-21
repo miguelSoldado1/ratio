@@ -20,7 +20,6 @@ export function AlbumHeader({ album, className, coverUrl }: AlbumHeaderProps) {
   return (
     <section className={className}>
       <div className="grid grid-cols-[112px_1fr] gap-4 sm:grid-cols-[144px_1fr] lg:block">
-        {/* Cover is shown inline only below the two-column breakpoint; on lg+ it lives in the sticky aside. */}
         <div className="lg:hidden">
           <AlbumArtwork
             alt={`${album.title} album cover`}

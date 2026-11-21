@@ -45,7 +45,6 @@ function FeedPage() {
   const queryClient = useQueryClient();
   const session = authClient.useSession();
   const [activeTab, setActiveTab] = useState<HomeFeedTab>("for-you");
-  // Better Auth re-enters isPending on every refetch while signed out, so remember the first resolution.
   const [sessionResolved, setSessionResolved] = useState(false);
   if (!(sessionResolved || session.isPending)) setSessionResolved(true);
   const viewerUserId = session.data?.user.id;
@@ -65,13 +64,11 @@ function FeedPage() {
     if (value === "following" || value === "for-you") setActiveTab(value);
   }
 
-  // Follows from the empty-state suggestions defer the refetch so the list stays put; swap it in once the tab has slid offscreen.
   function handleTabSettled(value: string) {
     if (value === "following") return;
 
     queryClient.refetchQueries(
       {
-        // Errors also set isInvalidated, so only refetch a successful query a follow has invalidated.
         predicate: (query) => query.state.isInvalidated && query.state.status === "success",
         queryKey: followingFeedQueryKey,
       },

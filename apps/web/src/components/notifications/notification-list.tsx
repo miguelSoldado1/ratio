@@ -286,7 +286,6 @@ function groupNotifications(items: NotificationItem[]): NotificationGroup[] {
   ].filter((group): group is NotificationGroup => group.items.length > 0);
 }
 
-// Keeps notification copy and metadata exhaustive as the notification union grows.
 function assertNever(value: never): never {
   throw new Error(`Unsupported notification item: ${String(value)}`);
 }

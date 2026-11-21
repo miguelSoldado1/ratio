@@ -47,7 +47,7 @@ export function NotificationsDropdown({ userId }: NotificationsDropdownProps) {
     enabled: Boolean(userId),
     queryFn: () => getUnseenNotificationCountFn(),
     queryKey: countQueryKey,
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 2 * 60 * 1000,
     refetchInterval: false,
     refetchOnMount: true,
     refetchOnWindowFocus: "always",

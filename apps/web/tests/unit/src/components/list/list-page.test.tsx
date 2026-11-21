@@ -10,17 +10,11 @@ vi.mock("@tanstack/react-router", () => ({
 }));
 
 const ratingAccessibleNamePattern = /out of 5 stars/;
-// jsdom has no ResizeObserver; the header pinning only needs the methods to exist.
 vi.stubGlobal(
   "ResizeObserver",
   class {
-    disconnect() {
-      // no-op
-    }
-
-    observe() {
-      // no-op
-    }
+    disconnect = vi.fn();
+    observe = vi.fn();
   }
 );
 

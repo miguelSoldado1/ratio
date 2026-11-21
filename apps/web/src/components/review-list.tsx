@@ -18,10 +18,6 @@ export type ReviewLikeToggleHandler = (
   liked: boolean
 ) => boolean | Promise<boolean | undefined> | undefined;
 
-/** Minimum shape a review needs to render as a row. The author is supplied by
- * `resolveUser` (the profile page derives it from the profile, not the review),
- * and site-specific fields (canDelete, pinned, …) are read inside
- * the caller-provided `renderMeta` / `renderActions` closures. */
 export interface ReviewListItem {
   album?: ReviewAlbum;
   createdAt: Date;
@@ -47,9 +43,6 @@ interface ReviewRowProps<TReview extends ReviewListItem> {
   viewer: ReviewListViewer;
 }
 
-/** A single review row. Used directly by contexts that render one review and
- * manage their own likes dialog (e.g. the review permalink); lists compose it
- * through `ReviewList`. */
 export function ReviewRow<TReview extends ReviewListItem>({
   className,
   onAuthRequired,
@@ -114,9 +107,6 @@ interface ReviewListProps<TReview extends ReviewListItem> {
   viewer: ReviewListViewer;
 }
 
-/** Renders a list of review rows plus the shared infinite-scroll sentinel,
- * loading-more indicator, and likes dialog. Presentational and controlled: the
- * caller owns the query and passes `reviews`, `loadMoreRef`, and callbacks. */
 export function ReviewList<TReview extends ReviewListItem>({
   emptyState,
   isFetchingNextPage = false,
@@ -180,7 +170,6 @@ function LoadingMoreReviews() {
   );
 }
 
-/** The shared skeleton body for a single review row. */
 export function ReviewSkeletonCard() {
   return (
     <ReviewCardSkeleton.Root>
@@ -201,7 +190,6 @@ interface ReviewListSkeletonProps {
   count?: number;
 }
 
-/** A full section of review skeletons, used for initial and load-more states. */
 export function ReviewListSkeleton({ "aria-label": ariaLabel, className, count = 3 }: ReviewListSkeletonProps) {
   return (
     <section aria-label={ariaLabel} className={cn("mt-7", className)}>

@@ -502,7 +502,6 @@ function decodeReviewRepliesCursor(cursor: string) {
   return decodeCursor(cursor, reviewRepliesCursorPayloadSchema, "Invalid review replies cursor");
 }
 
-/** Applies newest-first keyset pagination to reply likes. */
 function getReviewReplyLikesCursorFilter(cursor: ReviewReplyLikesCursorPayload) {
   return getCreatedAtIdCursorFilter(cursor, {
     createdAt: reviewReplyLikes.createdAt,
@@ -510,7 +509,6 @@ function getReviewReplyLikesCursorFilter(cursor: ReviewReplyLikesCursorPayload) 
   });
 }
 
-/** Validates and decodes an opaque reply-likes cursor. */
 function decodeReviewReplyLikesCursor(cursor: string) {
   return decodeCursor(cursor, reviewReplyLikesCursorPayloadSchema, "Invalid review reply likes cursor");
 }

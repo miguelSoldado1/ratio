@@ -16,8 +16,6 @@ import { spotifyIdSchema } from "../spotify";
 // Schemas
 
 const listDetailsInputSchema = z.object({
-  // The description renders as a one-block subtitle, so line breaks collapse to spaces rather than
-  // being stored and then silently flattened at display time.
   description: z
     .string()
     .trim()

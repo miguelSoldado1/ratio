@@ -95,7 +95,6 @@ export function ReviewDrawer({ albumId, albumArtist, albumTitle }: ReviewDrawerP
     trackReviewPublished({ artist: albumArtist, id: albumId, title: albumTitle }, trimmedBody.length > 0);
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: albumQueryKeys.review(albumId) }),
-      // List rows show their author's rating, so cached lists refetch next time they're opened.
       queryClient.invalidateQueries({ queryKey: listQueryKeys.all(), refetchType: "none" }),
     ]);
 

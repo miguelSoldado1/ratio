@@ -6,7 +6,6 @@ import { toFiniteNumber } from "@/lib/format";
 import { adminListQueryKeys } from "@/lib/tanstack-query/query-keys";
 import { getListStats } from "@/server/functions/list-functions";
 
-// These dashboard metrics do not need to refetch on every focus/navigation.
 const STATS_STALE_TIME_MS = 5 * 60 * 1000;
 
 export function ListsStats() {

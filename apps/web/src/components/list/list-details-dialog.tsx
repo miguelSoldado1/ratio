@@ -93,7 +93,6 @@ export function ListDetailsDialog({
     setTitleError(undefined);
   }, [initialValues?.description, initialValues?.isRanked, initialValues?.title, open]);
 
-  // Apart from the field reset, so a details save that updates initialValues doesn't drop a picked cover.
   useEffect(() => {
     if (!open) return;
 

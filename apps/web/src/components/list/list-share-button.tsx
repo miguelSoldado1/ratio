@@ -9,7 +9,6 @@ interface ListShareButtonProps {
   authorDisplayName: string;
   className?: string;
   itemCount: number;
-  // Viewers get no other action in the header row, so the button carries a label instead of a lone glyph.
   labeled?: boolean;
   listId: string;
   title: string;
@@ -55,7 +54,6 @@ export function ListShareButton({
   }
 
   return (
-    // Glyph-only, matching the album header's icon-only Spotify action.
     <Button
       aria-label="Share list"
       className={cn("text-muted-foreground hover:text-foreground", className)}

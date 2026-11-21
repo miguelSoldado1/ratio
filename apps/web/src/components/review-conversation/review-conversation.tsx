@@ -53,8 +53,6 @@ export function ReviewConversation({ reviewId: routeReviewId }: ReviewConversati
   const userId = session.data?.user.id;
   const hasSession = Boolean(userId);
 
-  // The tail carries viewer-specific `liked`/`canDelete`, so it must not
-  // survive a sign-in/sign-out from the dialog's own auth flow.
   const [tailViewerId, setTailViewerId] = useState(userId);
   if (tailViewerId !== userId) {
     setTailViewerId(userId);
@@ -134,8 +132,6 @@ export function ReviewConversation({ reviewId: routeReviewId }: ReviewConversati
     onLoadMore: repliesQuery.fetchNextPage,
   });
 
-  /** Narrow patch of the review's cached reply count on every loaded review
-   * list. Never invalidates For You ranking or unrelated profile data. */
   function patchReplyCountCaches(targetReviewId: string, updateCount: (replyCount: number) => number) {
     if (albumReviewsQueryKey) {
       queryClient.setQueryData<InfiniteData<ReviewReplyCountPage>>(albumReviewsQueryKey, (data) =>

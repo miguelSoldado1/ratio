@@ -116,9 +116,6 @@ export function ListPage({
 
     const nextAlbumIds = arrayMove(albumIds, activeIndex, overIndex);
 
-    // dnd-kit clears the dragged row's transform in the same React batch as this handler. Keep the
-    // rendered order locally so that batch already contains the final slot; the cache update then
-    // becomes persistence rather than a second-frame visual update.
     setPendingAlbumIds(nextAlbumIds);
     await tryCatch(onReorderAlbums(nextAlbumIds));
     setPendingAlbumIds((currentAlbumIds) =>
@@ -127,11 +124,7 @@ export function ListPage({
   }
 
   return (
-    // Lists have no tracks to fill the cover column, so on desktop the header moves under the cover and the
-    // right column is only the albums. Below lg it's one column: header (with its inline cover), then rows.
     <PageContainerContent className="grid max-w-285 gap-6 py-6 lg:grid-cols-[minmax(240px,340px)_1fr] lg:gap-8 xl:gap-12">
-      {/* Pinned only when cover + header fit the window; a long title or description would otherwise leave
-          the action buttons below the fold for as long as the albums scroll. */}
       <div className={cn("min-w-0 lg:self-start", canPinHeader && "lg:sticky lg:top-20")} ref={headerColumnRef}>
         <ListCoverMosaic
           albums={list.coverAlbums}
@@ -165,8 +158,6 @@ export function ListPage({
               sensors={sensors}
             >
               <SortableContext items={albumIds} strategy={verticalListSortingStrategy}>
-                {/* Every rank cell is as wide as the longest number, so single-digit lists don't reserve
-                    room for "100" on narrow screens. */}
                 <ul style={{ "--rank-width": `${String(displayedAlbums.length).length}ch` } as CSSProperties}>
                   {displayedAlbums.map((album, albumIndex) => (
                     <ListItemRow
@@ -192,7 +183,6 @@ export function ListPage({
   );
 }
 
-// Matches lg:top-20 plus a little breathing room under the column.
 const pinnedHeaderOffsetPx = 80 + 24;
 
 function useFitsBelowPinOffset(ref: RefObject<HTMLElement | null>) {
@@ -230,8 +220,6 @@ export function ListPageSkeleton() {
     >
       <div className="min-w-0">
         <Skeleton className="hidden aspect-square w-full rounded-none lg:block" />
-        {/* Same shape as the real header, including the inline cover below lg — otherwise the mosaic
-            lands after paint and shoves the whole page down. */}
         <div className="flex flex-col items-center gap-4 sm:grid sm:grid-cols-[144px_1fr] sm:items-end lg:mt-6 lg:block">
           <div className="lg:hidden">
             <Skeleton className="aspect-square w-44 rounded-none sm:w-full" />
@@ -240,20 +228,17 @@ export function ListPageSkeleton() {
             <Skeleton className="h-7.5 w-full max-w-70 sm:h-9.5 lg:h-11.25" />
           </div>
         </div>
-        {/* Two lines of the desktop subtitle (24px each) fit in the same 48px the real text takes. */}
         <div className="mx-auto mt-3 max-w-md sm:mx-0 lg:flex lg:h-12 lg:max-w-none lg:flex-col lg:justify-around">
           <Skeleton className="mx-auto h-5 w-4/5 sm:mx-0 lg:w-full" />
           <Skeleton className="hidden h-5 w-3/5 lg:block" />
         </div>
         <Skeleton className="mx-auto mt-1.5 h-4 w-2/3 max-w-56 sm:mx-0 lg:h-5" />
-        {/* One pill: the viewer's Share list button and the owner's button row both span this width. */}
         <Skeleton className="mt-5 h-10 w-full rounded-4xl sm:w-28 lg:w-full" />
       </div>
       <div className="max-w-2xl border-border border-t pt-1">
         {Array.from({ length: 5 }, (_, index) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: static loading placeholders
           <div className={listRowClassName} key={index}>
-            {/* Title, artist and rating lines, plus the Spotify icon: the shape most real rows have. */}
             <div className="flex min-w-0 flex-1 items-center gap-3 py-3">
               <Skeleton className="size-14 shrink-0 rounded-none" />
               <div className="flex min-w-0 flex-1 flex-col gap-1.5">
@@ -277,8 +262,6 @@ interface ListPageEmptyProps {
   onAddAlbum: () => void;
 }
 
-// Shaped exactly like a real row so the page reads the same empty or full — the artwork slot just
-// holds a plus instead of a cover.
 function ListPageEmpty({ canEdit, onAddAlbum }: ListPageEmptyProps) {
   if (!canEdit) {
     return <EmptyState description="This list doesn't have any albums yet." title="Nothing here yet" />;

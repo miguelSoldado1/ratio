@@ -5,9 +5,7 @@ import type { Db } from "@/lib/db";
 
 export const imageCleanupCron = "0 5 * * 1";
 
-// Leaves time for an upload to be saved by its dialog before it counts as an orphan.
 const orphanGracePeriodMs = 24 * 60 * 60 * 1000;
-// Keeps one run within the free plan's CPU limit.
 const maxPagesPerPrefix = 5;
 
 interface ImagePrefix {
@@ -55,7 +53,6 @@ export async function deleteOrphanedImages({ bucket, db, now }: DeleteOrphanedIm
 
       if (candidateKeys.length > 0) {
         const referencedKeys = new Set(await getReferencedKeys(db, candidateKeys));
-        // One purge request per page keeps a run within the free plan's subrequest limit.
         const orphanKeys = candidateKeys
           .filter((objectKey) => !referencedKeys.has(objectKey))
           .slice(0, imageCachePurgeLimit);

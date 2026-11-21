@@ -4,7 +4,6 @@ import { PageContainer, PageContainerContent } from "@/components/page-container
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-// The equalizer echoes the Ratio brand mark — a nod at a track that can't be played.
 const EQUALIZER_BARS = [
   { className: "bg-muted-foreground/40", delay: "0ms", height: "38%", id: "bar-1" },
   { className: "bg-muted-foreground/60", delay: "220ms", height: "64%", id: "bar-2" },
@@ -16,7 +15,6 @@ const EQUALIZER_BARS = [
 ];
 
 function openSearch() {
-  // Reuse the global "/" shortcut handler owned by the top bar's search dialog.
   document.body.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "/" }));
 }
 
@@ -28,7 +26,6 @@ export function NotFoundPage() {
       <PageContainer>
         <PageContainerContent className="flex min-h-[calc(100svh-4rem)] flex-col items-center justify-center py-12">
           <article className="flex w-full max-w-md flex-col items-center text-center">
-            {/* Missing "cover art" — the visualizer has fallen silent. */}
             <div className="relative">
               <div aria-hidden="true" className="absolute inset-0 -z-10 rounded-overlay bg-primary/15 blur-2xl" />
               <div className="flex size-40 items-center justify-center rounded-overlay border border-border bg-card shadow-black/20 shadow-lg sm:size-48">

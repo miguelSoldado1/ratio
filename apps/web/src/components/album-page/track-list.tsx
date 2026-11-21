@@ -7,7 +7,6 @@ import type { getAlbumDetails } from "@/server/functions/spotify-functions";
 type SpotifyAlbumDetails = Awaited<ReturnType<typeof getAlbumDetails>>;
 type SpotifyAlbumTrack = SpotifyAlbumDetails["tracks"][number];
 
-/** Only collapse into a peek when the album has more tracks than this; shorter lists show in full. */
 const PEEK_THRESHOLD = 3;
 
 interface TrackListProps {

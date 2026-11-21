@@ -70,8 +70,6 @@ describe("review reply migration", () => {
 
 type MigrationTransaction = Parameters<Parameters<typeof testDb.transaction>[0]>[0];
 
-/** Reads one generated migration and redirects its explicit public-schema
- * references into the isolated upgrade-test schema. */
 async function readMigration(filename: string, schemaName: string) {
   const migrationPath = resolve(process.cwd(), "../../drizzle", filename);
   const migration = await readFile(migrationPath, "utf8");
@@ -79,8 +77,6 @@ async function readMigration(filename: string, schemaName: string) {
   return migration.replaceAll('"public"', `"${schemaName}"`);
 }
 
-/** Executes the same statement boundaries used by Drizzle's generated
- * migration files without touching the shared public test schema. */
 async function executeMigration(tx: MigrationTransaction, migration: string) {
   const statements = migration
     .split("--> statement-breakpoint")
@@ -92,7 +88,6 @@ async function executeMigration(tx: MigrationTransaction, migration: string) {
   }
 }
 
-/** Seeds both legacy notification shapes before the enum-replacement upgrade. */
 async function seedPreReplyData(tx: MigrationTransaction) {
   await tx.execute(sql`
     insert into "user" (id, name, email, email_verified, username)
