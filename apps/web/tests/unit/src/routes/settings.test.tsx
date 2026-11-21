@@ -75,10 +75,7 @@ describe("SettingsPage", () => {
     fireEvent.click(within(spotifyRow).getByRole("button", { name: "Remove" }));
 
     await waitFor(() => {
-      expect(mockUnlinkAccount).toHaveBeenCalledWith({
-        accountId: "spotify-account",
-        providerId: "spotify",
-      });
+      expect(mockUnlinkAccount).toHaveBeenCalledWith({ accountId: "linked_spotify" });
     });
     expect(removeQueriesSpy).toHaveBeenCalledWith({
       queryKey: spotifyQueryKeys.recentRotation("user_1"),

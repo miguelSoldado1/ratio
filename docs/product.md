@@ -157,6 +157,24 @@ The scoring weights live in `apps/web/src/server/services/feed-service.ts` near 
 - recent likes
 - candidate source
 
+When tuning, keep source boosts (`feedSourceRank`) small, usually 0 to 10. They should break ties between candidates,
+not outweigh recency. Change score weights (`feedScoreWeights`) by 20 or less at a time. A bigger jump usually lets one
+signal take over the feed, so back it with real usage data first.
+
+| Weight | Effect of a higher value | Typical range |
+| --- | --- | --- |
+| `feedSourceRank.followed` | Followed users' reviews hold up against global and trending candidates more often | 0 to 10 |
+| `feedSourceRank.recent` | The baseline source. Raise it only if the feed should feel more chronological | 0 to 10 |
+| `feedSourceRank.recentLike` | Reviews that pick up new likes come back more often | 0 to 10 |
+| `body` | Written reviews beat rating-only activity more often | 4 to 14 |
+| `followedAuthor` | Signed-in feeds lean social over discovery | 8 to 24 |
+| `like` | Long-popular reviews rank higher (scales the log of total likes) | 0.5 to 4 |
+| `ownAuthor` | Closer to 0 lets the viewer's own reviews crowd their home feed | -20 to 0 |
+| `ratingOnly` | Closer to 0 shows more rating-only activity | -12 to 0 |
+| `recentLike` | Old reviews resurface faster from fresh likes (scales the log of recent likes) | 3 to 12 |
+| `recencyBase` | New reviews dominate | 20 to 60 |
+| `recencyHalfLifeHours` | New reviews stay boosted longer | Currently 168 (7 days) |
+
 Rating-only activity is allowed but capped so it can appear for social/meme behavior without overwhelming written reviews. Repeated albums and repeated authors are also capped per page.
 
 Feed pagination is deterministic and carries returned review IDs in the cursor so later pages do not return duplicate reviews. This is a v1 tradeoff that fits the bounded candidate-query design: each page can re-query a small candidate set, exclude seen IDs, rank the remainder, and stay deterministic without schema changes. A For You scroll session ends after 500 returned reviews. This keeps the cursor and `not in` filters bounded while letting an early, low-volume feed reach reviews of any age without cycling.

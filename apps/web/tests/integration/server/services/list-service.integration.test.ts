@@ -729,7 +729,6 @@ describe("list item mutations", () => {
     const context = createAuthenticatedContext(testDb, owner);
     const [first, second, third, fourth] = testAlbums.map((album) => album.id);
 
-    // The second and third adds hit position 0 and shift the existing rows up first.
     for (const albumId of [first, second, third]) {
       await addListItemService({ albumId: albumId ?? "", listId: list.id }, context);
     }

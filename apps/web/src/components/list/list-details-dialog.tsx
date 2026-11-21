@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -74,6 +74,53 @@ export function ListDetailsDialog({
   open,
   variant,
 }: ListDetailsDialogProps) {
+  const copy = listDetailsCopy[variant];
+  const [formKey, setFormKey] = useState(0);
+  const [wasOpen, setWasOpen] = useState(open);
+
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setFormKey((key) => key + 1);
+  }
+
+  return (
+    <Dialog onOpenChange={onOpenChange} open={open}>
+      <DialogContent size="md">
+        <DialogHeader>
+          <DialogTitle>{copy.title}</DialogTitle>
+          <DialogDescription>{copy.description}</DialogDescription>
+        </DialogHeader>
+        <ListDetailsForm
+          coverStatusLabel={coverStatusLabel}
+          currentCover={currentCover}
+          initialValues={initialValues}
+          isSubmitting={isSubmitting}
+          key={formKey}
+          onCancel={() => onOpenChange(false)}
+          onSubmit={onSubmit}
+          submitLabel={copy.submitLabel}
+        />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+interface ListDetailsFormProps
+  extends Pick<ListDetailsDialogProps, "coverStatusLabel" | "currentCover" | "initialValues" | "onSubmit"> {
+  isSubmitting: boolean;
+  onCancel: () => void;
+  submitLabel: string;
+}
+
+function ListDetailsForm({
+  coverStatusLabel,
+  currentCover,
+  initialValues,
+  isSubmitting,
+  onCancel,
+  onSubmit,
+  submitLabel,
+}: ListDetailsFormProps) {
   const [title, setTitle] = useState(initialValues?.title ?? "");
   const [description, setDescription] = useState(initialValues?.description ?? "");
   const [isRanked, setIsRanked] = useState(initialValues?.isRanked ?? false);
@@ -81,25 +128,6 @@ export function ListDetailsDialog({
   const [coverFile, setCoverFile] = useState<File | undefined>(undefined);
   const [removeCover, setRemoveCover] = useState(false);
   const descriptionRef = useRef<HTMLTextAreaElement>(null);
-
-  const copy = listDetailsCopy[variant];
-
-  useEffect(() => {
-    if (!open) return;
-
-    setTitle(initialValues?.title ?? "");
-    setDescription(initialValues?.description ?? "");
-    setIsRanked(initialValues?.isRanked ?? false);
-    setTitleError(undefined);
-  }, [initialValues?.description, initialValues?.isRanked, initialValues?.title, open]);
-
-  // Apart from the field reset, so a details save that updates initialValues doesn't drop a picked cover.
-  useEffect(() => {
-    if (!open) return;
-
-    setCoverFile(undefined);
-    setRemoveCover(false);
-  }, [open]);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -145,85 +173,77 @@ export function ListDetailsDialog({
   }
 
   return (
-    <Dialog onOpenChange={onOpenChange} open={open}>
-      <DialogContent size="md">
-        <DialogHeader>
-          <DialogTitle>{copy.title}</DialogTitle>
-          <DialogDescription>{copy.description}</DialogDescription>
-        </DialogHeader>
-        <form className="flex flex-col gap-5" noValidate onSubmit={handleSubmit}>
-          <ListCoverPicker
-            albums={currentCover?.coverAlbums ?? []}
-            coverUrl={removeCover ? undefined : currentCover?.coverUrl}
-            disabled={isSubmitting}
-            file={coverFile}
-            onFileSelect={handleCoverSelect}
-            onRemove={handleCoverRemove}
-            statusLabel={coverStatusLabel}
+    <form className="flex flex-col gap-5" noValidate onSubmit={handleSubmit}>
+      <ListCoverPicker
+        albums={currentCover?.coverAlbums ?? []}
+        coverUrl={removeCover ? undefined : currentCover?.coverUrl}
+        disabled={isSubmitting}
+        file={coverFile}
+        onFileSelect={handleCoverSelect}
+        onRemove={handleCoverRemove}
+        statusLabel={coverStatusLabel}
+      />
+      <FieldGroup className="gap-5">
+        <Field data-invalid={Boolean(titleError)}>
+          <FieldLabel htmlFor={fieldIds.title}>Title</FieldLabel>
+          <Input
+            aria-describedby={titleError ? fieldIds.titleError : undefined}
+            aria-invalid={Boolean(titleError)}
+            autoComplete="off"
+            id={fieldIds.title}
+            maxLength={listTitleMaxLength}
+            onChange={(event) => setTitle(event.target.value)}
+            placeholder="The 20 albums that made me"
+            value={title}
           />
-          <FieldGroup className="gap-5">
-            <Field data-invalid={Boolean(titleError)}>
-              <FieldLabel htmlFor={fieldIds.title}>Title</FieldLabel>
-              <Input
-                aria-describedby={titleError ? fieldIds.titleError : undefined}
-                aria-invalid={Boolean(titleError)}
-                autoComplete="off"
-                id={fieldIds.title}
-                maxLength={listTitleMaxLength}
-                onChange={(event) => setTitle(event.target.value)}
-                placeholder="The 20 albums that made me"
-                value={title}
-              />
-              <FieldError id={fieldIds.titleError}>{titleError}</FieldError>
-            </Field>
-            <Field>
-              <FieldLabel htmlFor={fieldIds.description}>Subtitle</FieldLabel>
-              <Textarea
-                aria-describedby={fieldIds.descriptionHint}
-                id={fieldIds.description}
-                onAnimationEnd={(event) => event.currentTarget.classList.remove("animate-input-shake")}
-                onChange={(event) => setDescription(event.target.value)}
-                placeholder="What ties these together?"
-                ref={descriptionRef}
-                rows={2}
-                value={description}
-              />
-              <FieldDescription
-                className={
-                  description.length > listDescriptionMaxLength
-                    ? "text-destructive text-xs tabular-nums"
-                    : "text-muted-foreground-subtle text-xs tabular-nums"
-                }
-                id={fieldIds.descriptionHint}
-              >
-                {description.length}/{listDescriptionMaxLength} characters
-              </FieldDescription>
-            </Field>
-            <Field orientation="horizontal">
-              <FieldContent>
-                <FieldLabel htmlFor={fieldIds.ranked}>Numbered</FieldLabel>
-                <FieldDescription className="text-muted-foreground-subtle text-xs" id={fieldIds.rankedHint}>
-                  Show each album's place in the order you set.
-                </FieldDescription>
-              </FieldContent>
-              <Switch
-                aria-describedby={fieldIds.rankedHint}
-                checked={isRanked}
-                id={fieldIds.ranked}
-                onCheckedChange={setIsRanked}
-              />
-            </Field>
-          </FieldGroup>
-          <DialogFooter className="pt-1">
-            <Button disabled={isSubmitting} onClick={() => onOpenChange(false)} type="button" variant="outline">
-              Cancel
-            </Button>
-            <Button disabled={isSubmitting} type="submit">
-              {copy.submitLabel}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+          <FieldError id={fieldIds.titleError}>{titleError}</FieldError>
+        </Field>
+        <Field>
+          <FieldLabel htmlFor={fieldIds.description}>Subtitle</FieldLabel>
+          <Textarea
+            aria-describedby={fieldIds.descriptionHint}
+            id={fieldIds.description}
+            onAnimationEnd={(event) => event.currentTarget.classList.remove("animate-input-shake")}
+            onChange={(event) => setDescription(event.target.value)}
+            placeholder="What ties these together?"
+            ref={descriptionRef}
+            rows={2}
+            value={description}
+          />
+          <FieldDescription
+            className={
+              description.length > listDescriptionMaxLength
+                ? "text-destructive text-xs tabular-nums"
+                : "text-muted-foreground-subtle text-xs tabular-nums"
+            }
+            id={fieldIds.descriptionHint}
+          >
+            {description.length}/{listDescriptionMaxLength} characters
+          </FieldDescription>
+        </Field>
+        <Field orientation="horizontal">
+          <FieldContent>
+            <FieldLabel htmlFor={fieldIds.ranked}>Numbered</FieldLabel>
+            <FieldDescription className="text-muted-foreground-subtle text-xs" id={fieldIds.rankedHint}>
+              Show each album's place in the order you set.
+            </FieldDescription>
+          </FieldContent>
+          <Switch
+            aria-describedby={fieldIds.rankedHint}
+            checked={isRanked}
+            id={fieldIds.ranked}
+            onCheckedChange={setIsRanked}
+          />
+        </Field>
+      </FieldGroup>
+      <DialogFooter className="pt-1">
+        <Button disabled={isSubmitting} onClick={onCancel} type="button" variant="outline">
+          Cancel
+        </Button>
+        <Button disabled={isSubmitting} type="submit">
+          {submitLabel}
+        </Button>
+      </DialogFooter>
+    </form>
   );
 }

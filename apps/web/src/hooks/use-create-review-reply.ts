@@ -11,9 +11,6 @@ type CreatedReviewReply = NonNullable<Awaited<ReturnType<typeof createReviewRepl
 
 export type CreateReviewReplyResult = { error: null; reply: CreatedReviewReply } | { error: string; reply: null };
 
-/** Creates a reply and patches every loaded review-list count that already
- * knows about its review. The full conversation can layer its thread-cache
- * work on top without duplicating the shared mutation or card updates. */
 export function useCreateReviewReply() {
   const queryClient = useQueryClient();
   const createReviewReplyFn = useServerFn(createReviewReply);

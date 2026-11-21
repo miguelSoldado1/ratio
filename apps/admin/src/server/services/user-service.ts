@@ -28,7 +28,6 @@ const userTableConfig: TableQueryConfig<typeof sortColumns, typeof filterColumns
   filterColumns,
   booleanColumns: new Set(["banned"]),
   dateColumns: new Set(["createdAt"]),
-  // role is a comma-separated list ("user,admin"), so it filters via ilike too
   textColumns: new Set(["id", "name", "email", "role"]),
 } as const;
 
@@ -91,7 +90,6 @@ export async function getUserStatsService(context: AdminUserContext): Promise<Ad
   const last30Start = new Date(now - 30 * dayMs);
   const prev30Start = new Date(now - 60 * dayMs);
 
-  // Single round trip: conditional counts over one pass of the user table
   const [stats] = await context.db
     .select({
       totalUsers: count(),

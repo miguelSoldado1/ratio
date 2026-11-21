@@ -48,7 +48,7 @@ const RECENTLY_PLAYED_TRACKS_LIMIT = 50;
 const ALBUM_TYPE = "album";
 
 const SPOTIFY_RECENT_ROTATION_CACHE_KEY_PREFIX = "spotify:recent-rotation:v2";
-const SPOTIFY_RECENT_ROTATION_CACHE_TTL_SECONDS = 30 * 60; // 30 minutes
+const SPOTIFY_RECENT_ROTATION_CACHE_TTL_SECONDS = 30 * 60;
 
 // Cache schemas
 
@@ -128,7 +128,6 @@ export function mapRecentlyPlayedToRotationAlbums(items: SpotifyPlayHistoryItem[
     const album = item?.track?.album;
     const playedAt = getValidPlayedAt(item?.played_at);
 
-    // Local tracks and malformed entries have no Spotify album ID; skip them.
     if (!(album?.id && playedAt)) continue;
     if (album.album_type !== ALBUM_TYPE) continue;
 

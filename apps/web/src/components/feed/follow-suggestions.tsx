@@ -31,7 +31,6 @@ export function FollowSuggestions({ viewerUserId }: FollowSuggestionsProps) {
 
   const panelToFocusOnUnmountRef = useRef<HTMLElement | null>(null);
 
-  // A refetch while this tab is open (e.g. on window focus) can refill the feed and unmount this list, dropping focus to <body>.
   useEffect(
     () =>
       function focusPanelOnUnmount() {
@@ -76,7 +75,6 @@ export function FollowSuggestions({ viewerUserId }: FollowSuggestionsProps) {
 
     trackSocialActionCompleted("follow");
 
-    // The viewer may have left the tab while the follow was in flight, after its settle refetch already ran.
     if (container?.closest("[inert]")) {
       queryClient.refetchQueries({ queryKey: feedQueryKeys.following(viewerUserId) }, { cancelRefetch: false });
     }

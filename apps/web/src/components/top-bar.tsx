@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { useState } from "react";
 import { AuthDialog } from "@/components/auth/auth-dialog";
-import { GlobalSearch } from "@/components/global-search/global-search";
+import { useOpenGlobalSearch } from "@/components/global-search/global-search-provider";
 import { GlobalSearchTrigger } from "@/components/global-search/global-search-trigger";
 import { HeaderAuthActions } from "@/components/header-auth-actions";
 import { NotificationsDropdown } from "@/components/notifications-dropdown";
@@ -44,7 +44,7 @@ function LogoHomeLink() {
 }
 
 export function TopBar() {
-  const [searchOpen, setSearchOpen] = useState(false);
+  const openSearch = useOpenGlobalSearch();
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const session = authClient.useSession();
   const userId = session.data?.user.id;
@@ -54,15 +54,14 @@ export function TopBar() {
   return (
     <>
       <AuthDialog onOpenChange={setAuthDialogOpen} open={authDialogOpen} source="header" />
-      <GlobalSearch onOpenChange={setSearchOpen} open={searchOpen} />
       <div className="sticky top-0 z-40 border-border/80 border-b bg-background/95 px-3 py-3 backdrop-blur-md sm:px-5 lg:px-10">
         <div className="mx-auto grid w-full max-w-375 grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
           <LogoHomeLink />
           <div className="hidden min-w-0 justify-center lg:flex">
-            <GlobalSearchTrigger className="max-w-108" onOpen={() => setSearchOpen(true)} />
+            <GlobalSearchTrigger className="max-w-108" onOpen={openSearch} />
           </div>
           <div className="flex min-w-0 items-center justify-end gap-1.5">
-            <GlobalSearchTrigger className="lg:hidden" compact onOpen={() => setSearchOpen(true)} />
+            <GlobalSearchTrigger className="lg:hidden" compact onOpen={openSearch} />
             <div className="flex w-28 shrink-0 items-center justify-end sm:w-32 lg:w-72">
               {session.isPending ? (
                 <Skeleton aria-hidden="true" className="h-9 w-full rounded-full" />

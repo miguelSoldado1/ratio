@@ -1,41 +1,35 @@
 import { useQuery } from "@tanstack/react-query";
-import {
-  getCoreRowModel,
-  getFacetedMinMaxValues,
-  getFacetedRowModel,
-  getFacetedUniqueValues,
-  getFilteredRowModel,
-  getPaginationRowModel,
-  getSortedRowModel,
-  useReactTable,
-} from "@tanstack/react-table";
+import { useTable } from "@tanstack/react-table";
 import { parseAsArrayOf, parseAsInteger, parseAsString, useQueryState, useQueryStates } from "nuqs";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDebouncedCallback } from "@/hooks/use-debounced-callback";
+import { dataTableFeatures } from "@/lib/data-table";
 import { getSortingStateParser } from "@/lib/parsers";
 import type { UseQueryOptions } from "@tanstack/react-query";
 import type {
   ColumnDef,
   ColumnFiltersState,
   ColumnPinningState,
+  ColumnVisibilityState,
   PaginationState,
+  RowData,
   RowSelectionState,
   SortingState,
   TableOptions,
   Updater,
-  VisibilityState,
 } from "@tanstack/react-table";
 import type { Parser } from "nuqs";
+import type { DataTableFeatures } from "@/lib/data-table";
 import type { ExtendedColumnSort } from "@/types/data-table";
 
 type QueryOptionsOrBuilder<TData, TQueryFnData> =
   | UseQueryOptions<TQueryFnData, unknown, TQueryFnData>
   | ((params: DataTableQueryParams<TData>) => unknown);
 
-interface UseQueryTableProps<TData, TQueryFnData = { data: TData[]; pageCount: number }> {
-  columns: ColumnDef<TData>[];
+interface UseQueryTableProps<TData extends RowData, TQueryFnData = { data: TData[]; pageCount: number }> {
+  columns: ColumnDef<DataTableFeatures, TData>[];
   debounceMs?: number;
-  initialState?: Partial<TableOptions<TData>>["initialState"];
+  initialState?: TableOptions<DataTableFeatures, TData>["initialState"];
   queryOptions: QueryOptionsOrBuilder<TData, TQueryFnData>;
 }
 
@@ -52,11 +46,11 @@ export interface DataTableQueryParams<T> {
   sorting?: ExtendedColumnSort<T>[];
 }
 
-function computeColumnIds<T>(columns: ColumnDef<T>[]) {
+function computeColumnIds<T extends RowData>(columns: ColumnDef<DataTableFeatures, T>[]) {
   return new Set(columns.map((column) => column.id).filter((id): id is string => Boolean(id)));
 }
 
-function buildFilterParsers<T>(filterableColumns: ColumnDef<T>[]) {
+function buildFilterParsers<T extends RowData>(filterableColumns: ColumnDef<DataTableFeatures, T>[]) {
   return filterableColumns.reduce<Record<string, Parser<string> | Parser<string[]>>>((acc, column) => {
     const variant = column.meta?.variant;
     const isMulti = variant === "multiSelect";
@@ -96,23 +90,20 @@ function buildQueryParams<T>(
   return { page, limit: perPage, sorting, filters } as DataTableQueryParams<T>;
 }
 
-// normalize tRPC or other custom option shapes to a UseQueryOptions object
 function normalizeQueryOptions<U>(opts: unknown): UseQueryOptions<U, unknown, U> {
   return opts as UseQueryOptions<U, unknown, U>;
 }
 
 export function useQueryTable<
-  TData,
+  TData extends RowData,
   TQueryFnData extends { data: TData[]; pageCount: number } = { data: TData[]; pageCount: number },
 >({ columns, initialState, debounceMs = DEBOUNCE_MS, queryOptions }: UseQueryTableProps<TData, TQueryFnData>) {
-  // URL state: page & perPage
   const [page, setPage] = useQueryState(PAGE_KEY, parseAsInteger.withDefault(1).withOptions({ shallow: true }));
   const [perPage, setPerPage] = useQueryState(
     PER_PAGE_KEY,
     parseAsInteger.withDefault(initialState?.pagination?.pageSize ?? 10).withOptions({ shallow: true })
   );
 
-  // Sorting parser based on column IDs
   const columnIds = useMemo(() => computeColumnIds(columns), [columns]);
 
   const [, setUrlSorting] = useQueryState(
@@ -145,8 +136,10 @@ export function useQueryTable<
   );
 
   // Table state
-  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>(initialState?.columnVisibility ?? {});
-  const [columnPinning, setColumnPinning] = useState<ColumnPinningState>(initialState?.columnPinning ?? {});
+  const [columnVisibility, setColumnVisibility] = useState<ColumnVisibilityState>(initialState?.columnVisibility ?? {});
+  const [columnPinning, setColumnPinning] = useState<ColumnPinningState>(
+    initialState?.columnPinning ?? { start: [], end: [] }
+  );
   const [rowSelection, setRowSelection] = useState<RowSelectionState>(initialState?.rowSelection ?? {});
 
   const initialColumnFilters: ColumnFiltersState = useMemo(
@@ -221,7 +214,8 @@ export function useQueryTable<
   );
 
   const getTableConfig = useCallback(
-    (data: TData[], pageCount: number): TableOptions<TData> => ({
+    (data: TData[], pageCount: number): TableOptions<DataTableFeatures, TData> => ({
+      features: dataTableFeatures,
       columns,
       data,
       pageCount,
@@ -239,13 +233,6 @@ export function useQueryTable<
       onColumnVisibilityChange: setColumnVisibility,
       onColumnPinningChange: setColumnPinning,
       onRowSelectionChange: setRowSelection,
-      getCoreRowModel: getCoreRowModel(),
-      getFilteredRowModel: getFilteredRowModel(),
-      getPaginationRowModel: getPaginationRowModel(),
-      getSortedRowModel: getSortedRowModel(),
-      getFacetedRowModel: getFacetedRowModel(),
-      getFacetedUniqueValues: getFacetedUniqueValues(),
-      getFacetedMinMaxValues: getFacetedMinMaxValues(),
       manualPagination: true,
       manualSorting: true,
       manualFiltering: true,
@@ -277,7 +264,7 @@ export function useQueryTable<
 
   const query = useQuery({ ...normalizedOptions, placeholderData: (prev) => prev });
 
-  const table = useReactTable<TData>(getTableConfig(query.data?.data ?? [], query.data?.pageCount ?? -1));
+  const table = useTable(getTableConfig(query.data?.data ?? [], query.data?.pageCount ?? -1));
 
   return { table, query };
 }

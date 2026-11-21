@@ -10,21 +10,17 @@ import { cn } from "@/lib/utils";
 import { listRowClassName } from "./list-row-styles";
 import type { ListAlbum } from "@/server/services/list-service";
 
-// Keeps a long list from taking half a second to flip into edit mode.
 const removeStaggerMaxSteps = 6;
 const removeStaggerStepMs = 22;
 
-// Cover plus the row's vertical padding: side controls centre on the cover, not on a row grown by a review excerpt.
 const coverBandClassName = "flex h-20 shrink-0 items-center";
 
 interface ListItemRowProps {
   album: ListAlbum;
   editing: boolean;
-  // Not displayed — only sets this row's stagger delay when edit mode opens.
   index: number;
   isRemoving: boolean;
   onRemove: (albumId: string) => void;
-  // Set only on numbered lists.
   rank?: number;
   sortingDisabled: boolean;
 }
@@ -47,8 +43,6 @@ export function ListItemRow({ album, editing, index, isRemoving, onRemove, rank,
         isDragging && "z-10 bg-background shadow-md"
       )}
       ref={setNodeRef}
-      // Translate only: rows differ in height once review text is shown, and dnd-kit's scale would stretch a row
-      // to fill the slot it passes over.
       style={{ transform: CSS.Translate.toString(transform) }}
     >
       {editing ? (
@@ -78,9 +72,6 @@ export function ListItemRow({ album, editing, index, isRemoving, onRemove, rank,
           {rank}
         </span>
       )}
-      {/* The title link stretches over the whole row so it opens the album, while the review excerpt
-          sits above it as its own link. Like a review card, the excerpt runs full width under the
-          cover instead of leaving a hole beneath it. */}
       <div className="relative min-w-0 flex-1 py-3 [transition:opacity_150ms_ease] has-[[data-album-link]:hover]:opacity-80">
         <div className="flex items-center gap-3">
           <AlbumArtwork

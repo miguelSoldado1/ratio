@@ -19,8 +19,5 @@ export default defineConfig({
     include: ["tests/**/*.test.{ts,tsx}"],
     restoreMocks: true,
     setupFiles: ["./tests/setup/vitest.setup.ts"],
-    env: {
-      DOTENV_CONFIG_PATH: "../../.env",
-    },
   },
 });

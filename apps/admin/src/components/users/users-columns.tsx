@@ -6,9 +6,10 @@ import { parseRoles } from "@/lib/roles";
 import { getWebAppHref } from "@/lib/web-app";
 import { UserActionsMenu } from "./user-actions-menu";
 import type { ColumnDef } from "@tanstack/react-table";
+import type { DataTableFeatures } from "@/lib/data-table";
 import type { AdminUserRow } from "@/server/services/user-service";
 
-export const usersColumns: ColumnDef<AdminUserRow>[] = [
+export const usersColumns: ColumnDef<DataTableFeatures, AdminUserRow>[] = [
   {
     id: "id",
     accessorKey: "id",

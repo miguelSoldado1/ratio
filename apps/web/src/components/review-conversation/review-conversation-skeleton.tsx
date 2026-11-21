@@ -1,7 +1,6 @@
 import { Skeleton } from "@/components/ui/skeleton";
 import { ReplyRowsSkeleton } from "./reply-rows-skeleton";
 
-/** Loading shape for the profile-style root review and its discussion. */
 export function ReviewConversationSkeleton() {
   return (
     <div aria-busy="true" aria-label="Loading review" className="flex flex-col" role="status">

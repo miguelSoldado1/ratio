@@ -61,7 +61,6 @@ function ListRoute() {
   const { listId } = Route.useParams();
   const session = authClient.useSession();
   const viewerUserId = session.data?.user.id;
-  // Remount owner-only state when the list or resolved viewer identity changes.
   const routeIdentity = `${listId}:${session.isPending ? "pending" : (viewerUserId ?? "anonymous")}`;
 
   return (
@@ -166,7 +165,6 @@ function ListRouteContent({ listId, sessionPending, viewerUserId }: ListRouteCon
         : currentList
     );
 
-    // Details first: re-sending them is harmless, so a failed cover can simply be retried.
     const isCoverSaved = await saveCoverChange({ coverFile, removeCover });
     if (isCoverSaved) setDetailsOpen(false);
 

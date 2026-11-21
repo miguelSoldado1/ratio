@@ -6,7 +6,6 @@ const csrfMiddleware = createCsrfMiddleware({
   filter: ({ handlerType }) => handlerType === "serverFn",
 });
 
-// First in the chain so throttled traffic never reaches a session lookup.
 const rateLimitMiddleware = createMiddleware().server(async ({ next, request }) => {
   const rateLimitResponse = await enforceAdminRequestRateLimit(request);
 

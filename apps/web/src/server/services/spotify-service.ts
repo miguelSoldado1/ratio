@@ -61,15 +61,15 @@ const SPOTIFY_CACHE_KEY_PREFIX = "spotify";
 const SPOTIFY_CATALOG_CACHE_SCOPE = "global-v1";
 
 const SPOTIFY_SEARCH_CACHE_KEY_PREFIX = `${SPOTIFY_CACHE_KEY_PREFIX}:search:album`;
-const SPOTIFY_SEARCH_CACHE_TTL_SECONDS = 10 * 60; // 10 minutes
+const SPOTIFY_SEARCH_CACHE_TTL_SECONDS = 10 * 60;
 
 const SPOTIFY_ALBUM_DETAILS_CACHE_KEY_PREFIX = `${SPOTIFY_CACHE_KEY_PREFIX}:album-details`;
-const SPOTIFY_ARTIST_ALBUMS_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60; // 7 days
-const SPOTIFY_ALBUM_DETAILS_CACHE_TTL_SECONDS = 24 * 60 * 60; // 24 hours
+const SPOTIFY_ARTIST_ALBUMS_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
+const SPOTIFY_ALBUM_DETAILS_CACHE_TTL_SECONDS = 24 * 60 * 60;
 
 const SPOTIFY_ALBUM_PERSISTENCE_CACHE_KEY_PREFIX = `${SPOTIFY_CACHE_KEY_PREFIX}:album-persistence`;
 const SPOTIFY_ARTIST_ALBUMS_CACHE_KEY_PREFIX = `${SPOTIFY_CACHE_KEY_PREFIX}:artist-albums`;
-const SPOTIFY_ALBUM_PERSISTENCE_CACHE_TTL_SECONDS = 24 * 60 * 60; // 24 hours
+const SPOTIFY_ALBUM_PERSISTENCE_CACHE_TTL_SECONDS = 24 * 60 * 60;
 const SPOTIFY_RELEASE_YEAR_DATE_PATTERN = /^\d{4}$/;
 const SPOTIFY_RELEASE_MONTH_DATE_PATTERN = /^\d{4}-\d{2}$/;
 const SPOTIFY_RELEASE_DAY_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
@@ -342,7 +342,6 @@ async function getParsedSpotifyCacheValue<T>(cacheKey: string, schema: z.ZodType
   return null;
 }
 
-// Only edge entries are logged: their per-datacenter hit rate is the one worth watching.
 function logSpotifyCacheResult(cacheKey: string, storage: SpotifyCacheStorage, hit: boolean) {
   if (storage !== "edge") return;
   console.info("spotify_edge_cache", { cache: cacheKey.split(":")[1], hit });

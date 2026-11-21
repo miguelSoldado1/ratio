@@ -74,7 +74,7 @@ function SettingsPage() {
     setPendingProvider(null);
   }
 
-  async function handleUnlinkProvider(providerId: AuthProviderId, accountId?: string) {
+  async function handleUnlinkProvider(providerId: AuthProviderId, accountId: string) {
     if (linkedProviderCount <= 1) {
       return toast.error("Keep one sign-in method", {
         description: "Link another provider before removing this one.",
@@ -82,10 +82,7 @@ function SettingsPage() {
     }
 
     setUnlinkingProvider(providerId);
-    const { error } = await authClient.unlinkAccount({
-      accountId,
-      providerId,
-    });
+    const { error } = await authClient.unlinkAccount({ accountId });
 
     if (error) {
       toast.error("Couldn't unlink provider", {

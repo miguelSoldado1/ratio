@@ -4,17 +4,15 @@ import { growthTrend } from "@/components/stat-card";
 import { StatStrip, StatStripSkeleton } from "@/components/stat-strip";
 import { toFiniteNumber } from "@/lib/format";
 import { adminListQueryKeys } from "@/lib/tanstack-query/query-keys";
+import { statsStaleTime } from "@/lib/tanstack-query/root-provider";
 import { getListStats } from "@/server/functions/list-functions";
-
-// These dashboard metrics do not need to refetch on every focus/navigation.
-const STATS_STALE_TIME_MS = 5 * 60 * 1000;
 
 export function ListsStats() {
   const getStatsFn = useServerFn(getListStats);
   const { data: stats, isLoading } = useQuery({
     queryKey: adminListQueryKeys.stats(),
     queryFn: () => getStatsFn(),
-    staleTime: STATS_STALE_TIME_MS,
+    staleTime: statsStaleTime,
   });
 
   if (isLoading) return <StatStripSkeleton />;

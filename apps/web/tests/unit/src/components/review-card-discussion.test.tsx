@@ -97,7 +97,6 @@ describe("review row discussion slots", () => {
 
     const discussionLink = screen.getByRole("link", { name: "View discussion of Alice's review" });
     const likeButton = screen.getByRole("button", { name: "Like review" });
-    // Siblings in the same footer, with the like control first.
     expect(discussionLink.compareDocumentPosition(likeButton)).toBe(Node.DOCUMENT_POSITION_PRECEDING);
     expect(discussionLink.parentElement?.parentElement).toBe(likeButton.parentElement?.parentElement ?? null);
   });

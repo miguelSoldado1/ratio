@@ -19,7 +19,7 @@ export function ListsTable() {
     columns: listsColumns,
     initialState: {
       sorting: [{ id: "createdAt", desc: true }],
-      columnPinning: { right: ["actions"] },
+      columnPinning: { start: [], end: ["actions"] },
     },
     queryOptions: (params) => ({
       queryKey: adminListQueryKeys.table(params),

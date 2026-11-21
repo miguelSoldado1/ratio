@@ -1,9 +1,6 @@
 import { Plus } from "lucide-react";
 import { listRowClassName } from "./list-row-styles";
 
-// Additive actions are rows rather than floating buttons: they scroll with the content they belong
-// to, which matters most inside the profile's swipeable tabs where the tab bar overlays the panel.
-
 interface ListAddRowProps {
   description: string;
   label: string;

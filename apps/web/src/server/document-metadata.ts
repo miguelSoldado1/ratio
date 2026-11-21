@@ -126,7 +126,6 @@ function createAlbumDocumentMetadata(albumId: string, album: AlbumDocumentMetada
               "@type": "AggregateRating",
               bestRating: 5,
               ratingCount: album.ratingCount,
-              // Matches the album page summary, which rounds to one decimal.
               ratingValue: Number(album.ratingAverage.toFixed(1)),
               worstRating: 0.5,
             },
@@ -145,8 +144,6 @@ function createAlbumDocumentMetadata(albumId: string, album: AlbumDocumentMetada
   } satisfies DocumentMetadata;
 }
 
-// One bounded query: the list and author repeat on each item row, and an empty list still returns its
-// list row through the left joins.
 async function resolveListDocumentMetadata(listId: string) {
   const db = await getDb();
   const rows = await db

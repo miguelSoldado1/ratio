@@ -7,15 +7,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { InputClear } from "@/components/ui/input-clear";
 import { cn } from "@/lib/utils";
-import type { Column, Table } from "@tanstack/react-table";
+import type { Column, ReactTable, RowData } from "@tanstack/react-table";
+import type { DataTableFeatures } from "@/lib/data-table";
 
-interface DataTableToolbarProps<TData> extends React.ComponentProps<"div"> {
+interface DataTableToolbarProps<TData extends RowData> extends React.ComponentProps<"div"> {
   isLoading?: boolean;
   refetch?: () => void;
-  table: Table<TData>;
+  table: ReactTable<DataTableFeatures, TData>;
 }
 
-export function DataTableToolbar<TData>({
+export function DataTableToolbar<TData extends RowData>({
   table,
   children,
   className,
@@ -23,7 +24,7 @@ export function DataTableToolbar<TData>({
   refetch,
   ...props
 }: DataTableToolbarProps<TData>) {
-  const isFiltered = table.getState().columnFilters.length > 0;
+  const isFiltered = table.state.columnFilters.length > 0;
 
   const columns = React.useMemo(() => table.getAllColumns().filter((column) => column.getCanFilter()), [table]);
 
@@ -63,11 +64,11 @@ export function DataTableToolbar<TData>({
   );
 }
 
-interface DataTableToolbarFilterProps<TData> {
-  column: Column<TData>;
+interface DataTableToolbarFilterProps<TData extends RowData> {
+  column: Column<DataTableFeatures, TData>;
 }
 
-function DataTableToolbarFilter<TData>({ column }: DataTableToolbarFilterProps<TData>) {
+function DataTableToolbarFilter<TData extends RowData>({ column }: DataTableToolbarFilterProps<TData>) {
   const columnMeta = column.columnDef.meta;
 
   const onFilterRender = React.useCallback(() => {

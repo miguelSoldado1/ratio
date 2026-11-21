@@ -32,7 +32,6 @@ const listItemCount = sql<number>`(
   select count(*) from ${listItems}
   where ${listItems.listId} = ${lists.id}
 )`.mapWith(Number);
-// The public list shows the highest position first, so these are its first four covers.
 const listCoverAlbums = sql<AdminListCoverAlbum[]>`(
   select coalesce(
     json_agg(

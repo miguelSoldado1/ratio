@@ -3,19 +3,20 @@ import { DataTablePagination } from "@/components/data-table/data-table-paginati
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { getCommonPinningStyles } from "@/lib/data-table";
 import { cn } from "@/lib/utils";
-import type { Table as TanstackTable } from "@tanstack/react-table";
+import type { ReactTable, RowData } from "@tanstack/react-table";
 import type * as React from "react";
+import type { DataTableFeatures } from "@/lib/data-table";
 
-interface DataTableProps<TData> extends React.ComponentProps<"div"> {
+interface DataTableProps<TData extends RowData> extends React.ComponentProps<"div"> {
   actionBar?: React.ReactNode;
   getRowLabel?: (row: TData) => string;
   onRowActivate?: (row: TData) => void;
   pageSizeOptions?: number[];
   showPagination?: boolean;
-  table: TanstackTable<TData>;
+  table: ReactTable<DataTableFeatures, TData>;
 }
 
-export function DataTable<TData>({
+export function DataTable<TData extends RowData>({
   table,
   actionBar,
   getRowLabel,

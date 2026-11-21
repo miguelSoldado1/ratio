@@ -405,7 +405,6 @@ export async function setListCoverService(data: SetListCoverInput, context: Auth
     .where(and(eq(lists.id, data.listId), eq(lists.userId, context.user.id)))
     .limit(1);
 
-  // No cleanup here: the key may be another owner's live cover.
   if (!currentList) {
     throw new Error("List not found");
   }
@@ -584,8 +583,6 @@ export async function reorderListItemsService(data: ReorderListItemsInput, conte
     const maxPosition = Math.max(...storedItems.map((item) => item.position));
     const temporaryOffset = maxPosition + 1;
 
-    // The position index is unique per list and is not deferrable. Move every row outside the
-    // current range first so assigning the final dense positions cannot collide mid-update.
     await transaction
       .update(listItems)
       .set({ position: sql`${listItems.position} + ${temporaryOffset}` })
@@ -634,9 +631,6 @@ async function assertListCanAcceptAlbum(data: ListItemInput, userId: string, db:
   }
 }
 
-// Rows display from the highest position down, so a new album goes below the lowest one. When the
-// lowest is already 0, every row first moves up by maxPosition + 1: each new value lands above every
-// old one, so the non-deferrable unique position index can't collide mid-update.
 async function getBottomPosition(
   listId: string,
   itemStats: { maxPosition: null | number; minPosition: null | number } | undefined,
@@ -762,7 +756,6 @@ function mapListAuthor(author: {
   };
 }
 
-// Left-joined, so every field is null when the list author hasn't reviewed the album.
 const authorReviewColumns = {
   excerpt: sql<null | string>`left(${reviews.body}, ${listReviewExcerptLength})`,
   id: reviews.id,

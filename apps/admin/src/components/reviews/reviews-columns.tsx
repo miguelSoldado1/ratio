@@ -6,9 +6,10 @@ import { formatCompactNumber, formatDate } from "@/lib/format";
 import { getWebAppHref } from "@/lib/web-app";
 import { ReviewActionsMenu } from "./review-actions-menu";
 import type { ColumnDef } from "@tanstack/react-table";
+import type { DataTableFeatures } from "@/lib/data-table";
 import type { AdminReviewRow } from "@/server/services/review-service";
 
-export const reviewsColumns: ColumnDef<AdminReviewRow>[] = [
+export const reviewsColumns: ColumnDef<DataTableFeatures, AdminReviewRow>[] = [
   {
     id: "user",
     accessorFn: (review) => review.userDisplayUsername ?? review.username ?? review.userName,

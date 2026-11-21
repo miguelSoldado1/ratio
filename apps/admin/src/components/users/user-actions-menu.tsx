@@ -94,7 +94,6 @@ export function UserActionsMenu({ user }: { user: AdminUserRow }) {
         return (
           await authClient.admin.setRole({
             userId: user.id,
-            // Better Auth's default client types do not model preserved custom roles.
             role: withAdminRole(user.role) as ("admin" | "user")[],
           })
         ).error;
@@ -102,7 +101,6 @@ export function UserActionsMenu({ user }: { user: AdminUserRow }) {
         return (
           await authClient.admin.setRole({
             userId: user.id,
-            // Better Auth's default client types do not model preserved custom roles.
             role: withoutAdminRole(user.role) as ("admin" | "user")[],
           })
         ).error;

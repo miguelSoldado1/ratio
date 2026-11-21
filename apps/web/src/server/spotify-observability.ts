@@ -56,7 +56,6 @@ function getErrorFields(error: unknown) {
 
 function getErrorMessage(error: unknown) {
   if (error instanceof Error) {
-    // The Spotify client can turn an object response body into "[object Object]".
     if (error.message === "[object Object]" && "body" in error) {
       try {
         return JSON.stringify(error.body) ?? error.message;

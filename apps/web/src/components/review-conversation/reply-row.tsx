@@ -16,8 +16,6 @@ interface ReplyRowProps {
   reply: ReviewReply;
 }
 
-/** A reply rendered as the shared review card without album or rating data,
- * while retaining reply-specific like and management controls. */
 export function ReplyRow({
   articleRef,
   canDeleteAsAdmin,

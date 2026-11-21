@@ -39,7 +39,7 @@ export interface ReviewData {
   id: string;
   liked?: boolean;
   likes?: number;
-  rating: number; // 1–5 (half-star increments)
+  rating: number;
   review?: string;
   user: ReviewUser;
 }
@@ -189,8 +189,6 @@ interface ReviewProps {
   permalink?: ReviewPermalink;
 }
 
-// ~8 lines at the review's line-height (15px × 1.45 ≈ 21.75px). Keep in sync
-// with the `max-h-44` (176px) clamp applied below.
 const collapsedReviewMaxHeightPx = 176;
 
 function Review({ children, className, collapsed = true, permalink }: ReviewProps) {
@@ -232,11 +230,12 @@ function Review({ children, className, collapsed = true, permalink }: ReviewProp
     <p
       className={cn(
         "wrap-break-word whitespace-pre-wrap text-[15px] text-foreground/90 leading-[1.45]",
-        collapsed && !expanded && "max-h-44 overflow-hidden",
+        collapsed && !expanded && "overflow-hidden",
         className
       )}
       id={reviewId}
       ref={collapsed ? setReviewElement : undefined}
+      style={collapsed && !expanded ? { maxHeight: collapsedReviewMaxHeightPx } : undefined}
     >
       {children}
     </p>

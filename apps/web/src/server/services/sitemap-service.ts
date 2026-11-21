@@ -6,7 +6,6 @@ import { getCanonicalUrl } from "@/lib/seo";
 const CLOUDFLARE_WORKERS_MODULE = "cloudflare:workers";
 const SITEMAP_CACHE_KEY = "sitemap:v1";
 
-// Keeps the four dynamic sections under the 50,000 URL limit of a single sitemap file.
 const SITEMAP_SECTION_LIMIT = 12_000;
 
 const staticEntries: SitemapEntry[] = [

@@ -12,7 +12,6 @@ export function SettingsSkeleton() {
         <PageContainerContent className="flex flex-col gap-10">
           <header className="flex max-w-2xl flex-col gap-2">
             <Skeleton className="h-9 w-64 max-w-full rounded-sm" />
-            {/* Description wraps to two lines below sm and collapses to one at sm+ (matches SettingsHeader copy). */}
             <Skeleton className="h-10 w-full max-w-xl rounded-sm sm:h-5" />
           </header>
 
@@ -96,7 +95,6 @@ function SettingsActionSkeleton({ descriptionLines, destructive }: { description
           <div className="min-w-0">
             <Skeleton className="h-4 w-32 rounded-sm" />
             <Skeleton className="mt-2 h-4 w-full max-w-md rounded-sm" />
-            {/* Danger-zone copy wraps to a second line until it fits on one at lg. */}
             {descriptionLines > 1 && <Skeleton className="mt-1.5 h-4 w-2/3 max-w-xs rounded-sm lg:hidden" />}
           </div>
         </div>

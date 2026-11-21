@@ -7,7 +7,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import type { Column, SortDirection } from "@tanstack/react-table";
+import type { Column, RowData, SortDirection } from "@tanstack/react-table";
+import type { DataTableFeatures } from "@/lib/data-table";
 
 function SortDirectionIcon({ direction }: { direction: SortDirection | false }) {
   if (direction === "desc") return <ChevronDown />;
@@ -15,12 +16,13 @@ function SortDirectionIcon({ direction }: { direction: SortDirection | false }) 
   return <ChevronsUpDown />;
 }
 
-interface DataTableColumnHeaderProps<TData, TValue> extends React.ComponentProps<typeof DropdownMenuTrigger> {
-  column: Column<TData, TValue>;
+interface DataTableColumnHeaderProps<TData extends RowData, TValue>
+  extends React.ComponentProps<typeof DropdownMenuTrigger> {
+  column: Column<DataTableFeatures, TData, TValue>;
   title: string;
 }
 
-export function DataTableColumnHeader<TData, TValue>({
+export function DataTableColumnHeader<TData extends RowData, TValue>({
   column,
   title,
   className,

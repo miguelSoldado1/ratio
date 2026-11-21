@@ -7,7 +7,6 @@ import type { ReactNode, RefObject } from "react";
 import type { ReviewReply } from "@/lib/tanstack-query/review-reply-cache";
 
 interface ReplyThreadProps {
-  /** Composer rendered between the discussion heading and the replies. */
   composer?: ReactNode;
   deletingReplyId: string | null;
   hasNextPage: boolean;
