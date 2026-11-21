@@ -19,7 +19,7 @@ export function ReviewsTable() {
     columns: reviewsColumns,
     initialState: {
       sorting: [{ id: "createdAt", desc: true }],
-      columnPinning: { right: ["actions"] },
+      columnPinning: { start: [], end: ["actions"] },
     },
     queryOptions: (params) => ({
       queryKey: adminReviewQueryKeys.table(params),

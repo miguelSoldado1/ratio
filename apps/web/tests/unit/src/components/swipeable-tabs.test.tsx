@@ -261,27 +261,27 @@ describe("SwipeableTabs", () => {
 
     reviewsPanel.scrollTop = 120;
     fireEvent.scroll(reviewsPanel);
-    expect(header.style.transform).toBe("translate3d(0, -120px, 0)");
-    expect(list.style.transform).toBe("translate3d(0, -120px, 0)");
+    expect(header.style.transform).toBe("translate3d(0px, -120px, 0px)");
+    expect(list.style.transform).toBe("translate3d(0px, -120px, 0px)");
     expect(likesPanel.scrollTop).toBe(120);
 
     reviewsPanel.scrollTop = 300;
     fireEvent.scroll(reviewsPanel);
-    expect(header.style.transform).toBe("translate3d(0, -200px, 0)");
-    expect(list.style.transform).toBe("translate3d(0, -200px, 0)");
+    expect(header.style.transform).toBe("translate3d(0px, -200px, 0px)");
+    expect(list.style.transform).toBe("translate3d(0px, -200px, 0px)");
     expect(likesPanel.scrollTop).toBe(200);
 
     fireEvent.click(screen.getByRole("tab", { name: "Likes" }));
     expect(likesPanel.scrollTop).toBe(200);
-    expect(header.style.transform).toBe("translate3d(0, -200px, 0)");
-    expect(list.style.transform).toBe("translate3d(0, -200px, 0)");
+    expect(header.style.transform).toBe("translate3d(0px, -200px, 0px)");
+    expect(list.style.transform).toBe("translate3d(0px, -200px, 0px)");
 
     likesPanel.scrollTop = 0;
     fireEvent.scroll(likesPanel);
     fireEvent.click(screen.getByRole("tab", { name: "Reviews" }));
     expect(reviewsPanel.scrollTop).toBe(0);
-    expect(header.style.transform).toBe("translate3d(0, 0px, 0)");
-    expect(list.style.transform).toBe("translate3d(0, 0px, 0)");
+    expect(header.style.transform).toBe("translate3d(0px, 0px, 0px)");
+    expect(list.style.transform).toBe("translate3d(0px, 0px, 0px)");
 
     offsetHeight.mockRestore();
   });

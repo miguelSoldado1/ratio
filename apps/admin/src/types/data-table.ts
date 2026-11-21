@@ -1,17 +1,16 @@
 import type { ColumnSort, Row, RowData } from "@tanstack/react-table";
 import type { DataTableConfig } from "@/config/data-table";
+import type { DataTableFeatures } from "@/lib/data-table";
 import type { FilterItemSchema } from "@/lib/parsers";
 
-declare module "@tanstack/react-table" {
-  interface ColumnMeta<TData extends RowData, TValue> {
-    icon?: React.FC<React.SVGProps<SVGSVGElement>>;
-    label?: string;
-    options?: Option[];
-    placeholder?: string;
-    range?: [number, number];
-    unit?: string;
-    variant?: FilterVariant;
-  }
+export interface DataTableColumnMeta {
+  icon?: React.FC<React.SVGProps<SVGSVGElement>>;
+  label?: string;
+  options?: Option[];
+  placeholder?: string;
+  range?: [number, number];
+  unit?: string;
+  variant?: FilterVariant;
 }
 
 export interface Option {
@@ -33,7 +32,7 @@ export interface ExtendedColumnFilter<TData> extends FilterItemSchema {
   id: Extract<keyof TData, string>;
 }
 
-export interface DataTableRowAction<TData> {
-  row: Row<TData>;
+export interface DataTableRowAction<TData extends RowData> {
+  row: Row<DataTableFeatures, TData>;
   variant: "update" | "delete";
 }

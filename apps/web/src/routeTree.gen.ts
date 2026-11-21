@@ -9,32 +9,22 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TermsRouteImport } from './routes/terms'
-import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as UserUsernameRouteImport } from './routes/user/$username'
-import { Route as ReviewReviewIdRouteImport } from './routes/review/$reviewId'
-import { Route as ListListIdRouteImport } from './routes/list/$listId'
-import { Route as ApiUploadRouteImport } from './routes/api/upload'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as AlbumAlbumIdRouteImport } from './routes/album/$albumId'
+import { Route as ApiUploadRouteImport } from './routes/api/upload'
+import { Route as ListListIdRouteImport } from './routes/list/$listId'
+import { Route as ReviewReviewIdRouteImport } from './routes/review/$reviewId'
+import { Route as UserUsernameRouteImport } from './routes/user/$username'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth.$'
 import { Route as ApiOgListListIdRouteImport } from './routes/api/og/list/$listId'
 
-const TermsRoute = TermsRouteImport.update({
-  id: '/terms',
-  path: '/terms',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -42,24 +32,24 @@ const PrivacyRoute = PrivacyRouteImport.update({
   path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
-const UserUsernameRoute = UserUsernameRouteImport.update({
-  id: '/user/$username',
-  path: '/user/$username',
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ReviewReviewIdRoute = ReviewReviewIdRouteImport.update({
-  id: '/review/$reviewId',
-  path: '/review/$reviewId',
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ListListIdRoute = ListListIdRouteImport.update({
-  id: '/list/$listId',
-  path: '/list/$listId',
+const AlbumAlbumIdRoute = AlbumAlbumIdRouteImport.update({
+  id: '/album/$albumId',
+  path: '/album/$albumId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiUploadRoute = ApiUploadRouteImport.update({
@@ -67,9 +57,19 @@ const ApiUploadRoute = ApiUploadRouteImport.update({
   path: '/api/upload',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AlbumAlbumIdRoute = AlbumAlbumIdRouteImport.update({
-  id: '/album/$albumId',
-  path: '/album/$albumId',
+const ListListIdRoute = ListListIdRouteImport.update({
+  id: '/list/$listId',
+  path: '/list/$listId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReviewReviewIdRoute = ReviewReviewIdRouteImport.update({
+  id: '/review/$reviewId',
+  path: '/review/$reviewId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UserUsernameRoute = UserUsernameRouteImport.update({
+  id: '/user/$username',
+  path: '/user/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -188,25 +188,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/terms': {
-      id: '/terms'
-      path: '/terms'
-      fullPath: '/terms'
-      preLoaderRoute: typeof TermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SitemapDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -216,32 +202,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/user/$username': {
-      id: '/user/$username'
-      path: '/user/$username'
-      fullPath: '/user/$username'
-      preLoaderRoute: typeof UserUsernameRouteImport
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/review/$reviewId': {
-      id: '/review/$reviewId'
-      path: '/review/$reviewId'
-      fullPath: '/review/$reviewId'
-      preLoaderRoute: typeof ReviewReviewIdRouteImport
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/list/$listId': {
-      id: '/list/$listId'
-      path: '/list/$listId'
-      fullPath: '/list/$listId'
-      preLoaderRoute: typeof ListListIdRouteImport
+    '/album/$albumId': {
+      id: '/album/$albumId'
+      path: '/album/$albumId'
+      fullPath: '/album/$albumId'
+      preLoaderRoute: typeof AlbumAlbumIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/upload': {
@@ -251,11 +237,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiUploadRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/album/$albumId': {
-      id: '/album/$albumId'
-      path: '/album/$albumId'
-      fullPath: '/album/$albumId'
-      preLoaderRoute: typeof AlbumAlbumIdRouteImport
+    '/list/$listId': {
+      id: '/list/$listId'
+      path: '/list/$listId'
+      fullPath: '/list/$listId'
+      preLoaderRoute: typeof ListListIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/review/$reviewId': {
+      id: '/review/$reviewId'
+      path: '/review/$reviewId'
+      fullPath: '/review/$reviewId'
+      preLoaderRoute: typeof ReviewReviewIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/user/$username': {
+      id: '/user/$username'
+      path: '/user/$username'
+      fullPath: '/user/$username'
+      preLoaderRoute: typeof UserUsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {

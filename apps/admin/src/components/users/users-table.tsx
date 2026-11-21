@@ -15,7 +15,7 @@ export function UsersTable() {
     columns: usersColumns,
     initialState: {
       sorting: [{ id: "createdAt", desc: true }],
-      columnPinning: { right: ["actions"] },
+      columnPinning: { start: [], end: ["actions"] },
       columnVisibility: { role: false },
     },
     queryOptions: (params) => ({

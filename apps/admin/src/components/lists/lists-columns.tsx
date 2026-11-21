@@ -7,9 +7,10 @@ import { formatCompactNumber, formatDate } from "@/lib/format";
 import { getWebAppHref } from "@/lib/web-app";
 import { ListActionsMenu } from "./list-actions-menu";
 import type { ColumnDef } from "@tanstack/react-table";
+import type { DataTableFeatures } from "@/lib/data-table";
 import type { AdminListRow } from "@/server/services/list-service";
 
-export const listsColumns: ColumnDef<AdminListRow>[] = [
+export const listsColumns: ColumnDef<DataTableFeatures, AdminListRow>[] = [
   {
     id: "user",
     accessorFn: (list) => list.userDisplayUsername ?? list.username ?? list.userName,

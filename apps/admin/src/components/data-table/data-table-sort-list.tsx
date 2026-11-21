@@ -8,23 +8,24 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Sortable, SortableContent, SortableItem, SortableItemHandle, SortableOverlay } from "@/components/ui/sortable";
 import { dataTableConfig } from "@/config/data-table";
 import { cn } from "@/lib/utils";
-import type { ColumnSort, Table } from "@tanstack/react-table";
+import type { ColumnSort, ReactTable, RowData } from "@tanstack/react-table";
+import type { DataTableFeatures } from "@/lib/data-table";
 
 const OPEN_MENU_SHORTCUT = "s";
 const REMOVE_SORT_SHORTCUTS = ["backspace", "delete"];
 
-interface DataTableSortListProps<TData> extends React.ComponentProps<typeof PopoverContent> {
-  table: Table<TData>;
+interface DataTableSortListProps<TData extends RowData> extends React.ComponentProps<typeof PopoverContent> {
+  table: ReactTable<DataTableFeatures, TData>;
 }
 
-export function DataTableSortList<TData>({ table, ...props }: DataTableSortListProps<TData>) {
+export function DataTableSortList<TData extends RowData>({ table, ...props }: DataTableSortListProps<TData>) {
   const id = React.useId();
   const labelId = React.useId();
   const descriptionId = React.useId();
   const [open, setOpen] = React.useState(false);
   const addButtonRef = React.useRef<HTMLButtonElement>(null);
 
-  const sorting = table.getState().sorting;
+  const sorting = table.state.sorting;
   const onSortingChange = table.setSorting;
 
   const { columnLabels, columns } = React.useMemo(() => {

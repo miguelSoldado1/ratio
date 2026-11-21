@@ -14,11 +14,12 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import type { Column } from "@tanstack/react-table";
+import type { Column, RowData } from "@tanstack/react-table";
+import type { DataTableFeatures } from "@/lib/data-table";
 import type { Option } from "@/types/data-table";
 
-interface DataTableFacetedFilterProps<TData, TValue> {
-  column?: Column<TData, TValue>;
+interface DataTableFacetedFilterProps<TData extends RowData, TValue> {
+  column?: Column<DataTableFeatures, TData, TValue>;
   multiple?: boolean;
   onSearchChange?: (value: string) => void;
   options: Option[];
@@ -27,7 +28,7 @@ interface DataTableFacetedFilterProps<TData, TValue> {
   title?: string;
 }
 
-export function DataTableFacetedFilter<TData, TValue>({
+export function DataTableFacetedFilter<TData extends RowData, TValue>({
   column,
   title,
   options,

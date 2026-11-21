@@ -5,8 +5,9 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import { formatDate, toUTCMidnight } from "@/lib/format";
-import type { Column } from "@tanstack/react-table";
+import type { Column, RowData } from "@tanstack/react-table";
 import type { DateRange } from "react-day-picker";
+import type { DataTableFeatures } from "@/lib/data-table";
 
 type DateSelection = Date[] | DateRange;
 
@@ -37,13 +38,17 @@ function parseColumnFilterValue(value: unknown) {
   return [];
 }
 
-interface DataTableDateFilterProps<TData> {
-  column: Column<TData, unknown>;
+interface DataTableDateFilterProps<TData extends RowData> {
+  column: Column<DataTableFeatures, TData, unknown>;
   multiple?: boolean;
   title?: string;
 }
 
-export function DataTableDateFilter<TData>({ column, title, multiple }: DataTableDateFilterProps<TData>) {
+export function DataTableDateFilter<TData extends RowData>({
+  column,
+  title,
+  multiple,
+}: DataTableDateFilterProps<TData>) {
   const columnFilterValue = column.getFilterValue();
 
   const selectedDates = React.useMemo<DateSelection>(() => {
