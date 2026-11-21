@@ -22,7 +22,7 @@ export class SpotifyReconnectRequiredError extends Error {
 
 export async function getSpotifyUserAccessToken(db: Db, userId: string): Promise<string> {
   const [spotifyAccount] = await db
-    .select({ accountId: schema.account.accountId, scope: schema.account.scope })
+    .select({ id: schema.account.id, scope: schema.account.scope })
     .from(schema.account)
     .where(and(eq(schema.account.userId, userId), eq(schema.account.providerId, SPOTIFY_PROVIDER_ID)))
     .limit(1);
@@ -39,8 +39,7 @@ export async function getSpotifyUserAccessToken(db: Db, userId: string): Promise
   try {
     ({ accessToken } = await auth.api.getAccessToken({
       body: {
-        accountId: spotifyAccount.accountId,
-        providerId: SPOTIFY_PROVIDER_ID,
+        accountId: spotifyAccount.id,
         userId,
       },
     }));

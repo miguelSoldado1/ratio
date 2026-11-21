@@ -30,28 +30,27 @@ describe("getSpotifyUserAccessToken", () => {
   });
 
   it("throws reconnect-required when the recently-played scope is missing", async () => {
-    const db = createMockDb([{ accountId: "spotify_account", scope: "user-read-email" }]);
+    const db = createMockDb([{ id: "account_1", scope: "user-read-email" }]);
 
     await expect(getSpotifyUserAccessToken(db, "user_1")).rejects.toBeInstanceOf(SpotifyReconnectRequiredError);
     expect(mockGetAccessToken).not.toHaveBeenCalled();
   });
 
   it("returns the access token for a granted account", async () => {
-    const db = createMockDb([{ accountId: "spotify_account", scope: "user-read-email,user-read-recently-played" }]);
+    const db = createMockDb([{ id: "account_1", scope: "user-read-email,user-read-recently-played" }]);
     mockGetAccessToken.mockResolvedValue({ accessToken: "user-access-token" });
 
     await expect(getSpotifyUserAccessToken(db, "user_1")).resolves.toBe("user-access-token");
     expect(mockGetAccessToken).toHaveBeenCalledWith({
       body: {
-        accountId: "spotify_account",
-        providerId: "spotify",
+        accountId: "account_1",
         userId: "user_1",
       },
     });
   });
 
   it("requires reconnect when token retrieval or refresh fails without retrying", async () => {
-    const db = createMockDb([{ accountId: "spotify_account", scope: "user-read-recently-played" }]);
+    const db = createMockDb([{ id: "account_1", scope: "user-read-recently-played" }]);
     mockGetAccessToken.mockRejectedValue(new Error("Failed to get a valid access token"));
 
     await expect(getSpotifyUserAccessToken(db, "user_1")).rejects.toBeInstanceOf(SpotifyReconnectRequiredError);
@@ -59,7 +58,7 @@ describe("getSpotifyUserAccessToken", () => {
   });
 });
 
-function createMockDb(accountRows: { accountId: string; scope: string | null }[]) {
+function createMockDb(accountRows: { id: string; scope: string | null }[]) {
   return {
     select: vi.fn(() => ({
       from: vi.fn(() => ({

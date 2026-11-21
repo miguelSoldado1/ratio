@@ -33,8 +33,7 @@ vi.mock("@/server/image-storage", () => ({
 
 vi.mock("@/server/rate-limit", () => ({
   createBetterAuthRateLimitStorage: vi.fn(() => ({
-    get: vi.fn(),
-    set: vi.fn(),
+    consume: vi.fn(),
   })),
 }));
 

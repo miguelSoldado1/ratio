@@ -26,7 +26,7 @@ interface SignInMethodsTableProps {
   linkedAccounts: LinkedAccount[];
   linkedProviderCount: number;
   onLink: (providerId: AuthProviderId) => void;
-  onUnlink: (providerId: AuthProviderId, accountId?: string) => void;
+  onUnlink: (providerId: AuthProviderId, accountId: string) => void;
   pendingProvider: AuthProviderId | null;
   unlinkingProvider: AuthProviderId | null;
 }
@@ -85,7 +85,7 @@ interface ProviderTableRowProps {
   linkedAccount?: LinkedAccount;
   linkedProviderCount: number;
   onLink: (providerId: AuthProviderId) => void;
-  onUnlink: (providerId: AuthProviderId, accountId?: string) => void;
+  onUnlink: (providerId: AuthProviderId, accountId: string) => void;
   provider: (typeof authProviders)[number];
 }
 
@@ -133,7 +133,7 @@ function ProviderTableRow({
           <Button
             disabled={isPending || isLastProvider}
             onClick={() => {
-              onUnlink(provider.id, linkedAccount?.accountId);
+              if (linkedAccount) onUnlink(provider.id, linkedAccount.id);
             }}
             size="sm"
             title={isLastProvider ? "Link another provider before removing this one" : undefined}

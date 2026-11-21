@@ -115,3 +115,60 @@ describe("fixed-window KV writes", () => {
     expect(put).toHaveBeenCalledOnce();
   });
 });
+
+describe("Better Auth rate-limit storage", () => {
+  const rule = { max: 2, window: 60 };
+
+  function createMemoryCache(initial?: unknown) {
+    let stored = initial === undefined ? null : JSON.stringify(initial);
+    const put = vi.fn((_key: string, value: string) => {
+      stored = value;
+      return Promise.resolve();
+    });
+    const get = vi.fn(() => Promise.resolve(stored === null ? null : JSON.parse(stored)));
+    return { get, put };
+  }
+
+  it("allows requests up to the limit and blocks the next one with a retry time", async () => {
+    const rateLimit = await importRateLimit();
+    stubWorkersRuntime();
+    const cache = createMemoryCache();
+    workersEnv.env = { CACHE: cache };
+    const storage = rateLimit.createBetterAuthRateLimitStorage();
+
+    await expect(storage.consume("ip:/sign-in/social", rule)).resolves.toEqual({ allowed: true, retryAfter: null });
+    await expect(storage.consume("ip:/sign-in/social", rule)).resolves.toEqual({ allowed: true, retryAfter: null });
+
+    const blocked = await storage.consume("ip:/sign-in/social", rule);
+    expect(blocked.allowed).toBe(false);
+    expect(blocked.retryAfter).toBeGreaterThan(0);
+    expect(blocked.retryAfter).toBeLessThanOrEqual(rule.window);
+    expect(cache.put).toHaveBeenCalledTimes(2);
+  });
+
+  it("starts a new window once the previous one has elapsed", async () => {
+    const rateLimit = await importRateLimit();
+    stubWorkersRuntime();
+    const cache = createMemoryCache({ count: rule.max, windowStart: Date.now() - (rule.window + 1) * 1000 });
+    workersEnv.env = { CACHE: cache };
+
+    await expect(rateLimit.createBetterAuthRateLimitStorage().consume("ip:/callback/spotify", rule)).resolves.toEqual({
+      allowed: true,
+      retryAfter: null,
+    });
+    expect(JSON.parse(cache.put.mock.calls[0]?.[1] ?? "{}")).toMatchObject({ count: 1 });
+  });
+
+  it("still allows sign-in when KV rejects the write", async () => {
+    const rateLimit = await importRateLimit();
+    stubWorkersRuntime();
+    workersEnv.env = {
+      CACHE: { get: vi.fn().mockResolvedValue(null), put: vi.fn().mockRejectedValue(new Error("KV put() limit")) },
+    };
+
+    await expect(rateLimit.createBetterAuthRateLimitStorage().consume("ip:/sign-in/social", rule)).resolves.toEqual({
+      allowed: true,
+      retryAfter: null,
+    });
+  });
+});

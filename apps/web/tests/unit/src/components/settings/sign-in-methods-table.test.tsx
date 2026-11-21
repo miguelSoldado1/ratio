@@ -43,7 +43,7 @@ describe("SignInMethodsTable", () => {
     fireEvent.click(
       within(screen.getByText("Spotify").closest("tr") as HTMLElement).getByRole("button", { name: "Remove" })
     );
-    expect(onUnlink).toHaveBeenCalledWith("spotify", "spotify-account");
+    expect(onUnlink).toHaveBeenCalledWith("spotify", "linked_spotify");
   });
 
   it("renders provider status", () => {
@@ -71,7 +71,7 @@ function renderTable({
   linkedAccounts: LinkedAccount[];
   linkedProviderCount: number;
   onLink?: (providerId: "spotify" | "google" | "discord") => void;
-  onUnlink?: (providerId: "spotify" | "google" | "discord", accountId?: string) => void;
+  onUnlink?: (providerId: "spotify" | "google" | "discord", accountId: string) => void;
 }) {
   return render(
     <SignInMethodsTable

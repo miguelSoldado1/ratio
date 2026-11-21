@@ -25,7 +25,7 @@ Each app owns its routes, shadcn components, authentication UI and behavior, dep
 | Deployment | Cloudflare Workers | Independent public/admin Workers and development environments |
 | Database | Supabase (Postgres) | Both apps reuse the existing databases through environment-specific Hyperdrive bindings |
 | ORM | Drizzle 0.45.x | Shared schema; Drizzle remains the only migration owner |
-| Auth | Better Auth 1.6.23 | Shared auth tables and secret, but separate host-only application sessions |
+| Auth | Better Auth 1.7 | Shared auth tables and secret, but separate host-only application sessions |
 | Music data | Spotify Web API | Public app only; see `spotify.md` |
 
 ## Admin Boundary

@@ -1,11 +1,9 @@
 import { createMiddleware } from "@tanstack/react-start";
 import { getRequestHeaders } from "@tanstack/react-start/server";
-import type { RateLimit as BetterAuthRateLimitRecord } from "better-auth";
 
 const CLOUDFLARE_WORKERS_MODULE = "cloudflare:workers";
 const RATE_LIMIT_KEY_PREFIX = "rate-limit";
 const BETTER_AUTH_RATE_LIMIT_KEY_PREFIX = `${RATE_LIMIT_KEY_PREFIX}:auth`;
-const BETTER_AUTH_RATE_LIMIT_TTL_SECONDS = 2 * 60;
 
 const warnedMissingRateLimitBindings = new Set<string>();
 
@@ -30,6 +28,11 @@ interface EnforceRateLimitOptions<TRule> {
 interface FixedWindowRateLimitRecord {
   count: number;
   resetAt: number;
+}
+
+interface BetterAuthRateLimitRecord {
+  count: number;
+  windowStart: number;
 }
 
 class RateLimitError extends Error {
@@ -122,34 +125,61 @@ export async function enforceFixedWindowRateLimitForRequest(
 
 export function createBetterAuthRateLimitStorage() {
   return {
-    async get(key: string) {
+    async consume(key: string, rule: { max: number; window: number }) {
       const cache = await getCloudflareCache();
 
       if (!cache) {
         warnMissingRateLimitBinding("CACHE");
-        return null;
+        return { allowed: true, retryAfter: null };
+      }
+
+      const storageKey = getBetterAuthRateLimitKey(key);
+      const now = Date.now();
+      const windowMs = rule.window * 1000;
+      const record = await getBetterAuthRateLimitRecord(cache, storageKey);
+      const activeRecord = record && now - record.windowStart < windowMs ? record : null;
+      const currentCount = activeRecord?.count ?? 0;
+
+      if (activeRecord && currentCount >= rule.max) {
+        return {
+          allowed: false,
+          retryAfter: Math.max(1, Math.ceil((activeRecord.windowStart + windowMs - now) / 1000)),
+        };
       }
 
       try {
-        return await cache.get<BetterAuthRateLimitRecord>(getBetterAuthRateLimitKey(key), "json");
-      } catch (error) {
-        console.warn("Failed to read Better Auth rate limit state", error);
-        return null;
-      }
-    },
-    async set(key: string, value: BetterAuthRateLimitRecord) {
-      const cache = await getCloudflareCache();
-      if (!cache) return;
-
-      try {
-        await cache.put(getBetterAuthRateLimitKey(key), JSON.stringify(value), {
-          expirationTtl: BETTER_AUTH_RATE_LIMIT_TTL_SECONDS,
-        });
+        await cache.put(
+          storageKey,
+          JSON.stringify({
+            count: currentCount + 1,
+            windowStart: activeRecord?.windowStart ?? now,
+          } satisfies BetterAuthRateLimitRecord),
+          { expirationTtl: rule.window + 60 }
+        );
       } catch (error) {
         console.warn("Failed to write Better Auth rate limit state", error);
       }
+
+      return { allowed: true, retryAfter: null };
     },
   };
+}
+
+async function getBetterAuthRateLimitRecord(cache: KVNamespace, key: string) {
+  try {
+    const value = await cache.get<unknown>(key, "json");
+    if (typeof value !== "object" || value === null) return null;
+    if (!("count" in value && "windowStart" in value)) return null;
+    if (typeof value.count !== "number" || typeof value.windowStart !== "number") return null;
+
+    return {
+      count: value.count,
+      windowStart: value.windowStart,
+    } satisfies BetterAuthRateLimitRecord;
+  } catch (error) {
+    console.warn("Failed to read Better Auth rate limit state", error);
+    return null;
+  }
 }
 
 export function isRateLimitError(error: unknown): error is RateLimitError {
