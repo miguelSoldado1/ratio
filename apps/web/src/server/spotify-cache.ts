@@ -1,3 +1,4 @@
+import { getEdgeCache } from "./edge-cache";
 import { logSpotifyCacheError } from "./spotify-observability";
 
 const CLOUDFLARE_WORKERS_MODULE = "cloudflare:workers";
@@ -52,7 +53,7 @@ async function getEdgeCacheJson(key: string) {
   if (!edgeCacheUrl) return null;
 
   try {
-    const response = await getEdgeCache().match(edgeCacheUrl);
+    const response = await getEdgeCache()?.match(edgeCacheUrl);
     return response ? await response.json<unknown>() : null;
   } catch (error) {
     logSpotifyCacheError("read_edge_response", error);
@@ -66,7 +67,7 @@ async function setEdgeCacheJson(key: string, value: unknown, ttlSeconds: number)
 
   try {
     const response = Response.json(value, { headers: { "Cache-Control": `max-age=${ttlSeconds}` } });
-    await getEdgeCache().put(edgeCacheUrl, response);
+    await getEdgeCache()?.put(edgeCacheUrl, response);
   } catch (error) {
     logSpotifyCacheError("write_edge_response", error);
   }
@@ -77,10 +78,6 @@ async function getEdgeCacheUrl(key: string) {
   if (!cloudflareWorkers) return null;
 
   return new URL(`${EDGE_CACHE_PATH}${encodeURIComponent(key)}`, cloudflareWorkers.env.BETTER_AUTH_URL).toString();
-}
-
-function getEdgeCache() {
-  return (caches as unknown as { default: Cache }).default;
 }
 
 async function getCloudflareWorkersModule(): Promise<CloudflareWorkersModule | null> {

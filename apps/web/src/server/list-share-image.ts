@@ -1,6 +1,7 @@
 import { and, desc, eq, isNotNull, sql } from "drizzle-orm";
 import { getDb } from "@/lib/db";
 import { albums, listItems, lists, user } from "@/lib/db/schema";
+import { getEdgeCache } from "./edge-cache";
 
 const imageSize = 1200;
 const mosaicCoverCount = 4;
@@ -90,9 +91,4 @@ async function getListShareImageVersion(covers: string[]) {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0"))
     .join("")
     .slice(0, versionLength);
-}
-
-function getEdgeCache() {
-  if (typeof caches === "undefined" || !("default" in caches)) return null;
-  return (caches as unknown as { default: Cache }).default;
 }
