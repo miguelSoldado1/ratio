@@ -1,11 +1,14 @@
 import { Trash2 } from "lucide-react";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
+import { ImageCropDialog, preloadImageCropper } from "@/components/image-crop-dialog";
 import { Button } from "@/components/ui/button";
-import { imageUploadAccept, imageUploadHint, isAcceptedImageUpload } from "@/lib/image-upload";
+import { imageUploadAccept, imageUploadHint, isAcceptedImageSource } from "@/lib/image-upload";
 import type { ChangeEvent, ReactNode } from "react";
 
 interface ImageUploadFieldProps {
+  cropOutputSize: number;
+  cropShape: "rect" | "round";
   disabled: boolean;
   hasImage: boolean;
   label: string;
@@ -19,6 +22,8 @@ interface ImageUploadFieldProps {
 }
 
 export function ImageUploadField({
+  cropOutputSize,
+  cropShape,
   disabled,
   hasImage,
   label,
@@ -31,6 +36,8 @@ export function ImageUploadField({
   uploadLabel,
 }: ImageUploadFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [sourceFile, setSourceFile] = useState<File>();
+  const [isCropOpen, setIsCropOpen] = useState(false);
 
   function handleInputChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.currentTarget.files?.[0];
@@ -38,11 +45,18 @@ export function ImageUploadField({
 
     if (!file) return;
 
-    if (!isAcceptedImageUpload(file)) {
+    if (!isAcceptedImageSource(file)) {
       return toast.error("Couldn't use that image", { description: imageUploadHint });
     }
 
+    preloadImageCropper().catch(() => undefined);
+    setSourceFile(file);
+    setIsCropOpen(true);
+  }
+
+  function handleCropApply(file: File) {
     onFileSelect(file);
+    setIsCropOpen(false);
   }
 
   return (
@@ -90,6 +104,16 @@ export function ImageUploadField({
           {uploadIcon}
         </Button>
       </div>
+      <ImageCropDialog
+        cropShape={cropShape}
+        file={sourceFile}
+        onApply={handleCropApply}
+        onClosed={() => setSourceFile(undefined)}
+        onOpenChange={setIsCropOpen}
+        open={isCropOpen}
+        outputSize={cropOutputSize}
+        title={`Adjust ${label.toLowerCase()}`}
+      />
     </div>
   );
 }

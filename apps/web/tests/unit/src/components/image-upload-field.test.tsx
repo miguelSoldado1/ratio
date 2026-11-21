@@ -1,6 +1,7 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ImageUploadField } from "@/components/image-upload-field";
+import { cropImageFile } from "@/lib/image-crop";
 
 const mockToastError = vi.hoisted(() => vi.fn());
 
@@ -9,6 +10,8 @@ vi.mock("sonner", () => ({
 }));
 
 const onFileSelect = vi.fn();
+const picked = new File([new Uint8Array(5 * 1024 * 1024)], "cover.jpg", { type: "image/jpeg" });
+const croppedFile = new File(["cropped"], "image.webp", { type: "image/webp" });
 
 beforeEach(() => {
   mockToastError.mockReset();
@@ -18,6 +21,8 @@ beforeEach(() => {
 function renderField({ hasImage = false } = {}) {
   render(
     <ImageUploadField
+      cropOutputSize={1024}
+      cropShape="rect"
       disabled={false}
       hasImage={hasImage}
       label="Cover"
@@ -36,23 +41,57 @@ function pickFile(file: File) {
   fireEvent.change(screen.getByLabelText("Cover"), { target: { files: [file] } });
 }
 
+async function findEnabledApply() {
+  const apply = await screen.findByRole("button", { name: "Apply" });
+  await waitFor(() => expect(apply).toHaveProperty("disabled", false));
+  return apply;
+}
+
 describe("ImageUploadField", () => {
-  it("passes an accepted image to the caller", () => {
+  it("passes the cropped image to the caller only after Apply", async () => {
+    vi.mocked(cropImageFile).mockResolvedValueOnce(croppedFile);
     renderField();
-    const file = new File(["image"], "cover.webp", { type: "image/webp" });
 
-    pickFile(file);
+    pickFile(picked);
+    fireEvent.click(await findEnabledApply());
 
-    expect(onFileSelect).toHaveBeenCalledWith(file);
-    expect(mockToastError).not.toHaveBeenCalled();
+    await waitFor(() => expect(onFileSelect).toHaveBeenCalledWith(croppedFile));
+    expect(cropImageFile).toHaveBeenCalledWith(expect.objectContaining({ file: picked, size: 1024 }));
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Apply" })).toBeNull());
   });
 
-  it("rejects unsupported types and files over 2 MB before the caller sees them", () => {
+  it("drops the picked image when the crop step is cancelled", async () => {
+    renderField();
+
+    pickFile(picked);
+    await findEnabledApply();
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+
+    await waitFor(() => expect(screen.queryByRole("button", { name: "Apply" })).toBeNull());
+    expect(onFileSelect).not.toHaveBeenCalled();
+  });
+
+  it("keeps the crop step open and reports an export failure", async () => {
+    vi.mocked(cropImageFile).mockRejectedValueOnce(new Error("encode failed"));
+    renderField();
+
+    pickFile(picked);
+    fireEvent.click(await findEnabledApply());
+
+    await waitFor(() =>
+      expect(mockToastError).toHaveBeenCalledWith("Couldn't crop that image", { description: "Try a different file." })
+    );
+    expect(onFileSelect).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: "Apply" })).toBeTruthy();
+  });
+
+  it("rejects unsupported types and files over 20 MB before cropping", () => {
     renderField();
 
     pickFile(new File(["image"], "cover.gif", { type: "image/gif" }));
-    pickFile(new File([new Uint8Array(2 * 1024 * 1024 + 1)], "cover.png", { type: "image/png" }));
+    pickFile(new File([new Uint8Array(20 * 1024 * 1024 + 1)], "cover.png", { type: "image/png" }));
 
+    expect(screen.queryByRole("button", { name: "Apply" })).toBeNull();
     expect(onFileSelect).not.toHaveBeenCalled();
     expect(mockToastError).toHaveBeenCalledTimes(2);
   });

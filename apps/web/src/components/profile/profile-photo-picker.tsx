@@ -27,6 +27,8 @@ export function ProfilePhotoPicker({
 
   return (
     <ImageUploadField
+      cropOutputSize={512}
+      cropShape="round"
       disabled={disabled}
       hasImage={Boolean(file || avatarUrl)}
       label="Profile photo"

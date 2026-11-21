@@ -1,5 +1,7 @@
 export const imageUploadMaxFileSize = 2 * 1024 * 1024;
 
+const imageSourceMaxFileSize = 20 * 1024 * 1024;
+
 export const imageUploadFileTypes = ["image/jpeg", "image/png", "image/webp", "image/avif"] as const;
 
 export const imageUploadAccept = imageUploadFileTypes.join(",");
@@ -17,8 +19,8 @@ export function getImageUploadFileExtension(fileType: string) {
   return imageUploadFileExtensions[fileType as ImageUploadFileType];
 }
 
-export const imageUploadHint = "JPG, PNG, WebP, or AVIF up to 2 MB.";
+export const imageUploadHint = "JPG, PNG, WebP, or AVIF up to 20 MB.";
 
-export function isAcceptedImageUpload(file: File) {
-  return Boolean(getImageUploadFileExtension(file.type)) && file.size <= imageUploadMaxFileSize;
+export function isAcceptedImageSource(file: File) {
+  return Boolean(getImageUploadFileExtension(file.type)) && file.size <= imageSourceMaxFileSize;
 }
