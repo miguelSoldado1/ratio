@@ -32,6 +32,10 @@ Each app owns its routes, shadcn components, authentication UI and behavior, dep
 
 Admin v1 supports sign-in for existing Ratio accounts, rejects OAuth user creation, verifies sessions and comma-separated admin roles through server functions, and exposes strict authorization middleware for protected server functions. Admin UI routes disable SSR and fetch access state, aggregate metrics, and table data from the client through `useServerFn` and TanStack Query. Unauthenticated protected routes redirect through `/sign-in` with a validated internal return path; authenticated non-admin users go to `/access-denied`. The overview route provides request-driven 30-day community growth and participation metrics for users, reviews, replies, lists, and retained list items. The users and reviews routes provide paginated, sortable, filterable tables backed by bounded database queries, and their shared table scaffold is intended for future admin resources. The app has no polling or separate analytics infrastructure.
 
+Better Auth stores `user.role` as free-form, comma-separated text. Promoting or demoting a user only adds or removes
+`admin`. Any other role passes through untouched, so the admin app never rewrites a role it doesn't know. Role filters
+use `ilike`, since one user can hold several roles.
+
 The admin cookie uses its own `ratio-admin` prefix, does not enable cross-subdomain cookies, and therefore remains
 host-only. The public and admin hosts do not share browser sessions even though Better Auth uses the same database
 schema and relevant secret/provider configuration.
@@ -131,6 +135,15 @@ The result goes in the per-datacenter Cache API for 7 days. The `v` hash covers 
 version, so it changes whenever the covers or the image layout do. If the transformation fails, for example once the free 5,000 unique
 transformations a month run out, the route redirects to the first cover without caching it. Lists with fewer than four
 covers keep the first cover. Transformations must be enabled for the zone in the Cloudflare dashboard.
+
+## Rate Limiting
+
+Short windows use Cloudflare's rate-limiting bindings. Hourly caps use fixed windows stored in KV. The admin app runs
+its limiter as the first request middleware, so throttled traffic never reaches a session lookup.
+
+Limits fail open. A KV error, including a spent daily write quota, shouldn't stop anyone reading or posting. A missing
+binding fails open too, and from the outside that looks exactly like a limit that never trips. The limiter therefore
+logs a warning naming the binding, once per isolate.
 
 ## Sitemap
 
