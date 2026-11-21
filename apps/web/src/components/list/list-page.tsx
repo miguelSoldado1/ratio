@@ -125,7 +125,11 @@ export function ListPage({
 
   return (
     <PageContainerContent className="grid max-w-285 gap-6 py-6 lg:grid-cols-[minmax(240px,340px)_1fr] lg:gap-8 xl:gap-12">
-      <div className={cn("min-w-0 lg:self-start", canPinHeader && "lg:sticky lg:top-20")} ref={headerColumnRef}>
+      <div
+        className={cn("min-w-0 lg:self-start", canPinHeader && "lg:sticky")}
+        ref={headerColumnRef}
+        style={canPinHeader ? { top: pinnedHeaderTopPx } : undefined}
+      >
         <ListCoverMosaic
           albums={list.coverAlbums}
           className="hidden w-full lg:grid"
@@ -183,7 +187,8 @@ export function ListPage({
   );
 }
 
-const pinnedHeaderOffsetPx = 80 + 24;
+const pinnedHeaderTopPx = 80;
+const pinnedHeaderBottomGapPx = 24;
 
 function useFitsBelowPinOffset(ref: RefObject<HTMLElement | null>) {
   const [fits, setFits] = useState(false);
@@ -192,7 +197,8 @@ function useFitsBelowPinOffset(ref: RefObject<HTMLElement | null>) {
     const element = ref.current;
     if (!element) return;
 
-    const update = () => setFits(element.offsetHeight + pinnedHeaderOffsetPx <= window.innerHeight);
+    const update = () =>
+      setFits(element.offsetHeight + pinnedHeaderTopPx + pinnedHeaderBottomGapPx <= window.innerHeight);
     const resizeObserver = new ResizeObserver(update);
     resizeObserver.observe(element);
     window.addEventListener("resize", update);

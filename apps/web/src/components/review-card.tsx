@@ -230,11 +230,12 @@ function Review({ children, className, collapsed = true, permalink }: ReviewProp
     <p
       className={cn(
         "wrap-break-word whitespace-pre-wrap text-[15px] text-foreground/90 leading-[1.45]",
-        collapsed && !expanded && "max-h-44 overflow-hidden",
+        collapsed && !expanded && "overflow-hidden",
         className
       )}
       id={reviewId}
       ref={collapsed ? setReviewElement : undefined}
+      style={collapsed && !expanded ? { maxHeight: collapsedReviewMaxHeightPx } : undefined}
     >
       {children}
     </p>
