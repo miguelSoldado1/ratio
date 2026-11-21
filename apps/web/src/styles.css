@@ -171,11 +171,6 @@
       transform: translateY(-0.25rem);
     }
   }
-
-  .animate-equalizer {
-    transform-origin: bottom;
-    animation: equalizer-bounce 1.4s ease-in-out infinite;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -238,15 +233,5 @@
   40%,
   80% {
     transform: translateX(3px);
-  }
-}
-
-@keyframes equalizer-bounce {
-  0%,
-  100% {
-    transform: scaleY(0.25);
-  }
-  50% {
-    transform: scaleY(1);
   }
 }
