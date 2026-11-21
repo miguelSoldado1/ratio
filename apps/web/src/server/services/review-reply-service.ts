@@ -3,6 +3,7 @@ import { alias } from "drizzle-orm/pg-core";
 import z from "zod";
 import { getDb } from "@/lib/db";
 import { reviewReplies, reviewReplyLikes, reviews, user } from "@/lib/db/schema";
+import { assertNoSlurs } from "@/lib/moderation/profanity.server";
 import { getFollowedByViewerSql, mapFollowableUser } from "../followable-user";
 import { decodeCursor, encodeCursor, getCreatedAtIdCursorFilter, getOptionalCurrentUser } from "../server-utils";
 import {
@@ -211,6 +212,8 @@ export async function getReviewReplyLikesService(data: GetReviewReplyLikesInput)
 }
 
 export async function createReviewReplyService(data: CreateReviewReplyInput, context: AuthenticatedContext) {
+  assertNoSlurs(data.body);
+
   return await context.db.transaction(async (transaction) => {
     const actor = alias(user, "create_review_reply_actor");
     const reviewAuthor = alias(user, "create_review_reply_review_author");

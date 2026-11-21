@@ -96,6 +96,7 @@ deferred until the product needs those dedicated surfaces.
   deferred suggested-users work. With no other reviewers, the empty state shows only its text
 - Review permalinks and basic review sharing
 - Basic admin moderation: remove bad reviews/ratings and ban abusive accounts
+- Usernames and display names block all profanity. Reviews, replies, and list titles and descriptions block only slurs, so people can still swear when writing about an album
 - Flat review conversations with public reading, authenticated replies and reply likes, owner/admin deletion, and
   batched reply counts on review cards
 - Notifications: review likes, review replies, reply likes, and new followers
@@ -120,7 +121,6 @@ deferred until the product needs those dedicated surfaces.
 - User reports and moderation queue
 - Realtime notifications; notification delivery stays request-driven
 - Notification preferences, thread muting, and per-type settings
-- Profanity and slur filtering for review and reply bodies; only usernames and display names are filtered
 
 ## Feed Algorithm
 

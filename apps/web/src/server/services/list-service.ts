@@ -2,6 +2,7 @@ import { and, count, desc, eq, isNotNull, max, min, sql } from "drizzle-orm";
 import z from "zod";
 import { getDb } from "@/lib/db";
 import { albums, listItems, lists, reviews, user } from "@/lib/db/schema";
+import { assertNoSlurs } from "@/lib/moderation/profanity.server";
 import { tryCatch } from "@/try-catch";
 import { deleteImageObjectSafely, getImagePublicUrl, isListCoverObjectKey } from "../image-storage";
 import { decodeCursor, encodeCursor, getCreatedAtIdCursorFilter, getOptionalCurrentUser } from "../server-utils";
@@ -339,6 +340,8 @@ export async function getMyListsForAlbumService(data: MyListsForAlbumInput, cont
 }
 
 export async function createListService(data: CreateListInput, context: AuthenticatedContext) {
+  assertNoSlurs(data.title, data.description);
+
   const [createdList] = await context.db
     .insert(lists)
     .values({ description: data.description, isRanked: data.isRanked, title: data.title, userId: context.user.id })
@@ -352,6 +355,8 @@ export async function createListService(data: CreateListInput, context: Authenti
 }
 
 export async function updateListService(data: UpdateListInput, context: AuthenticatedContext) {
+  assertNoSlurs(data.title, data.description);
+
   const updatedAt = new Date();
 
   const [updatedList] = await context.db

@@ -1,15 +1,10 @@
-import { englishDataset, englishRecommendedTransformers, RegExpMatcher } from "obscenity";
+import { hasProfanity } from "@/lib/moderation/profanity.server";
 import { validateSharedUsernamePolicy } from "./username-policy.shared";
-
-const usernameMatcher = new RegExpMatcher({
-  ...englishDataset.build(),
-  ...englishRecommendedTransformers,
-});
 
 function isBlockedUsername(username: string) {
   const compactUsername = username.replace(/[_.]/g, "");
 
-  return usernameMatcher.hasMatch(username) || usernameMatcher.hasMatch(compactUsername);
+  return hasProfanity(username) || hasProfanity(compactUsername);
 }
 
 export function isUsernameAllowed(username: string) {
