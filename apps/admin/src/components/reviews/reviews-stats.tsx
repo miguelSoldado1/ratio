@@ -4,16 +4,15 @@ import { growthTrend } from "@/components/stat-card";
 import { StatStrip, StatStripSkeleton } from "@/components/stat-strip";
 import { toFiniteNumber } from "@/lib/format";
 import { adminReviewQueryKeys } from "@/lib/tanstack-query/query-keys";
+import { statsStaleTime } from "@/lib/tanstack-query/root-provider";
 import { getReviewStats } from "@/server/functions/review-functions";
-
-const STATS_STALE_TIME_MS = 5 * 60 * 1000;
 
 export function ReviewsStats() {
   const getStatsFn = useServerFn(getReviewStats);
   const { data: stats, isLoading } = useQuery({
     queryKey: adminReviewQueryKeys.stats(),
     queryFn: () => getStatsFn(),
-    staleTime: STATS_STALE_TIME_MS,
+    staleTime: statsStaleTime,
   });
 
   if (isLoading) return <StatStripSkeleton />;

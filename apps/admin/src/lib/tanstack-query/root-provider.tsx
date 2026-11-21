@@ -2,6 +2,8 @@ import { QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-qu
 import { toast } from "sonner";
 import type { QueryClientConfig } from "@tanstack/react-query";
 
+export const statsStaleTime = 5 * 60 * 1000;
+
 const queryClientOptions: QueryClientConfig = {
   defaultOptions: {
     queries: {

@@ -4,16 +4,15 @@ import { growthTrend } from "@/components/stat-card";
 import { StatStrip, StatStripSkeleton } from "@/components/stat-strip";
 import { toFiniteNumber } from "@/lib/format";
 import { adminUserQueryKeys } from "@/lib/tanstack-query/query-keys";
+import { statsStaleTime } from "@/lib/tanstack-query/root-provider";
 import { getUserStats } from "@/server/functions/user-functions";
-
-const STATS_STALE_TIME_MS = 5 * 60 * 1000;
 
 export function UsersStats() {
   const getStatsFn = useServerFn(getUserStats);
   const { data: stats, isLoading } = useQuery({
     queryKey: adminUserQueryKeys.stats(),
     queryFn: () => getStatsFn(),
-    staleTime: STATS_STALE_TIME_MS,
+    staleTime: statsStaleTime,
   });
 
   if (isLoading) return <StatStripSkeleton />;
