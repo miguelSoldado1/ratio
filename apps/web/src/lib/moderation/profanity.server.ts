@@ -1,21 +1,6 @@
 import { DataSet, englishDataset, englishRecommendedTransformers, RegExpMatcher } from "obscenity";
 
-const slurWords = new Set([
-  "abeed",
-  "abo",
-  "africoon",
-  "arabush",
-  "boonga",
-  "chingchong",
-  "chink",
-  "dyke",
-  "fag",
-  "kike",
-  "nigger",
-  "retard",
-  "spastic",
-  "tranny",
-]);
+const slurWords = new Set(["abeed", "africoon", "arabush", "boonga", "chingchong", "chink", "kike", "nigger"]);
 
 const profanityMatcher = new RegExpMatcher({
   ...englishDataset.build(),
