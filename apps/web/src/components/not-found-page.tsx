@@ -1,5 +1,6 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { Home, Search } from "lucide-react";
+import { useOpenGlobalSearch } from "@/components/global-search/global-search-provider";
 import { PageContainer, PageContainerContent } from "@/components/page-container";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -14,12 +15,9 @@ const EQUALIZER_BARS = [
   { className: "bg-muted-foreground/40", delay: "100ms", height: "34%", id: "bar-7" },
 ];
 
-function openSearch() {
-  document.body.dispatchEvent(new KeyboardEvent("keydown", { bubbles: true, key: "/" }));
-}
-
 export function NotFoundPage() {
   const location = useLocation();
+  const openSearch = useOpenGlobalSearch();
 
   return (
     <main className="min-h-[calc(100svh-4rem)] bg-background text-foreground">

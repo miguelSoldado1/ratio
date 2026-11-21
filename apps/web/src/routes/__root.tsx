@@ -2,6 +2,7 @@ import { TanStackDevtools } from "@tanstack/react-devtools";
 import { ReactQueryDevtoolsPanel } from "@tanstack/react-query-devtools";
 import { createRootRoute, HeadContent, Outlet, Scripts } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { GlobalSearchProvider } from "@/components/global-search/global-search-provider";
 import { NotFoundPage } from "@/components/not-found-page";
 import { TopBar } from "@/components/top-bar";
 import { Toaster } from "@/components/ui/sonner";
@@ -42,10 +43,12 @@ function RootComponent() {
       >
         Skip to main content
       </a>
-      <TopBar />
-      <div id="main-content" tabIndex={-1}>
-        <Outlet />
-      </div>
+      <GlobalSearchProvider>
+        <TopBar />
+        <div id="main-content" tabIndex={-1}>
+          <Outlet />
+        </div>
+      </GlobalSearchProvider>
     </RootDocument>
   );
 }
