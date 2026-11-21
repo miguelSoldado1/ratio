@@ -110,22 +110,58 @@ describe("EditProfileDialog photo", () => {
     await waitFor(() => expect(mockRemoveMyAvatar).toHaveBeenCalled());
   });
 
-  it("retries only the name after the photo saved and the name failed", async () => {
-    mockUpdateUser.mockResolvedValueOnce({ error: { message: "Something went wrong." } });
+  it("doesn't save the photo when the new username is taken", async () => {
+    mockUpdateUser.mockResolvedValueOnce({ error: { code: "USERNAME_IS_ALREADY_TAKEN", message: "Username taken" } });
     openDialog();
 
-    fireEvent.change(screen.getByLabelText("Display username"), { target: { value: "Alice B" } });
+    fireEvent.change(screen.getByLabelText("Username"), { target: { value: "bob" } });
     fireEvent.change(screen.getByLabelText("Profile photo"), { target: { files: [photo] } });
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
-    await screen.findByText("Something went wrong.");
-    expect(mockUploadPhoto).toHaveBeenCalledTimes(1);
+    await screen.findByText("That username isn't available.");
+    expect(mockUpdateUser).toHaveBeenCalledWith({ displayUsername: "Alice", username: "bob" });
+    expect(mockUploadPhoto).not.toHaveBeenCalled();
+    expect(mockSetMyAvatar).not.toHaveBeenCalled();
+    expect(mockNavigate).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).not.toBeNull();
+  });
 
+  it("saves the new username, moves to its profile, then saves the photo", async () => {
+    openDialog();
+
+    fireEvent.change(screen.getByLabelText("Username"), { target: { value: "bob" } });
+    fireEvent.change(screen.getByLabelText("Profile photo"), { target: { files: [photo] } });
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
-    await waitFor(() => expect(mockUpdateUser).toHaveBeenCalledTimes(2));
-    expect(mockUploadPhoto).toHaveBeenCalledTimes(1);
-    expect(mockSetMyAvatar).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(mockNavigate).toHaveBeenCalledWith({ params: { username: "bob" }, to: "/user/$username" });
+    expect(mockUpdateUser.mock.invocationCallOrder[0]).toBeLessThan(mockUploadPhoto.mock.invocationCallOrder[0]);
+    expect(mockNavigate.mock.invocationCallOrder[0]).toBeLessThan(mockUploadPhoto.mock.invocationCallOrder[0]);
+  });
+
+  it("keeps the picked photo for a retry when it fails after the name saved", async () => {
+    mockSetMyAvatar.mockRejectedValueOnce(new Error("Upload failed."));
+    const { rerender } = renderWithQueryClient(<EditProfileDialog displayName="Alice" username="alice" />);
+    fireEvent.click(screen.getByRole("button", { name: "Edit profile" }));
+
+    fireEvent.change(screen.getByLabelText("Username"), { target: { value: "bob" } });
+    fireEvent.change(screen.getByLabelText("Profile photo"), { target: { files: [photo] } });
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => expect(mockSetMyAvatar).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Save changes" })).not.toHaveProperty("disabled", true)
+    );
+    expect(mockNavigate).toHaveBeenCalledWith({ params: { username: "bob" }, to: "/user/$username" });
+    expect(screen.queryByRole("dialog")).not.toBeNull();
+
+    rerender(<EditProfileDialog displayName="Alice" username="bob" />);
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(mockUpdateUser).toHaveBeenCalledTimes(1);
+    expect(mockUploadPhoto).toHaveBeenCalledTimes(2);
+    expect(mockUploadPhoto).toHaveBeenLastCalledWith(photo);
   });
 });
 

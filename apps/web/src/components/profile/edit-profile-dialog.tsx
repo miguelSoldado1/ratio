@@ -73,9 +73,13 @@ export function EditProfileDialog({ avatarUrl, className, displayName, username 
     if (!open) return;
     setForm({ displayUsername: displayName, username });
     setErrors({});
+  }, [displayName, open, username]);
+
+  useEffect(() => {
+    if (!open) return;
     setPhotoFile(undefined);
     setRemovePhoto(false);
-  }, [displayName, open, username]);
+  }, [open]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -95,24 +99,24 @@ export function EditProfileDialog({ avatarUrl, className, displayName, username 
       return setOpen(false);
     }
 
+    const hasUsernameChange = nextUsername !== currentUsername;
+
     setIsSaving(true);
-    // Photo first: it's cleared once saved, so a retry after a failed name doesn't upload it again.
-    const isPhotoSaved = !hasPhotoChange || (await savePhotoChange());
+    const isDetailsSaved =
+      !hasDetailsChanges || (await saveDetails({ displayUsername: nextDisplayUsername, username: nextUsername }));
+
+    if (isDetailsSaved && hasUsernameChange) {
+      await navigate({ params: { username: nextUsername }, to: "/user/$username" });
+    }
+
     const isSaved =
-      isPhotoSaved &&
-      (!hasDetailsChanges || (await saveDetails({ displayUsername: nextDisplayUsername, username: nextUsername })));
+      isDetailsSaved && (!hasPhotoChange || (await savePhotoChange(hasUsernameChange ? nextUsername : username)));
     setIsSaving(false);
 
-    if (!isSaved) return;
-
-    setOpen(false);
-
-    if (nextUsername !== currentUsername) {
-      navigate({ params: { username: nextUsername }, to: "/user/$username" });
-    }
+    if (isSaved) setOpen(false);
   }
 
-  async function savePhotoChange() {
+  async function savePhotoChange(profileUsername: string) {
     const avatarResult = photoFile ? await profilePhoto.uploadPhoto(photoFile) : await profilePhoto.removePhoto();
     if (!avatarResult) return false;
 
@@ -122,7 +126,7 @@ export function EditProfileDialog({ avatarUrl, className, displayName, username 
       avatarObjectKey: avatarResult.avatarObjectKey,
       avatarUrl: avatarResult.avatarUrl,
       queryClient,
-      username,
+      username: profileUsername,
     });
     await session.refetch().catch(() => undefined);
 
