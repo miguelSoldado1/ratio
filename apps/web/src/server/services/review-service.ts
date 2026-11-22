@@ -3,6 +3,7 @@ import { alias } from "drizzle-orm/pg-core";
 import z from "zod";
 import { getDb } from "@/lib/db";
 import { albums, profilePinnedReviews, reviewLikes, reviews, user, userFollows } from "@/lib/db/schema";
+import { assertNoSlurs } from "@/lib/moderation/profanity.server";
 import { getFollowedByViewerSql, mapFollowableUser } from "../followable-user";
 import {
   decodeCursor,
@@ -538,6 +539,8 @@ export async function hasMyAlbumReviewService(data: AlbumIdInput, context: Authe
 }
 
 export async function createReviewService(data: CreateReviewInput, context: AuthenticatedContext) {
+  assertNoSlurs(data.body);
+
   const albumMetadata = await getMissingAlbumMetadataForWrite(data.albumId, context.db);
 
   return context.db.transaction(async (transaction) => {

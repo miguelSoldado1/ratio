@@ -1,3 +1,4 @@
+import { pickCroppedImage } from "@test/image-crop";
 import { renderWithQueryClient } from "@test/react";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -73,10 +74,10 @@ afterEach(() => {
 });
 
 describe("EditProfileDialog photo", () => {
-  it("doesn't upload a picked photo when the dialog is cancelled", () => {
+  it("doesn't upload a picked photo when the dialog is cancelled", async () => {
     openDialog();
 
-    fireEvent.change(screen.getByLabelText("Profile photo"), { target: { files: [photo] } });
+    await pickCroppedImage("Profile photo", photo);
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
     expect(mockUploadPhoto).not.toHaveBeenCalled();
@@ -86,7 +87,7 @@ describe("EditProfileDialog photo", () => {
   it("uploads and saves a picked photo on Save", async () => {
     openDialog();
 
-    fireEvent.change(screen.getByLabelText("Profile photo"), { target: { files: [photo] } });
+    await pickCroppedImage("Profile photo", photo);
     expect(mockUploadPhoto).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
@@ -115,7 +116,7 @@ describe("EditProfileDialog photo", () => {
     openDialog();
 
     fireEvent.change(screen.getByLabelText("Username"), { target: { value: "bob" } });
-    fireEvent.change(screen.getByLabelText("Profile photo"), { target: { files: [photo] } });
+    await pickCroppedImage("Profile photo", photo);
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
     await screen.findByText("That username isn't available.");
@@ -130,7 +131,7 @@ describe("EditProfileDialog photo", () => {
     openDialog();
 
     fireEvent.change(screen.getByLabelText("Username"), { target: { value: "bob" } });
-    fireEvent.change(screen.getByLabelText("Profile photo"), { target: { files: [photo] } });
+    await pickCroppedImage("Profile photo", photo);
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
@@ -145,7 +146,7 @@ describe("EditProfileDialog photo", () => {
     fireEvent.click(screen.getByRole("button", { name: "Edit profile" }));
 
     fireEvent.change(screen.getByLabelText("Username"), { target: { value: "bob" } });
-    fireEvent.change(screen.getByLabelText("Profile photo"), { target: { files: [photo] } });
+    await pickCroppedImage("Profile photo", photo);
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
     await waitFor(() => expect(mockSetMyAvatar).toHaveBeenCalledTimes(1));

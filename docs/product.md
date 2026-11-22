@@ -77,8 +77,10 @@ deferred until the product needs those dedicated surfaces.
   actions sit under the cover, so the albums get the whole right column. People viewing someone else's list see a
   labeled share button. Owners can upload a cover image when they create a list, or later from Edit details. The cover
   replaces the album mosaic everywhere the list shows up, share image included, and removing it brings the mosaic back.
-  Like profile photos, it's shown square with no cropping, and picking or removing one only takes effect on Save, so
-  Cancel leaves it as it was. New additions go to the bottom and can then be repositioned.
+  Like profile photos, it's shown square. Picking an image opens a crop step (pan and zoom behind a square frame,
+  round for profile photos) that exports a resized WebP, or JPEG where the browser can't encode WebP, before upload.
+  Picking or removing one only takes effect on Save, so Cancel leaves it as it was. New additions go to the bottom and
+  can then be repositioned.
   Lists are unnumbered by default. An owner can turn on numbering in the list details, and each row then shows its
   position in the order they set. Owners create them from their profile and add, reorder, remove, rename, or delete content inline on the public list page
 - Album pages with community score and reviews
@@ -94,6 +96,7 @@ deferred until the product needs those dedicated surfaces.
   deferred suggested-users work. With no other reviewers, the empty state shows only its text
 - Review permalinks and basic review sharing
 - Basic admin moderation: remove bad reviews/ratings and ban abusive accounts
+- Usernames and display names block all profanity. Reviews, replies, and list titles and descriptions block only slurs, so people can still swear when writing about an album
 - Flat review conversations with public reading, authenticated replies and reply likes, owner/admin deletion, and
   batched reply counts on review cards
 - Notifications: review likes, review replies, reply likes, and new followers
@@ -118,7 +121,6 @@ deferred until the product needs those dedicated surfaces.
 - User reports and moderation queue
 - Realtime notifications; notification delivery stays request-driven
 - Notification preferences, thread muting, and per-type settings
-- Profanity and slur filtering for review and reply bodies; only usernames and display names are filtered
 
 ## Feed Algorithm
 

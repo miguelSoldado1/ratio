@@ -28,6 +28,8 @@ export function ListCoverPicker({
 
   return (
     <ImageUploadField
+      cropOutputSize={1024}
+      cropShape="rect"
       disabled={disabled}
       hasImage={Boolean(file || coverUrl)}
       label="Cover"

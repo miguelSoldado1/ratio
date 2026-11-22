@@ -1,3 +1,4 @@
+import { pickCroppedImage } from "@test/image-crop";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ListDetailsDialog } from "@/components/list/list-details-dialog";
@@ -35,10 +36,10 @@ afterEach(() => {
 });
 
 describe("ListDetailsDialog cover", () => {
-  it("hands a picked cover to onSubmit only when the dialog is saved", () => {
+  it("hands a picked cover to onSubmit only when the dialog is saved", async () => {
     const { onOpenChange, onSubmit } = renderDialog();
 
-    fireEvent.change(screen.getByLabelText("Cover"), { target: { files: [cover] } });
+    await pickCroppedImage("Cover", cover);
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
     expect(onOpenChange).toHaveBeenCalledWith(false);
@@ -62,11 +63,11 @@ describe("ListDetailsDialog cover", () => {
     expect(onSubmit).toHaveBeenCalledWith({ coverFile: undefined, details, removeCover: true });
   });
 
-  it("drops a pending removal when a new cover is picked", () => {
+  it("drops a pending removal when a new cover is picked", async () => {
     const { onSubmit } = renderDialog();
 
     fireEvent.click(screen.getByRole("button", { name: "Remove cover" }));
-    fireEvent.change(screen.getByLabelText("Cover"), { target: { files: [cover] } });
+    await pickCroppedImage("Cover", cover);
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
     expect(onSubmit).toHaveBeenCalledWith({ coverFile: cover, details, removeCover: false });
@@ -87,7 +88,7 @@ describe("ListDetailsDialog reset", () => {
     );
 
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Unsaved" } });
-    fireEvent.change(screen.getByLabelText("Cover"), { target: { files: [cover] } });
+    await pickCroppedImage("Cover", cover);
     rerender(
       <ListDetailsDialog
         {...props}
@@ -109,7 +110,7 @@ describe("ListDetailsDialog reset", () => {
     });
   });
 
-  it("keeps a picked cover when a details save updates the values while open", () => {
+  it("keeps a picked cover when a details save updates the values while open", async () => {
     const props = {
       coverStatusLabel: undefined,
       currentCover: { coverAlbums: [], coverUrl: undefined },
@@ -123,7 +124,7 @@ describe("ListDetailsDialog reset", () => {
     );
 
     fireEvent.change(screen.getByLabelText("Title"), { target: { value: "Saved" } });
-    fireEvent.change(screen.getByLabelText("Cover"), { target: { files: [cover] } });
+    await pickCroppedImage("Cover", cover);
     rerender(<ListDetailsDialog {...props} initialValues={{ description: "", isRanked: false, title: "Saved" }} />);
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
 

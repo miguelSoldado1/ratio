@@ -1,11 +1,6 @@
-import { englishDataset, englishRecommendedTransformers, RegExpMatcher } from "obscenity";
+import { hasProfanity } from "@/lib/moderation/profanity.server";
 import { isReservedUsername } from "@/lib/users/username-policy.shared";
 import { isDisplayUsernameValid, trimDisplayUsername } from "./profile-identity";
-
-const displayUsernameMatcher = new RegExpMatcher({
-  ...englishDataset.build(),
-  ...englishRecommendedTransformers,
-});
 
 const displayUsernameComponentPattern = /[\p{L}\p{N}_.-]+/gu;
 const displayUsernameSeparatorPattern = /[_.-]/g;
@@ -23,10 +18,7 @@ export function isDisplayUsernameAllowed(displayUsername: string) {
 
   const compactDisplayUsername = trimmedDisplayUsername.replace(displayUsernameSeparatorPattern, "");
 
-  return !(
-    displayUsernameMatcher.hasMatch(trimmedDisplayUsername.toLowerCase()) ||
-    displayUsernameMatcher.hasMatch(compactDisplayUsername.toLowerCase())
-  );
+  return !(hasProfanity(trimmedDisplayUsername.toLowerCase()) || hasProfanity(compactDisplayUsername.toLowerCase()));
 }
 
 export function getAllowedDisplayUsername(displayUsername: string, fallback = "User") {

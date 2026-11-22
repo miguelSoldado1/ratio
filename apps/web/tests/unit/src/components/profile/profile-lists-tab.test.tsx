@@ -1,3 +1,4 @@
+import { pickCroppedImage } from "@test/image-crop";
 import { renderWithQueryClient } from "@test/react";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -103,7 +104,7 @@ describe("ProfileListsTab", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "New list" }));
     fireEvent.change(await screen.findByLabelText("Title"), { target: { value: "Covered" } });
-    fireEvent.change(screen.getByLabelText("Cover"), { target: { files: [cover] } });
+    await pickCroppedImage("Cover", cover);
     expect(mockUploadCover).not.toHaveBeenCalled();
 
     fireEvent.click(screen.getByRole("button", { name: "Create list" }));
